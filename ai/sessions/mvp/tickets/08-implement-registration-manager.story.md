@@ -4,7 +4,7 @@ session_id: mvp
 feature_id: [server-registration]
 spec_id: [server-api-spec]
 model_id: [registration-data]
-status: pending
+status: completed
 priority: high
 estimated_minutes: 30
 ---

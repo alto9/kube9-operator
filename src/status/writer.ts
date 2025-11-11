@@ -2,6 +2,7 @@ import * as k8s from '@kubernetes/client-node';
 import { kubernetesClient, KubernetesClient } from '../kubernetes/client.js';
 import { calculateStatus } from './calculator.js';
 import type { OperatorStatus, RegistrationState } from './types.js';
+import type { RegistrationManager } from '../registration/manager.js';
 
 /**
  * Default registration state when registration manager is not available
@@ -78,6 +79,7 @@ export class StatusWriter {
   private intervalId: NodeJS.Timeout | null = null;
   private readonly kubernetesClient: KubernetesClient;
   private readonly intervalSeconds: number;
+  private readonly registrationManager?: RegistrationManager;
   private lastWriteError: string | null = null;
 
   /**
@@ -85,14 +87,17 @@ export class StatusWriter {
    * 
    * @param client - Kubernetes client instance (defaults to singleton)
    * @param intervalSeconds - Update interval in seconds (defaults to 60)
+   * @param registrationManager - Optional registration manager for registration state
    */
   constructor(
     client?: KubernetesClient,
-    intervalSeconds: number = 60
+    intervalSeconds: number = 60,
+    registrationManager?: RegistrationManager
   ) {
     // Use provided client or fall back to singleton
     this.kubernetesClient = client ?? kubernetesClient;
     this.intervalSeconds = intervalSeconds;
+    this.registrationManager = registrationManager;
   }
 
   /**
@@ -140,11 +145,14 @@ export class StatusWriter {
    */
   private async updateStatus(): Promise<void> {
     try {
-      // Calculate current status using default registration state
-      // (registration manager will provide real state in future)
+      // Get registration state from manager if available, otherwise use default
+      const registrationState = this.registrationManager
+        ? this.registrationManager.getState()
+        : DEFAULT_REGISTRATION_STATE;
+      
       const canWriteConfigMap = true; // Assume we can write unless proven otherwise
       const status = calculateStatus(
-        DEFAULT_REGISTRATION_STATE,
+        registrationState,
         this.lastWriteError,
         canWriteConfigMap
       );

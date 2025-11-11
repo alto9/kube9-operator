@@ -6,6 +6,9 @@ import { kubernetesClient } from './kubernetes/client.js';
 import { loadConfig, setConfig, getConfig } from './config/loader.js';
 import type { Config } from './config/types.js';
 import { StatusWriter } from './status/writer.js';
+import { RegistrationManager } from './registration/manager.js';
+import { RegistrationClient } from './registration/client.js';
+import { generateClusterIdentifier } from './cluster/identifier.js';
 
 console.log('kube9-operator starting...');
 
@@ -58,11 +61,35 @@ async function main() {
     // Test Kubernetes client
     await testKubernetesClient();
     
+    // Initialize registration manager if API key is present
+    let registrationManager: RegistrationManager | null = null;
+    if (config.apiKey) {
+      console.log('Initializing registration manager...');
+      const registrationClient = new RegistrationClient(
+        config.serverUrl,
+        config.apiKey
+      );
+      registrationManager = new RegistrationManager(
+        config,
+        registrationClient,
+        generateClusterIdentifier,
+        () => kubernetesClient.getClusterInfo()
+      );
+      
+      // Start registration (non-blocking)
+      registrationManager.start().catch((error) => {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        console.error(`Failed to start registration: ${errorMessage}`);
+        // Continue running even if registration fails initially
+      });
+    }
+    
     // Start status writer for periodic ConfigMap updates
     console.log('Starting status writer...');
     const statusWriter = new StatusWriter(
       kubernetesClient,
-      config.statusUpdateIntervalSeconds
+      config.statusUpdateIntervalSeconds,
+      registrationManager ?? undefined
     );
     statusWriter.start();
     
