@@ -1,0 +1,11 @@
+node_modules
+dist
+.git
+*.md
+ai
+*.test.ts
+*.test.js
+*.test.d.ts
+*.test.d.ts.map
+*.test.js.map
+
