@@ -140,6 +140,37 @@ export class StatusWriter {
   }
 
   /**
+   * Writes a final status update to the ConfigMap
+   * Used during graceful shutdown to indicate the operator is shutting down
+   * 
+   * @param status - Final status to write
+   */
+  async writeFinalStatus(status: OperatorStatus): Promise<void> {
+    try {
+      // Convert status to JSON string
+      const statusJson = JSON.stringify(status, null, 2);
+
+      // Create or update ConfigMap
+      await createOrUpdateConfigMap(
+        STATUS_NAMESPACE,
+        STATUS_CONFIGMAP_NAME,
+        { status: statusJson },
+        {
+          'app.kubernetes.io/name': 'kube9-operator',
+          'app.kubernetes.io/component': 'status',
+        },
+        this.kubernetesClient.coreApi
+      );
+
+      console.log('Final status update written: shutting down');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      // Log error but don't throw (non-fatal during shutdown)
+      console.error(`Failed to write final status ConfigMap: ${errorMessage}`);
+    }
+  }
+
+  /**
    * Updates the status ConfigMap with current operator status
    * Handles errors gracefully without crashing the operator
    */

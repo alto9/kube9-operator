@@ -11,8 +11,13 @@ import { RegistrationClient } from './registration/client.js';
 import { generateClusterIdentifier } from './cluster/identifier.js';
 import { startHealthServer } from './health/server.js';
 import { setInitialized } from './health/state.js';
+import { gracefulShutdown } from './shutdown/handler.js';
 
 console.log('kube9-operator starting...');
+
+// Module-level references for shutdown handler
+let statusWriterInstance: StatusWriter | null = null;
+let registrationManagerInstance: RegistrationManager | null = null;
 
 // Load configuration
 async function initializeConfig(): Promise<Config> {
@@ -89,6 +94,9 @@ async function main() {
       });
     }
     
+    // Store reference for shutdown handler
+    registrationManagerInstance = registrationManager;
+    
     // Start status writer for periodic ConfigMap updates
     console.log('Starting status writer...');
     const statusWriter = new StatusWriter(
@@ -97,6 +105,30 @@ async function main() {
       registrationManager ?? undefined
     );
     statusWriter.start();
+    
+    // Store reference for shutdown handler
+    statusWriterInstance = statusWriter;
+    
+    // Register signal handlers for graceful shutdown
+    process.on('SIGTERM', () => {
+      if (statusWriterInstance) {
+        gracefulShutdown(statusWriterInstance, registrationManagerInstance).catch((error) => {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          console.error(`Error in shutdown handler: ${errorMessage}`);
+          process.exit(1);
+        });
+      }
+    });
+    
+    process.on('SIGINT', () => {
+      if (statusWriterInstance) {
+        gracefulShutdown(statusWriterInstance, registrationManagerInstance).catch((error) => {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          console.error(`Error in shutdown handler: ${errorMessage}`);
+          process.exit(1);
+        });
+      }
+    });
     
     // Mark operator as initialized - readiness probe will now pass
     setInitialized(true);

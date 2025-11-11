@@ -1,0 +1,110 @@
+import type { StatusWriter } from '../status/writer.js';
+import type { RegistrationManager } from '../registration/manager.js';
+import { stopHealthServer } from '../health/server.js';
+import { getConfig } from '../config/loader.js';
+import type { OperatorStatus } from '../status/types.js';
+
+/**
+ * Operator version (semver)
+ * Must match version in status/calculator.ts
+ */
+const OPERATOR_VERSION = '1.0.0';
+
+/**
+ * Shutdown timeout in milliseconds (5 seconds)
+ */
+const SHUTDOWN_TIMEOUT_MS = 5000;
+
+/**
+ * Flag to prevent multiple shutdown attempts
+ */
+let isShuttingDown = false;
+
+/**
+ * Gracefully shuts down the operator
+ * 
+ * Handles SIGTERM and SIGINT signals by:
+ * 1. Stopping all background services (status writer, registration manager, health server)
+ * 2. Writing a final status update indicating shutdown
+ * 3. Exiting cleanly with code 0
+ * 
+ * Includes a 5-second timeout to force exit if shutdown hangs.
+ * 
+ * @param statusWriter - Status writer instance to stop and use for final status update
+ * @param registrationManager - Optional registration manager instance to stop
+ */
+export async function gracefulShutdown(
+  statusWriter: StatusWriter,
+  registrationManager: RegistrationManager | null
+): Promise<void> {
+  // Prevent multiple shutdown attempts
+  if (isShuttingDown) {
+    console.warn('Shutdown already in progress, ignoring signal');
+    return;
+  }
+  
+  isShuttingDown = true;
+  console.log('Shutdown initiated, beginning graceful shutdown...');
+
+  // Set up timeout to force exit if shutdown hangs
+  const timeoutId = setTimeout(() => {
+    console.error('Shutdown timeout reached, forcing exit');
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS);
+
+  try {
+    // Stop status writer (clears interval)
+    statusWriter.stop();
+
+    // Stop registration manager if present (clears timers)
+    if (registrationManager) {
+      registrationManager.stop();
+    }
+
+    // Stop health server (closes HTTP server)
+    await stopHealthServer();
+
+    // Get current config to build final status
+    const config = getConfig();
+    
+    // Get registration state if manager is available
+    const registrationState = registrationManager
+      ? registrationManager.getState()
+      : { isRegistered: false, clusterId: undefined, consecutiveFailures: 0 };
+
+    // Build final status indicating shutdown
+    const finalStatus: OperatorStatus = {
+      mode: config.apiKey ? "enabled" : "operated",
+      tier: config.apiKey && registrationState.isRegistered ? "pro" : "free",
+      version: OPERATOR_VERSION,
+      health: "unhealthy",
+      lastUpdate: new Date().toISOString(),
+      registered: registrationState.isRegistered,
+      error: "Shutting down",
+    };
+
+    // Include clusterId if registered
+    if (registrationState.isRegistered && registrationState.clusterId) {
+      finalStatus.clusterId = registrationState.clusterId;
+    }
+
+    // Write final status update
+    await statusWriter.writeFinalStatus(finalStatus);
+
+    // Clear timeout since shutdown completed successfully
+    clearTimeout(timeoutId);
+
+    console.log('Graceful shutdown completed');
+    process.exit(0);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error(`Error during graceful shutdown: ${errorMessage}`);
+    
+    // Clear timeout
+    clearTimeout(timeoutId);
+    
+    // Exit anyway - shutdown should always complete
+    process.exit(0);
+  }
+}
+
