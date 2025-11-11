@@ -9,6 +9,8 @@ import { StatusWriter } from './status/writer.js';
 import { RegistrationManager } from './registration/manager.js';
 import { RegistrationClient } from './registration/client.js';
 import { generateClusterIdentifier } from './cluster/identifier.js';
+import { startHealthServer } from './health/server.js';
+import { setInitialized } from './health/state.js';
 
 console.log('kube9-operator starting...');
 
@@ -58,6 +60,9 @@ async function main() {
     // Load config first
     const config = await initializeConfig();
     
+    // Start health server early so probes are available during initialization
+    startHealthServer(8080);
+    
     // Test Kubernetes client
     await testKubernetesClient();
     
@@ -92,6 +97,9 @@ async function main() {
       registrationManager ?? undefined
     );
     statusWriter.start();
+    
+    // Mark operator as initialized - readiness probe will now pass
+    setInitialized(true);
     
     console.log('kube9-operator initialized successfully');
   } catch (error) {
