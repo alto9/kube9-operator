@@ -2,7 +2,7 @@
 task_id: create-chart-readme
 session_id: mvp
 type: documentation
-status: pending
+status: completed
 priority: low
 ---
 
