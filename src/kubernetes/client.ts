@@ -1,0 +1,78 @@
+import * as k8s from '@kubernetes/client-node';
+
+/**
+ * Cluster information returned by getClusterInfo()
+ */
+export interface ClusterInfo {
+  version: string;
+  nodeCount: number;
+}
+
+/**
+ * Kubernetes client for interacting with the cluster API
+ * 
+ * Uses in-cluster configuration when running as a pod.
+ * Provides CoreV1Api and VersionApi clients for cluster operations.
+ */
+export class KubernetesClient {
+  private kubeConfig: k8s.KubeConfig;
+  public readonly coreApi: k8s.CoreV1Api;
+  public readonly versionApi: k8s.VersionApi;
+
+  constructor() {
+    try {
+      // Initialize KubeConfig and load in-cluster configuration
+      this.kubeConfig = new k8s.KubeConfig();
+      this.kubeConfig.loadFromCluster();
+
+      // Create API clients
+      this.coreApi = this.kubeConfig.makeApiClient(k8s.CoreV1Api);
+      this.versionApi = this.kubeConfig.makeApiClient(k8s.VersionApi);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Failed to initialize Kubernetes client:', errorMessage);
+      throw new Error(`Kubernetes client initialization failed: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Get cluster information including version and node count
+   * 
+   * @returns Promise resolving to cluster info with version and node count
+   * @throws Error if cluster is unreachable or API calls fail
+   */
+  async getClusterInfo(): Promise<ClusterInfo> {
+    try {
+      // Get Kubernetes version
+      const versionInfo = await this.versionApi.getCode();
+      const version = versionInfo.body.gitVersion || 'unknown';
+
+      // Get node count
+      const nodeList = await this.coreApi.listNode();
+      const nodeCount = nodeList.body.items?.length || 0;
+
+      return {
+        version,
+        nodeCount
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to get cluster info: ${errorMessage}`);
+    }
+  }
+
+  /**
+   * Get the underlying KubeConfig instance
+   * Useful for accessing cluster CA data (e.g., for cluster identifier generation)
+   */
+  getKubeConfig(): k8s.KubeConfig {
+    return this.kubeConfig;
+  }
+}
+
+/**
+ * Singleton instance of KubernetesClient
+ * Use this instance throughout the application for cluster interactions
+ */
+export const kubernetesClient = new KubernetesClient();
+
