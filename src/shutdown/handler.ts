@@ -3,6 +3,7 @@ import type { RegistrationManager } from '../registration/manager.js';
 import { stopHealthServer } from '../health/server.js';
 import { getConfig } from '../config/loader.js';
 import type { OperatorStatus } from '../status/types.js';
+import { logger } from '../logging/logger.js';
 
 /**
  * Operator version (semver)
@@ -39,16 +40,16 @@ export async function gracefulShutdown(
 ): Promise<void> {
   // Prevent multiple shutdown attempts
   if (isShuttingDown) {
-    console.warn('Shutdown already in progress, ignoring signal');
+    logger.warn('Shutdown already in progress, ignoring signal');
     return;
   }
   
   isShuttingDown = true;
-  console.log('Shutdown initiated, beginning graceful shutdown...');
+  logger.info('Shutdown initiated, beginning graceful shutdown...');
 
   // Set up timeout to force exit if shutdown hangs
   const timeoutId = setTimeout(() => {
-    console.error('Shutdown timeout reached, forcing exit');
+    logger.error('Shutdown timeout reached, forcing exit');
     process.exit(1);
   }, SHUTDOWN_TIMEOUT_MS);
 
@@ -94,11 +95,11 @@ export async function gracefulShutdown(
     // Clear timeout since shutdown completed successfully
     clearTimeout(timeoutId);
 
-    console.log('Graceful shutdown completed');
+    logger.info('Graceful shutdown completed');
     process.exit(0);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Error during graceful shutdown: ${errorMessage}`);
+    logger.error('Error during graceful shutdown', { error: errorMessage });
     
     // Clear timeout
     clearTimeout(timeoutId);

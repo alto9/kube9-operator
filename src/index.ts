@@ -12,8 +12,9 @@ import { generateClusterIdentifier } from './cluster/identifier.js';
 import { startHealthServer } from './health/server.js';
 import { setInitialized } from './health/state.js';
 import { gracefulShutdown } from './shutdown/handler.js';
+import { logger } from './logging/logger.js';
 
-console.log('kube9-operator starting...');
+logger.info('kube9-operator starting...');
 
 // Module-level references for shutdown handler
 let statusWriterInstance: StatusWriter | null = null;
@@ -22,22 +23,23 @@ let registrationManagerInstance: RegistrationManager | null = null;
 // Load configuration
 async function initializeConfig(): Promise<Config> {
   try {
-    console.log('Loading configuration...');
+    logger.info('Loading configuration...');
     const config = await loadConfig();
     setConfig(config);
     
     // Log config loaded (without sensitive data)
-    console.log('Configuration loaded:');
-    console.log(`  Server URL: ${config.serverUrl}`);
-    console.log(`  Log Level: ${config.logLevel}`);
-    console.log(`  Status Update Interval: ${config.statusUpdateIntervalSeconds}s`);
-    console.log(`  Re-registration Interval: ${config.reregistrationIntervalHours}h`);
-    console.log(`  API Key: ${config.apiKey ? 'configured (pro tier)' : 'not configured (free tier)'}`);
+    logger.info('Configuration loaded', {
+      serverUrl: config.serverUrl,
+      logLevel: config.logLevel,
+      statusUpdateIntervalSeconds: config.statusUpdateIntervalSeconds,
+      reregistrationIntervalHours: config.reregistrationIntervalHours,
+      tier: config.apiKey ? 'pro' : 'free',
+    });
     
     return config;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('Failed to load configuration:', errorMessage);
+    logger.error('Failed to load configuration', { error: errorMessage });
     throw error;
   }
 }
@@ -45,17 +47,20 @@ async function initializeConfig(): Promise<Config> {
 // Test Kubernetes client initialization
 async function testKubernetesClient() {
   try {
-    console.log('Testing Kubernetes client...');
+    logger.info('Testing Kubernetes client...');
     
     const clusterInfo = await kubernetesClient.getClusterInfo();
-    console.log('Cluster info retrieved successfully:');
-    console.log(`  Kubernetes version: ${clusterInfo.version}`);
-    console.log(`  Node count: ${clusterInfo.nodeCount}`);
+    logger.info('Cluster info retrieved successfully', {
+      kubernetesVersion: clusterInfo.version,
+      nodeCount: clusterInfo.nodeCount,
+    });
     
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('Failed to connect to Kubernetes cluster:', errorMessage);
-    console.error('This is expected if running outside a cluster. The operator will retry when deployed.');
+    logger.error('Failed to connect to Kubernetes cluster', {
+      error: errorMessage,
+      note: 'This is expected if running outside a cluster. The operator will retry when deployed.',
+    });
   }
 }
 
@@ -74,7 +79,7 @@ async function main() {
     // Initialize registration manager if API key is present
     let registrationManager: RegistrationManager | null = null;
     if (config.apiKey) {
-      console.log('Initializing registration manager...');
+      logger.info('Initializing registration manager...');
       const registrationClient = new RegistrationClient(
         config.serverUrl,
         config.apiKey
@@ -89,7 +94,7 @@ async function main() {
       // Start registration (non-blocking)
       registrationManager.start().catch((error) => {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`Failed to start registration: ${errorMessage}`);
+        logger.error('Failed to start registration', { error: errorMessage });
         // Continue running even if registration fails initially
       });
     }
@@ -98,7 +103,7 @@ async function main() {
     registrationManagerInstance = registrationManager;
     
     // Start status writer for periodic ConfigMap updates
-    console.log('Starting status writer...');
+    logger.info('Starting status writer...');
     const statusWriter = new StatusWriter(
       kubernetesClient,
       config.statusUpdateIntervalSeconds,
@@ -114,7 +119,7 @@ async function main() {
       if (statusWriterInstance) {
         gracefulShutdown(statusWriterInstance, registrationManagerInstance).catch((error) => {
           const errorMessage = error instanceof Error ? error.message : String(error);
-          console.error(`Error in shutdown handler: ${errorMessage}`);
+          logger.error('Error in shutdown handler', { error: errorMessage });
           process.exit(1);
         });
       }
@@ -124,7 +129,7 @@ async function main() {
       if (statusWriterInstance) {
         gracefulShutdown(statusWriterInstance, registrationManagerInstance).catch((error) => {
           const errorMessage = error instanceof Error ? error.message : String(error);
-          console.error(`Error in shutdown handler: ${errorMessage}`);
+          logger.error('Error in shutdown handler', { error: errorMessage });
           process.exit(1);
         });
       }
@@ -133,17 +138,17 @@ async function main() {
     // Mark operator as initialized - readiness probe will now pass
     setInitialized(true);
     
-    console.log('kube9-operator initialized successfully');
+    logger.info('kube9-operator initialized successfully');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('Failed to initialize operator:', errorMessage);
+    logger.error('Failed to initialize operator', { error: errorMessage });
     process.exit(1);
   }
 }
 
 // Run initialization
 main().catch((error) => {
-  console.error('Unexpected error during initialization:', error);
+  logger.error('Unexpected error during initialization', { error });
   process.exit(1);
 });
 

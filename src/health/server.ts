@@ -1,5 +1,6 @@
 import express, { type Express } from 'express';
 import { checkLiveness, checkReadiness } from './checks.js';
+import { logger } from '../logging/logger.js';
 
 /**
  * Health server instance
@@ -16,7 +17,7 @@ let server: ReturnType<Express['listen']> | null = null;
  */
 export function startHealthServer(port: number = 8080): void {
   if (server !== null) {
-    console.warn('Health server is already running');
+    logger.warn('Health server is already running');
     return;
   }
 
@@ -54,13 +55,13 @@ export function startHealthServer(port: number = 8080): void {
 
   // Start server
   server = app.listen(port, () => {
-    console.log(`Health server listening on port ${port}`);
+    logger.info('Health server listening', { port });
   });
 
   // Handle server errors gracefully
   server.on('error', (error) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error(`Health server error: ${errorMessage}`);
+    logger.error('Health server error', { error: errorMessage });
   });
 }
 
@@ -76,9 +77,9 @@ export function stopHealthServer(): Promise<void> {
       return;
     }
 
-    console.log('Stopping health server...');
+    logger.info('Stopping health server...');
     server.close(() => {
-      console.log('Health server stopped');
+      logger.info('Health server stopped');
       server = null;
       resolve();
     });

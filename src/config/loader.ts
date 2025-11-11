@@ -1,5 +1,6 @@
 import { kubernetesClient } from '../kubernetes/client.js';
 import type { Config } from './types.js';
+import { logger } from '../logging/logger.js';
 
 const SECRET_NAME = 'kube9-operator-config';
 const SECRET_NAMESPACE = 'kube9-system';
@@ -51,13 +52,13 @@ export async function loadConfig(): Promise<Config> {
       
       // Validate that we got a non-empty API key
       if (!apiKey || apiKey.trim().length === 0) {
-        console.warn('API key found in Secret but is empty');
+        logger.warn('API key found in Secret but is empty');
         apiKey = null;
       } else {
-        console.log('API key loaded from Secret (pro tier mode)');
+        logger.info('API key loaded from Secret (pro tier mode)');
       }
     } else {
-      console.log('Secret exists but does not contain apiKey');
+      logger.info('Secret exists but does not contain apiKey');
     }
   } catch (error: unknown) {
     // Handle 404 as expected (free tier - Secret doesn't exist)
@@ -65,17 +66,20 @@ export async function loadConfig(): Promise<Config> {
     const httpError = error as { statusCode?: number; body?: unknown };
     
     if (httpError.statusCode === 404) {
-      console.log('Secret not found - running in free tier mode');
+      logger.info('Secret not found - running in free tier mode');
       apiKey = null;
     } else {
       // Other HTTP errors or network errors - log but don't crash
       const errorMessage = error instanceof Error ? error.message : String(error);
       if (httpError.statusCode) {
-        console.error(`Failed to read Secret (status ${httpError.statusCode}):`, errorMessage);
+        logger.error('Failed to read Secret', {
+          statusCode: httpError.statusCode,
+          error: errorMessage,
+        });
       } else {
-        console.error('Failed to read Secret:', errorMessage);
+        logger.error('Failed to read Secret', { error: errorMessage });
       }
-      console.error('Continuing without API key (free tier mode)');
+      logger.error('Continuing without API key (free tier mode)');
       apiKey = null;
     }
   }

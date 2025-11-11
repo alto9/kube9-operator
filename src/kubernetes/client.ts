@@ -1,4 +1,5 @@
 import * as k8s from '@kubernetes/client-node';
+import { logger } from '../logging/logger.js';
 
 /**
  * Cluster information returned by getClusterInfo()
@@ -30,7 +31,7 @@ export class KubernetesClient {
       this.versionApi = this.kubeConfig.makeApiClient(k8s.VersionApi);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('Failed to initialize Kubernetes client:', errorMessage);
+      logger.error('Failed to initialize Kubernetes client', { error: errorMessage });
       throw new Error(`Kubernetes client initialization failed: ${errorMessage}`);
     }
   }

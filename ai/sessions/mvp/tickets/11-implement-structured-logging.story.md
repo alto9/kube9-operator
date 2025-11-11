@@ -4,7 +4,7 @@ session_id: mvp
 feature_id: []
 spec_id: []
 model_id: []
-status: pending
+status: completed
 priority: medium
 estimated_minutes: 20
 ---

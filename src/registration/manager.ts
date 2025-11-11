@@ -10,6 +10,7 @@ import {
 import { RegistrationStateManager } from './state.js';
 import type { RegistrationState } from '../status/types.js';
 import type { ClusterInfo } from '../kubernetes/client.js';
+import { logger } from '../logging/logger.js';
 
 /**
  * Operator version (semver)
@@ -88,18 +89,18 @@ export class RegistrationManager {
    */
   async start(): Promise<void> {
     if (this.isStopped) {
-      console.warn('RegistrationManager is stopped, cannot start');
+      logger.warn('RegistrationManager is stopped, cannot start');
       return;
     }
 
     // Skip registration if no API key
     if (!this.config.apiKey) {
-      console.log('No API key configured - skipping registration (free tier mode)');
+      logger.info('No API key configured - skipping registration (free tier mode)');
       this.stateManager.reset();
       return;
     }
 
-    console.log('Starting registration manager...');
+    logger.info('Starting registration manager...');
     
     // Perform initial registration
     // Note: scheduleReregistration will be called after successful registration
@@ -114,7 +115,7 @@ export class RegistrationManager {
       return;
     }
 
-    console.log('Stopping registration manager...');
+    logger.info('Stopping registration manager...');
     this.isStopped = true;
 
     // Clear re-registration timer
@@ -152,21 +153,22 @@ export class RegistrationManager {
         approximateNodeCount: clusterInfo.nodeCount,
       };
 
-      console.log('Registering with kube9-server...');
-      console.log(`  Cluster identifier: ${clusterIdentifier}`);
-      console.log(`  Kubernetes version: ${clusterInfo.version}`);
-      console.log(`  Node count: ${clusterInfo.nodeCount}`);
+      logger.info('Registering with kube9-server...', {
+        clusterIdentifier,
+        kubernetesVersion: clusterInfo.version,
+        nodeCount: clusterInfo.nodeCount,
+      });
 
       // Call registration client
       const response: RegistrationResponse = await this.client.register(request);
 
       // Registration successful
-      console.log(`Registration successful: ${response.status}`);
-      console.log(`  Cluster ID: ${response.clusterId}`);
-      console.log(`  Tier: ${response.tier}`);
-      if (response.message) {
-        console.log(`  Message: ${response.message}`);
-      }
+      logger.info('Registration successful', {
+        status: response.status,
+        clusterId: response.clusterId,
+        tier: response.tier,
+        message: response.message,
+      });
 
       // Update state
       this.stateManager.setRegistered(response.clusterId);
@@ -199,8 +201,9 @@ export class RegistrationManager {
     // Handle specific error types
     if (error instanceof UnauthorizedError) {
       // Invalid API key - don't retry, fall back to operated mode
-      console.error('Registration failed: Invalid API key');
-      console.error('  Falling back to operated (free tier) mode');
+      logger.error('Registration failed: Invalid API key', {
+        note: 'Falling back to operated (free tier) mode',
+      });
       this.stateManager.setFailed('Invalid API key');
       this.retryAttempt = 0; // Reset retry attempts
       return;
@@ -212,7 +215,9 @@ export class RegistrationManager {
         ? error.retryAfter * 1000
         : 60 * 60 * 1000; // Default to 1 hour if no Retry-After header
 
-      console.warn(`Registration rate limited, retrying after ${retryAfterMs / 1000}s`);
+      logger.warn('Registration rate limited', {
+        retryAfterSeconds: retryAfterMs / 1000,
+      });
       this.stateManager.setFailed(`Rate limited: ${errorMessage}`);
       
       // Schedule retry after rate limit period
@@ -230,15 +235,21 @@ export class RegistrationManager {
       this.retryAttempt++;
       
       if (this.retryAttempt > MAX_RETRY_ATTEMPTS) {
-        console.error(`Registration failed after ${MAX_RETRY_ATTEMPTS} retry attempts`);
-        console.error(`  Last error: ${errorMessage}`);
+        logger.error('Registration failed after maximum retry attempts', {
+          retryAttempts: MAX_RETRY_ATTEMPTS,
+          lastError: errorMessage,
+        });
         this.stateManager.setFailed(`Registration failed: ${errorMessage}`);
         return;
       }
 
       const backoffDelay = BACKOFF_DELAYS_MS[this.retryAttempt - 1] || BACKOFF_DELAYS_MS[BACKOFF_DELAYS_MS.length - 1];
-      console.warn(`Registration failed (attempt ${this.retryAttempt}/${MAX_RETRY_ATTEMPTS}): ${errorMessage}`);
-      console.warn(`  Retrying in ${backoffDelay / 1000 / 60} minutes...`);
+      logger.warn('Registration failed, retrying with exponential backoff', {
+        attempt: this.retryAttempt,
+        maxAttempts: MAX_RETRY_ATTEMPTS,
+        error: errorMessage,
+        retryAfterMinutes: backoffDelay / 1000 / 60,
+      });
       this.stateManager.setFailed(`Registration failed: ${errorMessage}`);
 
       // Schedule retry with exponential backoff
@@ -251,17 +262,24 @@ export class RegistrationManager {
     }
 
     // Unknown error - treat as network error and retry
-    console.error(`Registration failed with unknown error: ${errorMessage}`);
+    logger.error('Registration failed with unknown error', { error: errorMessage });
     this.retryAttempt++;
     
     if (this.retryAttempt > MAX_RETRY_ATTEMPTS) {
-      console.error(`Registration failed after ${MAX_RETRY_ATTEMPTS} retry attempts`);
+      logger.error('Registration failed after maximum retry attempts', {
+        retryAttempts: MAX_RETRY_ATTEMPTS,
+        lastError: errorMessage,
+      });
       this.stateManager.setFailed(`Registration failed: ${errorMessage}`);
       return;
     }
 
     const backoffDelay = BACKOFF_DELAYS_MS[this.retryAttempt - 1] || BACKOFF_DELAYS_MS[BACKOFF_DELAYS_MS.length - 1];
-    console.warn(`Retrying registration in ${backoffDelay / 1000 / 60} minutes...`);
+    logger.warn('Retrying registration', {
+      retryAfterMinutes: backoffDelay / 1000 / 60,
+      attempt: this.retryAttempt,
+      maxAttempts: MAX_RETRY_ATTEMPTS,
+    });
     this.stateManager.setFailed(`Registration failed: ${errorMessage}`);
 
     if (!this.isStopped) {
@@ -286,11 +304,11 @@ export class RegistrationManager {
     const hours = intervalHours ?? this.config.reregistrationIntervalHours;
     const intervalMs = hours * 60 * 60 * 1000;
 
-    console.log(`Scheduling re-registration every ${hours} hours`);
+    logger.info('Scheduling re-registration', { intervalHours: hours });
 
     this.reregistrationTimer = setInterval(() => {
       if (!this.isStopped) {
-        console.log('Performing periodic re-registration...');
+        logger.info('Performing periodic re-registration...');
         this.performRegistration();
       }
     }, intervalMs);

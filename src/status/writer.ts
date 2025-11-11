@@ -3,6 +3,7 @@ import { kubernetesClient, KubernetesClient } from '../kubernetes/client.js';
 import { calculateStatus } from './calculator.js';
 import type { OperatorStatus, RegistrationState } from './types.js';
 import type { RegistrationManager } from '../registration/manager.js';
+import { logger } from '../logging/logger.js';
 
 /**
  * Default registration state when registration manager is not available
@@ -105,23 +106,23 @@ export class StatusWriter {
    */
   start(): void {
     if (this.intervalId !== null) {
-      console.warn('StatusWriter is already running');
+      logger.warn('StatusWriter is already running');
       return;
     }
 
-    console.log(`Starting status writer (interval: ${this.intervalSeconds}s)`);
+    logger.info('Starting status writer', { intervalSeconds: this.intervalSeconds });
     
     // Perform initial update immediately
     this.updateStatus().catch((error) => {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error(`Initial status update failed: ${errorMessage}`);
+      logger.error('Initial status update failed', { error: errorMessage });
     });
 
     // Set up periodic updates
     this.intervalId = setInterval(() => {
       this.updateStatus().catch((error) => {
         const errorMessage = error instanceof Error ? error.message : String(error);
-        console.error(`Periodic status update failed: ${errorMessage}`);
+        logger.error('Periodic status update failed', { error: errorMessage });
       });
     }, this.intervalSeconds * 1000);
   }
@@ -134,7 +135,7 @@ export class StatusWriter {
       return;
     }
 
-    console.log('Stopping status writer');
+    logger.info('Stopping status writer');
     clearInterval(this.intervalId);
     this.intervalId = null;
   }
@@ -162,11 +163,11 @@ export class StatusWriter {
         this.kubernetesClient.coreApi
       );
 
-      console.log('Final status update written: shutting down');
+      logger.info('Final status update written: shutting down');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       // Log error but don't throw (non-fatal during shutdown)
-      console.error(`Failed to write final status ConfigMap: ${errorMessage}`);
+      logger.error('Failed to write final status ConfigMap', { error: errorMessage });
     }
   }
 
@@ -206,25 +207,28 @@ export class StatusWriter {
       // Clear any previous write errors on success
       if (this.lastWriteError !== null) {
         this.lastWriteError = null;
-        console.log('Status ConfigMap write recovered from previous error');
+        logger.info('Status ConfigMap write recovered from previous error');
       }
 
       // Log successful update at INFO level
-      console.log(
-        `Status updated: mode=${status.mode}, tier=${status.tier}, health=${status.health}, registered=${status.registered}`
-      );
+      logger.info('Status updated', {
+        mode: status.mode,
+        tier: status.tier,
+        health: status.health,
+        registered: status.registered,
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.lastWriteError = errorMessage;
       
       // Log error but don't throw (non-fatal)
-      console.error(`Failed to update status ConfigMap: ${errorMessage}`);
+      logger.error('Failed to update status ConfigMap', { error: errorMessage });
       
       // Log additional context for debugging
       if (error instanceof Error && 'response' in error) {
         const k8sError = error as { response?: { statusCode?: number; body?: unknown } };
         if (k8sError.response?.statusCode === 403) {
-          console.error('ConfigMap write forbidden: check RBAC permissions for ConfigMap create/update');
+          logger.error('ConfigMap write forbidden: check RBAC permissions for ConfigMap create/update');
         }
       }
     }
