@@ -1,0 +1,30 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your release is named {{ .Release.Name }}.
+
+{{- if .Values.apiKey }}
+✅ Pro Tier enabled
+The operator will register with kube9-server and enable Pro features.
+{{- else }}
+ℹ️  Free Tier - instructions to upgrade
+The operator is running in free tier mode.
+
+To upgrade to Pro tier:
+1. Get an API key from https://portal.kube9.dev
+2. Run: helm upgrade {{ .Release.Name }} {{ .Chart.Name }} \
+     --set apiKey=YOUR_API_KEY \
+     --namespace {{ .Release.Namespace }} \
+     --reuse-values
+{{- end }}
+
+To check operator status:
+  kubectl get pods -n {{ .Release.Namespace }}
+
+To view operator logs:
+  kubectl logs -n {{ .Release.Namespace }} deployment/{{ include "kube9-operator.fullname" . }}
+
+To view status ConfigMap:
+  kubectl get configmap kube9-operator-status -n {{ .Release.Namespace }} -o yaml
+
+For more information, visit https://docs.kube9.dev
+

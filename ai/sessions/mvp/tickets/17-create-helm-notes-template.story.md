@@ -4,7 +4,7 @@ session_id: mvp
 feature_id: [helm-installation]
 spec_id: [helm-chart-spec]
 model_id: []
-status: pending
+status: completed
 priority: low
 estimated_minutes: 15
 ---
