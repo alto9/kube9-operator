@@ -5,6 +5,7 @@
 import { kubernetesClient } from './kubernetes/client.js';
 import { loadConfig, setConfig, getConfig } from './config/loader.js';
 import type { Config } from './config/types.js';
+import { StatusWriter } from './status/writer.js';
 
 console.log('kube9-operator starting...');
 
@@ -52,11 +53,20 @@ async function testKubernetesClient() {
 async function main() {
   try {
     // Load config first
-    await initializeConfig();
+    const config = await initializeConfig();
     
     // Test Kubernetes client
     await testKubernetesClient();
     
+    // Start status writer for periodic ConfigMap updates
+    console.log('Starting status writer...');
+    const statusWriter = new StatusWriter(
+      kubernetesClient,
+      config.statusUpdateIntervalSeconds
+    );
+    statusWriter.start();
+    
+    console.log('kube9-operator initialized successfully');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Failed to initialize operator:', errorMessage);
