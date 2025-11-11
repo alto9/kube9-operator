@@ -32,6 +32,9 @@ logLevel: "info"
 # Status update interval in seconds
 statusUpdateIntervalSeconds: 60
 
+# Re-registration interval for pro tier (hours)
+reregistrationIntervalHours: 24
+
 # kube9-server URL (for pro tier)
 serverUrl: "https://api.kube9.dev"
 
