@@ -3,8 +3,33 @@
  */
 
 import { kubernetesClient } from './kubernetes/client.js';
+import { loadConfig, setConfig, getConfig } from './config/loader.js';
+import type { Config } from './config/types.js';
 
 console.log('kube9-operator starting...');
+
+// Load configuration
+async function initializeConfig(): Promise<Config> {
+  try {
+    console.log('Loading configuration...');
+    const config = await loadConfig();
+    setConfig(config);
+    
+    // Log config loaded (without sensitive data)
+    console.log('Configuration loaded:');
+    console.log(`  Server URL: ${config.serverUrl}`);
+    console.log(`  Log Level: ${config.logLevel}`);
+    console.log(`  Status Update Interval: ${config.statusUpdateIntervalSeconds}s`);
+    console.log(`  Re-registration Interval: ${config.reregistrationIntervalHours}h`);
+    console.log(`  API Key: ${config.apiKey ? 'configured (pro tier)' : 'not configured (free tier)'}`);
+    
+    return config;
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Failed to load configuration:', errorMessage);
+    throw error;
+  }
+}
 
 // Test Kubernetes client initialization
 async function testKubernetesClient() {
@@ -23,8 +48,29 @@ async function testKubernetesClient() {
   }
 }
 
-// Run test
-testKubernetesClient().catch((error) => {
-  console.error('Unexpected error during client test:', error);
+// Initialize and run
+async function main() {
+  try {
+    // Load config first
+    await initializeConfig();
+    
+    // Test Kubernetes client
+    await testKubernetesClient();
+    
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Failed to initialize operator:', errorMessage);
+    process.exit(1);
+  }
+}
+
+// Run initialization
+main().catch((error) => {
+  console.error('Unexpected error during initialization:', error);
+  process.exit(1);
 });
+
+// Export config singleton
+export { getConfig };
+export type { Config };
 
