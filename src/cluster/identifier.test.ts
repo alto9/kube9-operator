@@ -207,10 +207,11 @@ test('generateClusterIdentifier - throws error when no cluster found', () => {
 
 test('generateClusterIdentifier - throws error when cluster has neither CA nor server', () => {
   const mockKubeConfig = new k8s.KubeConfig();
-  const mockCluster: k8s.Cluster = {
+  // Use type assertion to create cluster without server for this test case
+  const mockCluster = {
     name: 'test-cluster',
-    // No caData and no server
-  };
+    // No caData and no server - will cause error in generateClusterIdentifier
+  } as k8s.Cluster;
   const mockUser: k8s.User = {
     name: 'test-user',
   };

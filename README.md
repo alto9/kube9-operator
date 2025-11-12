@@ -192,29 +192,132 @@ helm uninstall kube9-operator --namespace kube9-system
 - Node.js 22+
 - kubectl with cluster access
 - Docker (for building images)
-- Kind or Minikube (for local testing)
+- minikube (for local testing)
 
-### Local Development
+### Local Development with Minikube
+
+The recommended workflow for developing kube9-operator is to run it locally connected to a minikube cluster. This provides the fastest iteration cycle without Docker rebuilds.
+
+#### Quick Start
 
 ```bash
-# Clone repository
-git clone https://github.com/alto9/kube9-operator.git
-cd kube9-operator
+# Step 1: Ensure minikube is running (run this helper script)
+./scripts/dev-minikube.sh
 
-# Install dependencies
-npm install
-
-# Build TypeScript
-npm run build
-
-# Run locally (requires kubeconfig)
-npm run dev
+# Step 2: Run operator locally (connects to minikube via kubeconfig)
+npm run dev:watch  # For auto-reload on file changes
+# Or: npm run dev   # For single run
 ```
+
+**Important:** 
+- minikube must be started separately before running the operator. The `dev-minikube.sh` script will start it if it's not running.
+- Environment variables are set with defaults in the npm scripts. To override, set them in your shell or create a `.env` file (see `.env.example`).
+
+The operator will:
+- Run on your local machine (not in a pod)
+- Connect to minikube via kubeconfig (from `~/.kube/config`)
+- Auto-reload on code changes (with `dev:watch` via nodemon)
+- Create/update ConfigMaps in the minikube cluster
+
+#### Prerequisites for Local Development
+
+1. **Install minikube**: https://minikube.sigs.k8s.io/docs/start/
+2. **Start minikube**: `minikube start` (or use `./scripts/dev-minikube.sh`)
+3. **Verify kubectl context**: `kubectl config current-context` should show "minikube"
+4. **Environment variables**: Defaults are set in npm scripts. To customize, set `SERVER_URL` and other vars in your shell or create a `.env` file (see `.env.example`)
+
+#### Environment Variables
+
+The operator requires `SERVER_URL` to be set. The npm scripts provide defaults, but you can override:
+
+```bash
+# Set in your shell
+export SERVER_URL=https://api.kube9.dev
+export LOG_LEVEL=debug
+
+# Or create a .env file (see .env.example)
+cp .env.example .env
+# Edit .env with your values
+```
+
+#### Development Workflow
+
+**Local Development (Recommended for daily work):**
+```bash
+# Step 1: Ensure minikube is running
+./scripts/dev-minikube.sh  # Starts minikube if not running
+
+# Step 2: Run operator locally with auto-reload
+npm run dev:watch
+
+# Edit code → changes auto-reload → test immediately
+```
+
+**Note:** `npm run dev` runs once (no auto-reload). Use `npm run dev:watch` for development with auto-reload.
+
+**In-Cluster Testing (Recommended before PR):**
+```bash
+# Build Docker image, load into minikube, and deploy
+npm run deploy:minikube
+
+# Verify deployment
+kubectl get pods -n kube9-system
+kubectl logs -n kube9-system deployment/kube9-operator
+```
+
+#### Available npm Scripts
+
+| Script | Description |
+|--------|-------------|
+| `npm run dev` | Run operator locally once (connects to minikube) |
+| `npm run dev:watch` | Run operator locally with auto-reload on file changes |
+| `npm run docker:build` | Build Docker image locally |
+| `npm run docker:load:minikube` | Build and load image into minikube |
+| `npm run deploy:minikube` | Build, load, and deploy operator to minikube |
+| `npm run clean:minikube` | Uninstall operator from minikube |
+
+#### Helper Scripts
+
+- **`scripts/dev-minikube.sh`**: Checks minikube setup and provides development commands
+- **`scripts/deploy-minikube.sh`**: Builds image, loads into minikube, and deploys with Helm
+
+#### Troubleshooting
+
+**Operator can't connect to minikube:**
+```bash
+# Verify minikube is running
+minikube status
+
+# Verify kubectl context
+kubectl config current-context  # Should be "minikube"
+kubectl config use-context minikube  # If not set
+```
+
+**Image not found when deploying:**
+```bash
+# Ensure image is loaded into minikube
+minikube image ls | grep kube9-operator
+
+# Reload image if needed
+npm run docker:load:minikube
+```
+
+**RBAC permission errors:**
+```bash
+# For local development, ensure you have cluster-admin permissions
+kubectl auth can-i create configmaps --namespace=kube9-system
+```
+
+For more detailed troubleshooting and best practices, see:
+- **Developer Actor**: [`ai/actors/users/kube9-operator-developer.actor.md`](ai/actors/users/kube9-operator-developer.actor.md)
+- **Development Context**: [`ai/contexts/development/minikube-local-development.context.md`](ai/contexts/development/minikube-local-development.context.md)
 
 ### Build Docker Image
 
 ```bash
-docker build -t kube9-operator:dev .
+npm run docker:build
+# Or manually:
+docker build -t kube9-operator:local .
 ```
 
 ### Run Tests
@@ -223,8 +326,8 @@ docker build -t kube9-operator:dev .
 # Unit tests
 npm test
 
-# Integration tests (requires Kind cluster)
-npm run test:integration
+# Integration tests (requires minikube cluster)
+npm run test:minikube
 ```
 
 ### Helm Chart Development
@@ -238,12 +341,9 @@ helm template kube9-operator charts/kube9-operator \
   --namespace kube9-system \
   --set apiKey=test123
 
-# Test installation in Kind
-kind create cluster --name kube9-test
-helm install kube9-operator charts/kube9-operator \
-  --namespace kube9-system \
-  --create-namespace
-kind delete cluster --name kube9-test
+# Test installation in minikube
+npm run deploy:minikube
+npm run clean:minikube
 ```
 
 ## How It Works

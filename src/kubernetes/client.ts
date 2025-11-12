@@ -1,4 +1,5 @@
 import * as k8s from '@kubernetes/client-node';
+import { existsSync } from 'fs';
 import { logger } from '../logging/logger.js';
 
 /**
@@ -13,6 +14,7 @@ export interface ClusterInfo {
  * Kubernetes client for interacting with the cluster API
  * 
  * Uses in-cluster configuration when running as a pod.
+ * Falls back to default kubeconfig (from KUBECONFIG env var or ~/.kube/config) for local development.
  * Provides CoreV1Api and VersionApi clients for cluster operations.
  */
 export class KubernetesClient {
@@ -22,9 +24,37 @@ export class KubernetesClient {
 
   constructor() {
     try {
-      // Initialize KubeConfig and load in-cluster configuration
+      // Initialize KubeConfig
       this.kubeConfig = new k8s.KubeConfig();
-      this.kubeConfig.loadFromCluster();
+      
+      // Check if we're running in-cluster by checking for service account files
+      const inClusterTokenPath = '/var/run/secrets/kubernetes.io/serviceaccount/token';
+      const inClusterCAPath = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt';
+      const isInCluster = existsSync(inClusterTokenPath) && existsSync(inClusterCAPath);
+      
+      if (isInCluster) {
+        // Load in-cluster configuration (for production/in-cluster deployment)
+        try {
+          this.kubeConfig.loadFromCluster();
+          logger.info('Loaded Kubernetes config from cluster (in-cluster mode)');
+        } catch (inClusterError) {
+          const errorMessage = inClusterError instanceof Error ? inClusterError.message : String(inClusterError);
+          logger.error('Failed to load in-cluster config', { error: errorMessage });
+          throw new Error(`Kubernetes client initialization failed: Could not load in-cluster config. ${errorMessage}`);
+        }
+      } else {
+        // Load from default kubeconfig (for local development)
+        try {
+          this.kubeConfig.loadFromDefault();
+          logger.info('Loaded Kubernetes config from default kubeconfig (local development mode)');
+        } catch (defaultError) {
+          const errorMessage = defaultError instanceof Error ? defaultError.message : String(defaultError);
+          logger.error('Failed to load Kubernetes config from default kubeconfig', {
+            error: errorMessage
+          });
+          throw new Error(`Kubernetes client initialization failed: Could not load config from default kubeconfig. ${errorMessage}`);
+        }
+      }
 
       // Create API clients
       this.coreApi = this.kubeConfig.makeApiClient(k8s.CoreV1Api);

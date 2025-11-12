@@ -9,9 +9,15 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "nodemon --exec ts-node src/index.ts",
+    "dev": "SERVER_URL=${SERVER_URL:-https://api.kube9.dev} LOG_LEVEL=${LOG_LEVEL:-info} tsx src/index.ts",
+    "dev:watch": "SERVER_URL=${SERVER_URL:-https://api.kube9.dev} LOG_LEVEL=${LOG_LEVEL:-info} nodemon --exec tsx src/index.ts",
     "start": "node dist/index.js",
-    "test:integration": "echo 'Run individual test scripts in tests/integration/' && exit 1"
+    "test:integration": "echo 'Run individual test scripts in tests/integration/' && exit 1",
+    "docker:build": "docker build -t kube9-operator:local .",
+    "docker:load:minikube": "npm run docker:build && minikube image load kube9-operator:local",
+    "deploy:minikube": "./scripts/deploy-minikube.sh",
+    "test:minikube": "echo 'Run integration tests against minikube cluster' && exit 1",
+    "clean:minikube": "helm uninstall kube9-operator --namespace kube9-system 2>/dev/null || true"
   },
   "dependencies": {
     "@kubernetes/client-node": "^0.20.0",
@@ -23,6 +29,7 @@
     "@types/node": "^20.10.0",
     "nodemon": "^3.0.2",
     "ts-node": "^10.9.2",
+    "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   },
   "keywords": [
