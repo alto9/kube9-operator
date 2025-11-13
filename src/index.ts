@@ -142,7 +142,7 @@ async function main() {
     // Register cluster metadata collection task
     collectionScheduler.register(
       'cluster-metadata',
-      86400, // 24 hours default interval
+      config.clusterMetadataIntervalSeconds,
       3600,  // 1 hour minimum interval
       3600,  // 0-1 hour random offset range
       async () => {
@@ -177,7 +177,7 @@ async function main() {
     // Register resource inventory collection task
     collectionScheduler.register(
       'resource-inventory',
-      21600, // 6 hours default interval
+      config.resourceInventoryIntervalSeconds,
       1800,  // 30 minutes minimum interval
       1800,  // 0-30 minutes random offset range
       async () => {

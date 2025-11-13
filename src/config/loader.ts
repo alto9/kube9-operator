@@ -28,6 +28,14 @@ export async function loadConfig(): Promise<Config> {
     process.env.REREGISTRATION_INTERVAL_HOURS || '24',
     10
   );
+  const clusterMetadataIntervalSeconds = parseInt(
+    process.env.CLUSTER_METADATA_INTERVAL_SECONDS || '86400',
+    10
+  );
+  const resourceInventoryIntervalSeconds = parseInt(
+    process.env.RESOURCE_INVENTORY_INTERVAL_SECONDS || '21600',
+    10
+  );
 
   // Validate required environment variables
   if (!serverUrl) {
@@ -84,13 +92,25 @@ export async function loadConfig(): Promise<Config> {
     }
   }
 
-  return {
+  const config: Config = {
     apiKey,
     serverUrl,
     logLevel,
     statusUpdateIntervalSeconds,
     reregistrationIntervalHours,
+    clusterMetadataIntervalSeconds,
+    resourceInventoryIntervalSeconds,
   };
+
+  // Log configured intervals (and any overrides)
+  logger.info('Collection intervals configured', {
+    clusterMetadataIntervalSeconds: config.clusterMetadataIntervalSeconds,
+    resourceInventoryIntervalSeconds: config.resourceInventoryIntervalSeconds,
+    clusterMetadataOverridden: process.env.CLUSTER_METADATA_INTERVAL_SECONDS !== undefined,
+    resourceInventoryOverridden: process.env.RESOURCE_INVENTORY_INTERVAL_SECONDS !== undefined,
+  });
+
+  return config;
 }
 
 /**

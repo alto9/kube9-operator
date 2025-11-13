@@ -38,3 +38,14 @@ reregistrationIntervalHours: 24
 # kube9-server URL (for pro tier)
 serverUrl: "https://api.kube9.dev"
 
+# Collection interval configuration (for testing/debugging)
+# The operator enforces minimum intervals to prevent abuse
+metrics:
+  intervals:
+    # Cluster metadata collection interval in seconds (default: 86400 = 24 hours)
+    # Minimum: 3600 seconds (1 hour)
+    clusterMetadata: 86400
+    # Resource inventory collection interval in seconds (default: 21600 = 6 hours)
+    # Minimum: 1800 seconds (30 minutes)
+    resourceInventory: 21600
+

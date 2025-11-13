@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "metrics": {
+      "type": "object",
+      "description": "Collection metrics configuration",
+      "properties": {
+        "intervals": {
+          "type": "object",
+          "description": "Collection interval configuration for testing/debugging. The operator enforces minimum intervals to prevent abuse.",
+          "properties": {
+            "clusterMetadata": {
+              "type": "integer",
+              "description": "Cluster metadata collection interval in seconds. Default: 86400 (24 hours). Minimum: 3600 (1 hour). Configurable for testing/debugging purposes.",
+              "minimum": 3600,
+              "default": 86400
+            },
+            "resourceInventory": {
+              "type": "integer",
+              "description": "Resource inventory collection interval in seconds. Default: 21600 (6 hours). Minimum: 1800 (30 minutes). Configurable for testing/debugging purposes.",
+              "minimum": 1800,
+              "default": 21600
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}
+

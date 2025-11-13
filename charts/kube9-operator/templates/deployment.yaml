@@ -50,6 +50,10 @@ spec:
           value: {{ .Values.serverUrl | quote }}
         - name: REREGISTRATION_INTERVAL_HOURS
           value: {{ .Values.reregistrationIntervalHours | default 24 | quote }}
+        - name: CLUSTER_METADATA_INTERVAL_SECONDS
+          value: {{ .Values.metrics.intervals.clusterMetadata | default 86400 | quote }}
+        - name: RESOURCE_INVENTORY_INTERVAL_SECONDS
+          value: {{ .Values.metrics.intervals.resourceInventory | default 21600 | quote }}
         {{- if .Values.apiKey }}
         - name: API_KEY
           valueFrom:

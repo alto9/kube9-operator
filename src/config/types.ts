@@ -26,5 +26,17 @@ export interface Config {
    * How often to re-register with server (hours)
    */
   reregistrationIntervalHours: number;
+
+  /**
+   * Cluster metadata collection interval in seconds
+   * Default: 86400 (24 hours), Minimum: 3600 (1 hour)
+   */
+  clusterMetadataIntervalSeconds: number;
+
+  /**
+   * Resource inventory collection interval in seconds
+   * Default: 21600 (6 hours), Minimum: 1800 (30 minutes)
+   */
+  resourceInventoryIntervalSeconds: number;
 }
 
