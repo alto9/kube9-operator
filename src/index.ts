@@ -12,6 +12,7 @@ import { generateClusterIdentifier } from './cluster/identifier.js';
 import { startHealthServer } from './health/server.js';
 import { setInitialized } from './health/state.js';
 import { gracefulShutdown } from './shutdown/handler.js';
+import { CollectionScheduler } from './collection/scheduler.js';
 import { logger } from './logging/logger.js';
 
 logger.info('kube9-operator starting...');
@@ -19,6 +20,7 @@ logger.info('kube9-operator starting...');
 // Module-level references for shutdown handler
 let statusWriterInstance: StatusWriter | null = null;
 let registrationManagerInstance: RegistrationManager | null = null;
+let collectionSchedulerInstance: CollectionScheduler | null = null;
 
 // Load configuration
 async function initializeConfig(): Promise<Config> {
@@ -114,10 +116,42 @@ async function main() {
     // Store reference for shutdown handler
     statusWriterInstance = statusWriter;
     
+    // Initialize collection scheduler
+    logger.info('Initializing collection scheduler...');
+    const collectionScheduler = new CollectionScheduler();
+    
+    // Register collection tasks with placeholder callbacks
+    // Actual collectors will be implemented in stories 005/006
+    collectionScheduler.register(
+      'cluster-metadata',
+      86400, // 24 hours default interval
+      3600,  // 1 hour minimum interval
+      3600,  // 0-1 hour random offset range
+      async () => {
+        logger.debug('Cluster metadata collection not yet implemented');
+      }
+    );
+    
+    collectionScheduler.register(
+      'resource-inventory',
+      21600, // 6 hours default interval
+      1800,  // 30 minutes minimum interval
+      1800,  // 0-30 minutes random offset range
+      async () => {
+        logger.debug('Resource inventory collection not yet implemented');
+      }
+    );
+    
+    // Start scheduler
+    collectionScheduler.start();
+    
+    // Store reference for shutdown handler
+    collectionSchedulerInstance = collectionScheduler;
+    
     // Register signal handlers for graceful shutdown
     process.on('SIGTERM', () => {
       if (statusWriterInstance) {
-        gracefulShutdown(statusWriterInstance, registrationManagerInstance).catch((error) => {
+        gracefulShutdown(statusWriterInstance, registrationManagerInstance, collectionSchedulerInstance).catch((error) => {
           const errorMessage = error instanceof Error ? error.message : String(error);
           logger.error('Error in shutdown handler', { error: errorMessage });
           process.exit(1);
@@ -127,7 +161,7 @@ async function main() {
     
     process.on('SIGINT', () => {
       if (statusWriterInstance) {
-        gracefulShutdown(statusWriterInstance, registrationManagerInstance).catch((error) => {
+        gracefulShutdown(statusWriterInstance, registrationManagerInstance, collectionSchedulerInstance).catch((error) => {
           const errorMessage = error instanceof Error ? error.message : String(error);
           logger.error('Error in shutdown handler', { error: errorMessage });
           process.exit(1);

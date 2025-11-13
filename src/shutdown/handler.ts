@@ -1,5 +1,6 @@
 import type { StatusWriter } from '../status/writer.js';
 import type { RegistrationManager } from '../registration/manager.js';
+import type { CollectionScheduler } from '../collection/scheduler.js';
 import { stopHealthServer } from '../health/server.js';
 import { getConfig } from '../config/loader.js';
 import type { OperatorStatus } from '../status/types.js';
@@ -25,7 +26,7 @@ let isShuttingDown = false;
  * Gracefully shuts down the operator
  * 
  * Handles SIGTERM and SIGINT signals by:
- * 1. Stopping all background services (status writer, registration manager, health server)
+ * 1. Stopping all background services (collection scheduler, status writer, registration manager, health server)
  * 2. Writing a final status update indicating shutdown
  * 3. Exiting cleanly with code 0
  * 
@@ -33,10 +34,12 @@ let isShuttingDown = false;
  * 
  * @param statusWriter - Status writer instance to stop and use for final status update
  * @param registrationManager - Optional registration manager instance to stop
+ * @param collectionScheduler - Optional collection scheduler instance to stop
  */
 export async function gracefulShutdown(
   statusWriter: StatusWriter,
-  registrationManager: RegistrationManager | null
+  registrationManager: RegistrationManager | null,
+  collectionScheduler: CollectionScheduler | null
 ): Promise<void> {
   // Prevent multiple shutdown attempts
   if (isShuttingDown) {
@@ -54,6 +57,11 @@ export async function gracefulShutdown(
   }, SHUTDOWN_TIMEOUT_MS);
 
   try {
+    // Stop collection scheduler if present (clears all collection timers)
+    if (collectionScheduler) {
+      collectionScheduler.stop();
+    }
+
     // Stop status writer (clears interval)
     statusWriter.stop();
 
