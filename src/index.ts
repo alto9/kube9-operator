@@ -14,6 +14,7 @@ import { setInitialized } from './health/state.js';
 import { gracefulShutdown } from './shutdown/handler.js';
 import { CollectionScheduler } from './collection/scheduler.js';
 import { ClusterMetadataCollector } from './collection/collectors/cluster-metadata.js';
+import { ResourceInventoryCollector } from './collection/collectors/resource-inventory.js';
 import { LocalStorage } from './collection/storage.js';
 import { TransmissionClient } from './collection/transmission.js';
 import { logger } from './logging/logger.js';
@@ -155,13 +156,29 @@ async function main() {
       }
     );
     
+    // Initialize resource inventory collector
+    const resourceInventoryCollector = new ResourceInventoryCollector(
+      kubernetesClient,
+      localStorage,
+      transmissionClient,
+      config
+    );
+    
+    // Register resource inventory collection task
     collectionScheduler.register(
       'resource-inventory',
       21600, // 6 hours default interval
       1800,  // 30 minutes minimum interval
       1800,  // 0-30 minutes random offset range
       async () => {
-        logger.debug('Resource inventory collection not yet implemented');
+        try {
+          const inventory = await resourceInventoryCollector.collect();
+          await resourceInventoryCollector.processCollection(inventory);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error('Resource inventory collection failed', { error: errorMessage });
+          // Don't throw - scheduler will retry on next interval
+        }
       }
     );
     

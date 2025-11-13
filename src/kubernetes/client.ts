@@ -15,12 +15,13 @@ export interface ClusterInfo {
  * 
  * Uses in-cluster configuration when running as a pod.
  * Falls back to default kubeconfig (from KUBECONFIG env var or ~/.kube/config) for local development.
- * Provides CoreV1Api and VersionApi clients for cluster operations.
+ * Provides CoreV1Api, VersionApi, and AppsV1Api clients for cluster operations.
  */
 export class KubernetesClient {
   private kubeConfig: k8s.KubeConfig;
   public readonly coreApi: k8s.CoreV1Api;
   public readonly versionApi: k8s.VersionApi;
+  public readonly appsApi: k8s.AppsV1Api;
 
   constructor() {
     try {
@@ -59,6 +60,7 @@ export class KubernetesClient {
       // Create API clients
       this.coreApi = this.kubeConfig.makeApiClient(k8s.CoreV1Api);
       this.versionApi = this.kubeConfig.makeApiClient(k8s.VersionApi);
+      this.appsApi = this.kubeConfig.makeApiClient(k8s.AppsV1Api);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error('Failed to initialize Kubernetes client', { error: errorMessage });
