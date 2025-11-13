@@ -6,11 +6,16 @@ metadata:
   labels:
     {{- include "kube9-operator.labels" . | nindent 4 }}
 rules:
-# Read cluster metadata (for status and future metrics)
+# Read cluster version (for cluster metadata collection)
+- apiGroups: [""]
+  resources: []
+  verbs: ["get"]
+  nonResourceURLs: ["/version"]
+# Read cluster metadata and resources (for data collection: cluster metadata and resource inventory)
 - apiGroups: [""]
   resources: ["nodes", "namespaces", "pods"]
   verbs: ["get", "list", "watch"]
-# Read deployments and services (for future metrics)
+# Read deployments and services (for resource inventory collection)
 - apiGroups: ["apps"]
   resources: ["deployments", "replicasets", "statefulsets"]
   verbs: ["get", "list", "watch"]

@@ -3,7 +3,7 @@ story_id: update-rbac-permissions
 session_id: basic-data-collection
 feature_id: [cluster-metadata-collection, resource-inventory-collection]
 spec_id: [cluster-metadata-collection-spec, resource-inventory-collection-spec]
-status: pending
+status: completed
 priority: high
 estimated_minutes: 15
 ---
