@@ -17,6 +17,7 @@ import { ClusterMetadataCollector } from './collection/collectors/cluster-metada
 import { ResourceInventoryCollector } from './collection/collectors/resource-inventory.js';
 import { LocalStorage } from './collection/storage.js';
 import { TransmissionClient } from './collection/transmission.js';
+import { recordCollection } from './collection/metrics.js';
 import { logger } from './logging/logger.js';
 
 logger.info('kube9-operator starting...');
@@ -145,12 +146,21 @@ async function main() {
       3600,  // 1 hour minimum interval
       3600,  // 0-1 hour random offset range
       async () => {
+        const startTime = Date.now();
         try {
           const metadata = await clusterMetadataCollector.collect();
           await clusterMetadataCollector.processCollection(metadata);
+          
+          // Record successful collection
+          const durationSeconds = (Date.now() - startTime) / 1000;
+          recordCollection('cluster-metadata', 'success', durationSeconds);
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           logger.error('Cluster metadata collection failed', { error: errorMessage });
+          
+          // Record failed collection
+          const durationSeconds = (Date.now() - startTime) / 1000;
+          recordCollection('cluster-metadata', 'failed', durationSeconds);
           // Don't throw - scheduler will retry on next interval
         }
       }
@@ -171,12 +181,21 @@ async function main() {
       1800,  // 30 minutes minimum interval
       1800,  // 0-30 minutes random offset range
       async () => {
+        const startTime = Date.now();
         try {
           const inventory = await resourceInventoryCollector.collect();
           await resourceInventoryCollector.processCollection(inventory);
+          
+          // Record successful collection
+          const durationSeconds = (Date.now() - startTime) / 1000;
+          recordCollection('resource-inventory', 'success', durationSeconds);
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           logger.error('Resource inventory collection failed', { error: errorMessage });
+          
+          // Record failed collection
+          const durationSeconds = (Date.now() - startTime) / 1000;
+          recordCollection('resource-inventory', 'failed', durationSeconds);
           // Don't throw - scheduler will retry on next interval
         }
       }

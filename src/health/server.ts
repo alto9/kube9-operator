@@ -1,5 +1,6 @@
 import express, { type Express } from 'express';
 import { checkLiveness, checkReadiness } from './checks.js';
+import { getMetrics } from '../collection/metrics.js';
 import { logger } from '../logging/logger.js';
 
 /**
@@ -50,6 +51,19 @@ export function startHealthServer(port: number = 8080): void {
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       res.status(503).send(`Not ready: ${errorMessage}`);
+    }
+  });
+
+  // Prometheus metrics endpoint
+  app.get('/metrics', async (req, res) => {
+    try {
+      const metrics = await getMetrics();
+      res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');
+      res.status(200).send(metrics);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to retrieve metrics', { error: errorMessage });
+      res.status(500).send(`Error generating metrics: ${errorMessage}`);
     }
   });
 
