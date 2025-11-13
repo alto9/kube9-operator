@@ -13,6 +13,9 @@ import { startHealthServer } from './health/server.js';
 import { setInitialized } from './health/state.js';
 import { gracefulShutdown } from './shutdown/handler.js';
 import { CollectionScheduler } from './collection/scheduler.js';
+import { ClusterMetadataCollector } from './collection/collectors/cluster-metadata.js';
+import { LocalStorage } from './collection/storage.js';
+import { TransmissionClient } from './collection/transmission.js';
 import { logger } from './logging/logger.js';
 
 logger.info('kube9-operator starting...');
@@ -120,15 +123,35 @@ async function main() {
     logger.info('Initializing collection scheduler...');
     const collectionScheduler = new CollectionScheduler();
     
-    // Register collection tasks with placeholder callbacks
-    // Actual collectors will be implemented in stories 005/006
+    // Initialize collection infrastructure
+    const localStorage = new LocalStorage();
+    const transmissionClient = config.apiKey
+      ? new TransmissionClient(config.serverUrl, config.apiKey)
+      : null;
+    
+    // Initialize cluster metadata collector
+    const clusterMetadataCollector = new ClusterMetadataCollector(
+      kubernetesClient,
+      localStorage,
+      transmissionClient,
+      config
+    );
+    
+    // Register cluster metadata collection task
     collectionScheduler.register(
       'cluster-metadata',
       86400, // 24 hours default interval
       3600,  // 1 hour minimum interval
       3600,  // 0-1 hour random offset range
       async () => {
-        logger.debug('Cluster metadata collection not yet implemented');
+        try {
+          const metadata = await clusterMetadataCollector.collect();
+          await clusterMetadataCollector.processCollection(metadata);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error('Cluster metadata collection failed', { error: errorMessage });
+          // Don't throw - scheduler will retry on next interval
+        }
       }
     );
     
