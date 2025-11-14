@@ -123,21 +123,24 @@ async function main() {
     
     // Initialize collection scheduler
     logger.info('Initializing collection scheduler...');
-    const collectionScheduler = new CollectionScheduler();
-    
-    // Initialize collection infrastructure
-    const localStorage = new LocalStorage();
-    const transmissionClient = config.apiKey
-      ? new TransmissionClient(config.serverUrl, config.apiKey)
-      : null;
-    
-    // Initialize cluster metadata collector
-    const clusterMetadataCollector = new ClusterMetadataCollector(
-      kubernetesClient,
-      localStorage,
-      transmissionClient,
-      config
-    );
+
+    try {
+      const collectionScheduler = new CollectionScheduler();
+      logger.info('Collection scheduler created successfully');
+
+      // Initialize collection infrastructure
+      const localStorage = new LocalStorage();
+      const transmissionClient = config.apiKey
+        ? new TransmissionClient(config.serverUrl, config.apiKey)
+        : null;
+
+      // Initialize cluster metadata collector
+      const clusterMetadataCollector = new ClusterMetadataCollector(
+        kubernetesClient,
+        localStorage,
+        transmissionClient,
+        config
+      );
     
     // Register cluster metadata collection task
     collectionScheduler.register(
@@ -201,11 +204,18 @@ async function main() {
       }
     );
     
-    // Start scheduler
-    collectionScheduler.start();
-    
-    // Store reference for shutdown handler
-    collectionSchedulerInstance = collectionScheduler;
+      // Start scheduler
+      collectionScheduler.start();
+
+      // Store reference for shutdown handler
+      collectionSchedulerInstance = collectionScheduler;
+
+      logger.info('Collection initialization completed successfully');
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to initialize collection system', { error: errorMessage });
+      // Continue without collection - operator can still function for status reporting
+    }
     
     // Register signal handlers for graceful shutdown
     process.on('SIGTERM', () => {
@@ -230,7 +240,7 @@ async function main() {
     
     // Mark operator as initialized - readiness probe will now pass
     setInitialized(true);
-    
+
     logger.info('kube9-operator initialized successfully');
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

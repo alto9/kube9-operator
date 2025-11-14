@@ -20,6 +20,8 @@ function createMockConfig(apiKey: string | null = 'kdy_prod_test123'): Config {
     logLevel: 'info',
     statusUpdateIntervalSeconds: 60,
     reregistrationIntervalHours: 24,
+    clusterMetadataIntervalSeconds: 86400,
+    resourceInventoryIntervalSeconds: 21600,
   };
 }
 

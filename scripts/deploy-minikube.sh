@@ -92,8 +92,41 @@ echo ""
 
 # Step 2: Load image into minikube
 info "Step 2: Loading image into minikube..."
+
+# Get the new image ID from local docker
+NEW_IMAGE_ID=$(docker images "${IMAGE_NAME}:${IMAGE_TAG}" --format "{{.ID}}" | head -n 1)
+info "New image ID: ${NEW_IMAGE_ID}"
+
+# Get the current image ID from minikube (if it exists)
+CURRENT_IMAGE_ID=$(minikube ssh "docker images ${IMAGE_NAME}:${IMAGE_TAG} --format '{{.ID}}'" 2>/dev/null | head -n 1 || echo "")
+
+if [ -n "$CURRENT_IMAGE_ID" ] && [ "$CURRENT_IMAGE_ID" != "$NEW_IMAGE_ID" ]; then
+    warning "Different image already exists in minikube (${CURRENT_IMAGE_ID}), replacing..."
+    
+    # Check if any pods are using the old image
+    if kubectl get pods -n "${NAMESPACE}" -l app.kubernetes.io/name=kube9-operator &> /dev/null; then
+        info "Scaling down deployment to replace image..."
+        kubectl scale deployment/kube9-operator -n "${NAMESPACE}" --replicas=0 2>/dev/null || true
+        sleep 3
+    fi
+    
+    # Remove old containers and image from minikube
+    info "Removing old image from minikube..."
+    minikube ssh "docker rm -f \$(docker ps -a -q --filter ancestor=${CURRENT_IMAGE_ID}) 2>/dev/null; docker rmi -f ${CURRENT_IMAGE_ID}" &> /dev/null || true
+    sleep 2
+fi
+
+# Load the new image
 if minikube image load "${IMAGE_NAME}:${IMAGE_TAG}"; then
     success "Image loaded into minikube"
+    
+    # Verify the image was loaded correctly
+    LOADED_IMAGE_ID=$(minikube ssh "docker images ${IMAGE_NAME}:${IMAGE_TAG} --format '{{.ID}}'" 2>/dev/null | head -n 1)
+    if [ "$LOADED_IMAGE_ID" = "$NEW_IMAGE_ID" ]; then
+        success "Verified image ID matches: ${LOADED_IMAGE_ID}"
+    else
+        warning "Image ID mismatch! Expected: ${NEW_IMAGE_ID}, Got: ${LOADED_IMAGE_ID}"
+    fi
 else
     error "Failed to load image into minikube"
     exit 1
@@ -128,6 +161,13 @@ if helm list -n "${NAMESPACE}" | grep -q "^${RELEASE_NAME}"; then
         --set "image.tag=${IMAGE_TAG}" \
         --set "image.pullPolicy=Never"; then
         success "Helm upgrade completed"
+        
+        # Ensure deployment is scaled to 1 replica (in case we scaled down earlier)
+        CURRENT_REPLICAS=$(kubectl get deployment/kube9-operator -n "${NAMESPACE}" -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "1")
+        if [ "$CURRENT_REPLICAS" = "0" ]; then
+            info "Scaling deployment back to 1 replica..."
+            kubectl scale deployment/kube9-operator -n "${NAMESPACE}" --replicas=1
+        fi
     else
         error "Helm upgrade failed"
         exit 1

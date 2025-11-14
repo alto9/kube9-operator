@@ -7,9 +7,7 @@ metadata:
     {{- include "kube9-operator.labels" . | nindent 4 }}
 rules:
 # Read cluster version (for cluster metadata collection)
-- apiGroups: [""]
-  resources: []
-  verbs: ["get"]
+- verbs: ["get"]
   nonResourceURLs: ["/version"]
 # Read cluster metadata and resources (for data collection: cluster metadata and resource inventory)
 - apiGroups: [""]
