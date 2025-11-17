@@ -31,7 +31,7 @@ kube9-operator will become the **standard way for clusters to participate in the
 **Medium-Term (1-2 years)**
 - Expand operator capabilities for advanced metrics collection
 - Support for multi-cluster federation and management
-- Integration with GitOps tools (ArgoCD, Flux)
+- **Native GitOps with Application CRD**: Replace ArgoCD complexity with integrated GitOps
 - Advanced health checks and predictive analytics
 
 **Long-Term (2+ years)**
@@ -89,6 +89,65 @@ kube9-operator will become the **standard way for clusters to participate in the
 - **vs. Cloud-Specific Operators**: Works with any cluster vs. cloud-specific solutions
 - **vs. Generic Operators**: Purpose-built for kube9 ecosystem vs. generic functionality
 
+## GitOps Vision: Application CRD
+
+### The GitOps Revolution for kube9
+
+**Problem**: Teams want GitOps capabilities but ArgoCD/Flux introduce complexity with separate UIs, steep learning curves, and additional operational overhead.
+
+**Solution**: Native GitOps built directly into the kube9 operator through an Application CRD that provides continuous deployment with drift detection and correction.
+
+### Application CRD Capabilities
+
+1. **Simple Git Integration**: Point to any git repository, branch, or commit
+2. **Automatic Drift Detection**: Continuously monitors cluster state vs. git source
+3. **Auto-Correction**: Automatically syncs drift back to desired state
+4. **VS Code Native**: Full management through kube9 VS Code extension
+5. **Security First**: Uses operator's zero-trust outbound communication model
+
+### Key Differentiators from ArgoCD
+
+- **No Separate UI**: Everything managed through VS Code
+- **Zero Additional Infrastructure**: Leverages existing operator
+- **Simplified Configuration**: Focus on common use cases over complex features
+- **Integrated Security**: Same security model as the operator
+- **Pro Tier Integration**: GitOps capabilities unlocked with Pro subscription
+
+### Technical Architecture
+
+```yaml
+apiVersion: kube9.io/v1alpha1
+kind: Application
+metadata:
+  name: my-app
+  namespace: default
+spec:
+  source:
+    repoURL: https://github.com/myorg/my-app
+    path: manifests/
+    targetRevision: main
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+  destination:
+    namespace: default
+```
+
+### User Experience
+
+**For Developers**:
+- Create Application CRDs directly from VS Code
+- View sync status and drift in real-time
+- Manual sync control when needed
+- Integrated with existing kube9 cluster management
+
+**For Platform Teams**:
+- Centralized GitOps management across all clusters
+- Consistent deployment patterns
+- Audit trails and compliance reporting
+- Multi-cluster application management
+
 ## Target Outcomes
 
 ### For Cluster Operators
@@ -140,7 +199,7 @@ kube9-operator will become the **standard way for clusters to participate in the
 ### Advanced Capabilities
 - Multi-cluster federation and management
 - Advanced metrics collection and aggregation
-- Integration with GitOps tools (ArgoCD, Flux)
+- **Native GitOps Application CRD**: Integrated GitOps without external tools
 - Edge cluster and air-gapped environment support
 - Custom metrics and health check plugins
 
