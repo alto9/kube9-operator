@@ -4,7 +4,7 @@ session_id: resource-configuration-patterns
 feature_id: [resource-configuration-patterns-collection]
 spec_id: [resource-configuration-patterns-collection-spec]
 diagram_id: [data-collection-flow]
-status: pending
+status: completed
 priority: high
 estimated_minutes: 25
 ---
