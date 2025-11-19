@@ -3,7 +3,7 @@ story_id: add-pods-collection-helpers
 session_id: resource-configuration-patterns
 feature_id: [resource-configuration-patterns-collection]
 spec_id: [resource-configuration-patterns-collection-spec]
-status: pending
+status: completed
 priority: high
 estimated_minutes: 30
 ---
@@ -39,14 +39,14 @@ Pods and containers provide the majority of configuration data (resource limits,
 
 ## Acceptance Criteria
 
-- [ ] All 7 helper functions implemented
-- [ ] Functions handle undefined/null values without errors
-- [ ] Resource limits/requests recorded as strings (e.g., "100m", "256Mi") or null
-- [ ] Security context booleans tracked with true/false/notSet counters
-- [ ] Probe types correctly identified (http, tcp, exec, grpc)
-- [ ] Volume types correctly identified from volume object keys
-- [ ] Label/annotation counts extracted from metadata objects
-- [ ] TypeScript compilation succeeds
+- [x] All 7 helper functions implemented
+- [x] Functions handle undefined/null values without errors
+- [x] Resource limits/requests recorded as strings (e.g., "100m", "256Mi") or null
+- [x] Security context booleans tracked with true/false/notSet counters
+- [x] Probe types correctly identified (http, tcp, exec, grpc)
+- [x] Volume types correctly identified from volume object keys
+- [x] Label/annotation counts extracted from metadata objects
+- [x] TypeScript compilation succeeds
 
 ## Dependencies
 

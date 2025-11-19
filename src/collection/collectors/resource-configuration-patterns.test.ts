@@ -1,5 +1,6 @@
 import { test } from 'node:test';
 import * as assert from 'node:assert';
+import type { ResourceConfigurationPatternsData } from '../types.js';
 import {
   initResourceLimitsRequestsData,
   initReplicaCountsData,
@@ -10,7 +11,31 @@ import {
   initServicesData,
   initProbeConfigData,
   initProbesData,
+  processContainerResources,
+  processImagePullPolicy,
+  processContainerSecurityContext,
+  processPodSecurityContext,
+  processProbes,
+  processVolumes,
+  processPodLabelsAnnotations,
 } from './resource-configuration-patterns.js';
+
+// Helper function to create a full ResourceConfigurationPatternsData structure for testing
+function createTestData(): ResourceConfigurationPatternsData {
+  return {
+    timestamp: new Date().toISOString(),
+    collectionId: 'coll_test123',
+    clusterId: 'cls_test456',
+    resourceLimitsRequests: initResourceLimitsRequestsData(),
+    replicaCounts: initReplicaCountsData(),
+    imagePullPolicies: initImagePullPoliciesData(),
+    securityContexts: initSecurityContextsData(),
+    labelsAnnotations: initLabelsAnnotationsData(),
+    volumes: initVolumesData(),
+    services: initServicesData(),
+    probes: initProbesData(),
+  };
+}
 
 test('initResourceLimitsRequestsData - returns proper structure', () => {
   const data = initResourceLimitsRequestsData();
@@ -294,5 +319,450 @@ test('initProbesData - probe configs have independent instances', () => {
   // Verify others are not affected
   assert.strictEqual(data.readinessProbes.configured, 0, 'readinessProbes should not be affected');
   assert.strictEqual(data.startupProbes.configured, 0, 'startupProbes should not be affected');
+});
+
+// ========== Helper Function Tests ==========
+
+// processContainerResources tests
+test('processContainerResources - processes valid resource requests and limits', () => {
+  const data = createTestData();
+  
+  processContainerResources(data, {
+    requests: { cpu: '100m', memory: '256Mi' },
+    limits: { cpu: '500m', memory: '512Mi' },
+  });
+  
+  assert.strictEqual(data.resourceLimitsRequests.containers.cpuRequests.length, 1);
+  assert.strictEqual(data.resourceLimitsRequests.containers.cpuRequests[0], '100m');
+  assert.strictEqual(data.resourceLimitsRequests.containers.memoryRequests[0], '256Mi');
+  assert.strictEqual(data.resourceLimitsRequests.containers.cpuLimits[0], '500m');
+  assert.strictEqual(data.resourceLimitsRequests.containers.memoryLimits[0], '512Mi');
+  assert.strictEqual(data.resourceLimitsRequests.containers.totalCount, 1);
+});
+
+test('processContainerResources - handles undefined resources', () => {
+  const data = createTestData();
+  
+  processContainerResources(data, undefined);
+  
+  assert.strictEqual(data.resourceLimitsRequests.containers.cpuRequests[0], null);
+  assert.strictEqual(data.resourceLimitsRequests.containers.memoryRequests[0], null);
+  assert.strictEqual(data.resourceLimitsRequests.containers.cpuLimits[0], null);
+  assert.strictEqual(data.resourceLimitsRequests.containers.memoryLimits[0], null);
+  assert.strictEqual(data.resourceLimitsRequests.containers.totalCount, 1);
+});
+
+test('processContainerResources - handles partial resource definitions', () => {
+  const data = createTestData();
+  
+  processContainerResources(data, {
+    requests: { cpu: '100m' },
+    limits: { memory: '512Mi' },
+  });
+  
+  assert.strictEqual(data.resourceLimitsRequests.containers.cpuRequests[0], '100m');
+  assert.strictEqual(data.resourceLimitsRequests.containers.memoryRequests[0], null);
+  assert.strictEqual(data.resourceLimitsRequests.containers.cpuLimits[0], null);
+  assert.strictEqual(data.resourceLimitsRequests.containers.memoryLimits[0], '512Mi');
+  assert.strictEqual(data.resourceLimitsRequests.containers.totalCount, 1);
+});
+
+test('processContainerResources - handles multiple containers', () => {
+  const data = createTestData();
+  
+  processContainerResources(data, { requests: { cpu: '100m' } });
+  processContainerResources(data, { limits: { memory: '512Mi' } });
+  processContainerResources(data, undefined);
+  
+  assert.strictEqual(data.resourceLimitsRequests.containers.totalCount, 3);
+  assert.strictEqual(data.resourceLimitsRequests.containers.cpuRequests.length, 3);
+});
+
+// processImagePullPolicy tests
+test('processImagePullPolicy - counts Always policy', () => {
+  const data = createTestData();
+  
+  processImagePullPolicy(data, 'Always');
+  
+  assert.strictEqual(data.imagePullPolicies.policies.Always, 1);
+  assert.strictEqual(data.imagePullPolicies.policies.IfNotPresent, 0);
+  assert.strictEqual(data.imagePullPolicies.policies.Never, 0);
+  assert.strictEqual(data.imagePullPolicies.policies.notSet, 0);
+  assert.strictEqual(data.imagePullPolicies.totalContainers, 1);
+});
+
+test('processImagePullPolicy - counts IfNotPresent policy', () => {
+  const data = createTestData();
+  
+  processImagePullPolicy(data, 'IfNotPresent');
+  
+  assert.strictEqual(data.imagePullPolicies.policies.IfNotPresent, 1);
+  assert.strictEqual(data.imagePullPolicies.totalContainers, 1);
+});
+
+test('processImagePullPolicy - counts Never policy', () => {
+  const data = createTestData();
+  
+  processImagePullPolicy(data, 'Never');
+  
+  assert.strictEqual(data.imagePullPolicies.policies.Never, 1);
+  assert.strictEqual(data.imagePullPolicies.totalContainers, 1);
+});
+
+test('processImagePullPolicy - counts notSet for undefined', () => {
+  const data = createTestData();
+  
+  processImagePullPolicy(data, undefined);
+  
+  assert.strictEqual(data.imagePullPolicies.policies.notSet, 1);
+  assert.strictEqual(data.imagePullPolicies.totalContainers, 1);
+});
+
+test('processImagePullPolicy - handles multiple containers', () => {
+  const data = createTestData();
+  
+  processImagePullPolicy(data, 'Always');
+  processImagePullPolicy(data, 'IfNotPresent');
+  processImagePullPolicy(data, undefined);
+  
+  assert.strictEqual(data.imagePullPolicies.policies.Always, 1);
+  assert.strictEqual(data.imagePullPolicies.policies.IfNotPresent, 1);
+  assert.strictEqual(data.imagePullPolicies.policies.notSet, 1);
+  assert.strictEqual(data.imagePullPolicies.totalContainers, 3);
+});
+
+// processContainerSecurityContext tests
+test('processContainerSecurityContext - tracks all security settings', () => {
+  const data = createTestData();
+  
+  processContainerSecurityContext(data, {
+    runAsNonRoot: true,
+    readOnlyRootFilesystem: false,
+    allowPrivilegeEscalation: true,
+    capabilities: {
+      add: ['NET_ADMIN', 'SYS_TIME'],
+      drop: ['ALL'],
+    },
+  });
+  
+  assert.strictEqual(data.securityContexts.containerLevel.runAsNonRoot.true, 1);
+  assert.strictEqual(data.securityContexts.containerLevel.readOnlyRootFilesystem.false, 1);
+  assert.strictEqual(data.securityContexts.containerLevel.allowPrivilegeEscalation.true, 1);
+  assert.deepStrictEqual(data.securityContexts.containerLevel.capabilities.added, ['NET_ADMIN', 'SYS_TIME']);
+  assert.deepStrictEqual(data.securityContexts.containerLevel.capabilities.dropped, ['ALL']);
+  assert.strictEqual(data.securityContexts.totalContainers, 1);
+});
+
+test('processContainerSecurityContext - handles undefined context', () => {
+  const data = createTestData();
+  
+  processContainerSecurityContext(data, undefined);
+  
+  assert.strictEqual(data.securityContexts.containerLevel.runAsNonRoot.notSet, 1);
+  assert.strictEqual(data.securityContexts.containerLevel.readOnlyRootFilesystem.notSet, 1);
+  assert.strictEqual(data.securityContexts.containerLevel.allowPrivilegeEscalation.notSet, 1);
+  assert.strictEqual(data.securityContexts.totalContainers, 1);
+});
+
+test('processContainerSecurityContext - handles partial context', () => {
+  const data = createTestData();
+  
+  processContainerSecurityContext(data, {
+    runAsNonRoot: false,
+  });
+  
+  assert.strictEqual(data.securityContexts.containerLevel.runAsNonRoot.false, 1);
+  assert.strictEqual(data.securityContexts.containerLevel.readOnlyRootFilesystem.notSet, 1);
+  assert.strictEqual(data.securityContexts.containerLevel.allowPrivilegeEscalation.notSet, 1);
+  assert.strictEqual(data.securityContexts.totalContainers, 1);
+});
+
+test('processContainerSecurityContext - accumulates capabilities', () => {
+  const data = createTestData();
+  
+  processContainerSecurityContext(data, {
+    capabilities: { add: ['NET_ADMIN'] },
+  });
+  processContainerSecurityContext(data, {
+    capabilities: { add: ['SYS_TIME'], drop: ['ALL'] },
+  });
+  
+  assert.deepStrictEqual(data.securityContexts.containerLevel.capabilities.added, ['NET_ADMIN', 'SYS_TIME']);
+  assert.deepStrictEqual(data.securityContexts.containerLevel.capabilities.dropped, ['ALL']);
+  assert.strictEqual(data.securityContexts.totalContainers, 2);
+});
+
+// processPodSecurityContext tests
+test('processPodSecurityContext - tracks pod-level security settings', () => {
+  const data = createTestData();
+  
+  processPodSecurityContext(data, {
+    runAsNonRoot: true,
+    fsGroup: 1000,
+  });
+  
+  assert.strictEqual(data.securityContexts.podLevel.runAsNonRoot.true, 1);
+  assert.strictEqual(data.securityContexts.podLevel.fsGroup.set, 1);
+  assert.strictEqual(data.securityContexts.totalPods, 1);
+});
+
+test('processPodSecurityContext - handles undefined context', () => {
+  const data = createTestData();
+  
+  processPodSecurityContext(data, undefined);
+  
+  assert.strictEqual(data.securityContexts.podLevel.runAsNonRoot.notSet, 1);
+  assert.strictEqual(data.securityContexts.podLevel.fsGroup.notSet, 1);
+  assert.strictEqual(data.securityContexts.totalPods, 1);
+});
+
+test('processPodSecurityContext - handles false values', () => {
+  const data = createTestData();
+  
+  processPodSecurityContext(data, {
+    runAsNonRoot: false,
+  });
+  
+  assert.strictEqual(data.securityContexts.podLevel.runAsNonRoot.false, 1);
+  assert.strictEqual(data.securityContexts.podLevel.fsGroup.notSet, 1);
+  assert.strictEqual(data.securityContexts.totalPods, 1);
+});
+
+test('processPodSecurityContext - handles multiple pods', () => {
+  const data = createTestData();
+  
+  processPodSecurityContext(data, { runAsNonRoot: true, fsGroup: 1000 });
+  processPodSecurityContext(data, { runAsNonRoot: false });
+  processPodSecurityContext(data, undefined);
+  
+  assert.strictEqual(data.securityContexts.podLevel.runAsNonRoot.true, 1);
+  assert.strictEqual(data.securityContexts.podLevel.runAsNonRoot.false, 1);
+  assert.strictEqual(data.securityContexts.podLevel.runAsNonRoot.notSet, 1);
+  assert.strictEqual(data.securityContexts.totalPods, 3);
+});
+
+// processProbes tests
+test('processProbes - tracks all probe types', () => {
+  const data = createTestData();
+  
+  processProbes(data, {
+    name: 'test-container',
+    image: 'test:latest',
+    livenessProbe: {
+      httpGet: { path: '/health', port: 8080 },
+      initialDelaySeconds: 10,
+      timeoutSeconds: 5,
+      periodSeconds: 30,
+    },
+    readinessProbe: {
+      tcpSocket: { port: 8080 },
+      initialDelaySeconds: 5,
+    },
+    startupProbe: {
+      exec: { command: ['cat', '/tmp/healthy'] },
+      periodSeconds: 10,
+    },
+  });
+  
+  assert.strictEqual(data.probes.livenessProbes.configured, 1);
+  assert.strictEqual(data.probes.livenessProbes.probeTypes.http, 1);
+  assert.deepStrictEqual(data.probes.livenessProbes.initialDelaySeconds, [10]);
+  assert.deepStrictEqual(data.probes.livenessProbes.timeoutSeconds, [5]);
+  assert.deepStrictEqual(data.probes.livenessProbes.periodSeconds, [30]);
+  
+  assert.strictEqual(data.probes.readinessProbes.configured, 1);
+  assert.strictEqual(data.probes.readinessProbes.probeTypes.tcp, 1);
+  
+  assert.strictEqual(data.probes.startupProbes.configured, 1);
+  assert.strictEqual(data.probes.startupProbes.probeTypes.exec, 1);
+  
+  assert.strictEqual(data.probes.totalContainers, 1);
+});
+
+test('processProbes - tracks notConfigured for missing probes', () => {
+  const data = createTestData();
+  
+  processProbes(data, {
+    name: 'test-container',
+    image: 'test:latest',
+  });
+  
+  assert.strictEqual(data.probes.livenessProbes.notConfigured, 1);
+  assert.strictEqual(data.probes.readinessProbes.notConfigured, 1);
+  assert.strictEqual(data.probes.startupProbes.notConfigured, 1);
+  assert.strictEqual(data.probes.totalContainers, 1);
+});
+
+test('processProbes - handles grpc probe type', () => {
+  const data = createTestData();
+  
+  processProbes(data, {
+    name: 'test-container',
+    image: 'test:latest',
+    livenessProbe: {
+      grpc: { port: 9090 },
+    },
+  });
+  
+  assert.strictEqual(data.probes.livenessProbes.probeTypes.grpc, 1);
+});
+
+test('processProbes - handles multiple containers', () => {
+  const data = createTestData();
+  
+  processProbes(data, {
+    name: 'container1',
+    image: 'test:latest',
+    livenessProbe: { httpGet: { path: '/health', port: 8080 } },
+  });
+  processProbes(data, {
+    name: 'container2',
+    image: 'test:latest',
+  });
+  
+  assert.strictEqual(data.probes.livenessProbes.configured, 1);
+  assert.strictEqual(data.probes.livenessProbes.notConfigured, 1);
+  assert.strictEqual(data.probes.totalContainers, 2);
+});
+
+// processVolumes tests
+test('processVolumes - processes different volume types', () => {
+  const data = createTestData();
+  
+  processVolumes(data, [
+    { name: 'config', configMap: { name: 'my-config' } },
+    { name: 'secret', secret: { secretName: 'my-secret' } },
+    { name: 'empty', emptyDir: {} },
+    { name: 'pvc', persistentVolumeClaim: { claimName: 'my-pvc' } },
+  ]);
+  
+  assert.strictEqual(data.volumes.volumeTypes.configMap, 1);
+  assert.strictEqual(data.volumes.volumeTypes.secret, 1);
+  assert.strictEqual(data.volumes.volumeTypes.emptyDir, 1);
+  assert.strictEqual(data.volumes.volumeTypes.persistentVolumeClaim, 1);
+  assert.deepStrictEqual(data.volumes.volumesPerPod, [4]);
+  assert.strictEqual(data.volumes.totalPods, 1);
+});
+
+test('processVolumes - handles all volume types', () => {
+  const data = createTestData();
+  
+  processVolumes(data, [
+    { name: 'hostPath', hostPath: { path: '/var/log' } },
+    { name: 'downwardAPI', downwardAPI: { items: [] } },
+    { name: 'projected', projected: { sources: [] } },
+  ]);
+  
+  assert.strictEqual(data.volumes.volumeTypes.hostPath, 1);
+  assert.strictEqual(data.volumes.volumeTypes.downwardAPI, 1);
+  assert.strictEqual(data.volumes.volumeTypes.projected, 1);
+});
+
+test('processVolumes - handles undefined volumes', () => {
+  const data = createTestData();
+  
+  processVolumes(data, undefined);
+  
+  assert.deepStrictEqual(data.volumes.volumesPerPod, [0]);
+  assert.strictEqual(data.volumes.totalPods, 1);
+});
+
+test('processVolumes - handles empty volumes array', () => {
+  const data = createTestData();
+  
+  processVolumes(data, []);
+  
+  assert.deepStrictEqual(data.volumes.volumesPerPod, [0]);
+  assert.strictEqual(data.volumes.totalPods, 1);
+});
+
+test('processVolumes - tracks other volume types', () => {
+  const data = createTestData();
+  
+  processVolumes(data, [
+    { name: 'unknown', csi: { driver: 'some-csi-driver' } },
+  ]);
+  
+  assert.strictEqual(data.volumes.volumeTypes.other, 1);
+});
+
+test('processVolumes - handles multiple pods', () => {
+  const data = createTestData();
+  
+  processVolumes(data, [{ name: 'vol1', emptyDir: {} }]);
+  processVolumes(data, [{ name: 'vol1', emptyDir: {} }, { name: 'vol2', emptyDir: {} }]);
+  processVolumes(data, undefined);
+  
+  assert.deepStrictEqual(data.volumes.volumesPerPod, [1, 2, 0]);
+  assert.strictEqual(data.volumes.totalPods, 3);
+});
+
+// processPodLabelsAnnotations tests
+test('processPodLabelsAnnotations - counts labels and annotations', () => {
+  const data = createTestData();
+  
+  processPodLabelsAnnotations(data, {
+    labels: {
+      app: 'myapp',
+      version: 'v1',
+      environment: 'prod',
+    },
+    annotations: {
+      'prometheus.io/scrape': 'true',
+      'prometheus.io/port': '8080',
+    },
+  });
+  
+  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.pods, [3]);
+  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.pods, [2]);
+});
+
+test('processPodLabelsAnnotations - handles undefined metadata', () => {
+  const data = createTestData();
+  
+  processPodLabelsAnnotations(data, undefined);
+  
+  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.pods, [0]);
+  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.pods, [0]);
+});
+
+test('processPodLabelsAnnotations - handles empty labels and annotations', () => {
+  const data = createTestData();
+  
+  processPodLabelsAnnotations(data, {
+    labels: {},
+    annotations: {},
+  });
+  
+  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.pods, [0]);
+  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.pods, [0]);
+});
+
+test('processPodLabelsAnnotations - handles metadata without labels or annotations', () => {
+  const data = createTestData();
+  
+  processPodLabelsAnnotations(data, {
+    name: 'my-pod',
+    namespace: 'default',
+  });
+  
+  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.pods, [0]);
+  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.pods, [0]);
+});
+
+test('processPodLabelsAnnotations - handles multiple pods', () => {
+  const data = createTestData();
+  
+  processPodLabelsAnnotations(data, {
+    labels: { app: 'myapp', version: 'v1' },
+    annotations: { note: 'test' },
+  });
+  processPodLabelsAnnotations(data, {
+    labels: { app: 'otherapp' },
+  });
+  processPodLabelsAnnotations(data, undefined);
+  
+  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.pods, [2, 1, 0]);
+  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.pods, [1, 0, 0]);
 });
 
