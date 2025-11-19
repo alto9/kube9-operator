@@ -54,6 +54,8 @@ spec:
           value: {{ .Values.metrics.intervals.clusterMetadata | default 86400 | quote }}
         - name: RESOURCE_INVENTORY_INTERVAL_SECONDS
           value: {{ .Values.metrics.intervals.resourceInventory | default 21600 | quote }}
+        - name: RESOURCE_CONFIGURATION_PATTERNS_INTERVAL_SECONDS
+          value: {{ .Values.metrics.intervals.resourceConfigurationPatterns | default 43200 | quote }}
         {{- if .Values.apiKey }}
         - name: API_KEY
           valueFrom:

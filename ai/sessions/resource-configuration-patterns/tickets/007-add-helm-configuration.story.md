@@ -3,7 +3,7 @@ story_id: add-helm-configuration
 session_id: resource-configuration-patterns
 feature_id: [resource-configuration-patterns-collection]
 spec_id: [resource-configuration-patterns-collection-spec]
-status: pending
+status: completed
 priority: medium
 estimated_minutes: 15
 ---
@@ -31,11 +31,11 @@ The Helm chart needs to expose the collection interval as a configurable value f
 
 ## Acceptance Criteria
 
-- [ ] `metrics.intervals.resourceConfigurationPatterns` set to 43200 (12 hours)
-- [ ] Configuration follows existing pattern from other collectors
-- [ ] YAML syntax is valid
-- [ ] helm lint passes
-- [ ] helm template renders correctly
+- [x] `metrics.intervals.resourceConfigurationPatterns` set to 43200 (12 hours)
+- [x] Configuration follows existing pattern from other collectors
+- [x] YAML syntax is valid
+- [x] helm lint passes
+- [x] helm template renders correctly
 
 ## Dependencies
 

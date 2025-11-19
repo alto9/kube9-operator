@@ -48,4 +48,7 @@ metrics:
     # Resource inventory collection interval in seconds (default: 21600 = 6 hours)
     # Minimum: 1800 seconds (30 minutes)
     resourceInventory: 21600
+    # Resource configuration patterns collection interval in seconds (default: 43200 = 12 hours)
+    # Minimum: 3600 seconds (1 hour)
+    resourceConfigurationPatterns: 43200
 

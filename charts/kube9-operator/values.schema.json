@@ -21,6 +21,12 @@
               "description": "Resource inventory collection interval in seconds. Default: 21600 (6 hours). Minimum: 1800 (30 minutes). Configurable for testing/debugging purposes.",
               "minimum": 1800,
               "default": 21600
+            },
+            "resourceConfigurationPatterns": {
+              "type": "integer",
+              "description": "Resource configuration patterns collection interval in seconds. Default: 43200 (12 hours). Minimum: 3600 (1 hour). Configurable for testing/debugging purposes.",
+              "minimum": 3600,
+              "default": 43200
             }
           },
           "additionalProperties": false
