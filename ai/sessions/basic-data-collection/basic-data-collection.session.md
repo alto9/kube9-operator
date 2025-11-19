@@ -1,7 +1,7 @@
 ---
 session_id: basic-data-collection
 start_time: '2025-11-13T14:46:43.784Z'
-status: development
+status: completed
 problem_statement: basic data collection
 changed_files:
   - path: ai/features/data-collection/cluster-metadata-collection.feature.md

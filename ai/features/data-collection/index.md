@@ -17,22 +17,27 @@ Background:
 ## Rules
 
 ```gherkin
-Rule: Data collection respects tier mode
-  Example: Free tier collection
-    Given the operator is running in free tier (operated mode)
+Rule: Data collection stores raw data locally
+  Example: Raw data collection
+    Given the operator is collecting data
     When data is collected
-    Then the data should be stored locally in the operator pod
-    And the data should NOT be transmitted to kube9-server
-    And the data should be available for local analysis only
+    Then the raw, unsanitized data should be stored locally in the operator pod
+    And the data should include actual resource names and configurations
+    And the data should NOT leave the cluster during collection
+    And the data should be available for verification and future processing
 
-  Example: Pro tier collection
-    Given the operator is running in pro tier (enabled mode)
-    And the operator has successfully registered with kube9-server
-    When data is collected
-    Then the data should be sanitized before transmission
-    And the data should be validated against schema
-    And the data should be transmitted to kube9-server via HTTPS POST
+Rule: Data sanitization is a separate future phase
+  Example: Future Pro tier data transmission
+    Given the operator has collected raw data locally
+    And the operator is running in pro tier (enabled mode) with obfuscation library implemented (future)
+    When preparing data for transmission to kube9-server
+    Then the data should be sanitized using the obfuscation library
+    And real names should be replaced with mock equivalents
+    And the sanitized data should be validated against schema
+    And the sanitized data should be transmitted to kube9-server via HTTPS POST
     And the transmission should include API key authentication
+    
+  Note: Sanitization, obfuscation library, and transmission are future features not yet implemented
 
 Rule: All collections use read-only operations
   Example: Cluster metadata collection

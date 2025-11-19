@@ -121,29 +121,19 @@ Scenario: Large clusters are handled efficiently
   And the collection should complete within reasonable time
   And memory usage should remain bounded
 
-Scenario: Collected data is stored locally for free tier
-  Given the operator is running in free tier (operated mode)
-  When resource inventory is collected
-  Then the data should be stored locally in the operator pod
-  And the data should NOT be transmitted to kube9-server
-  And the data should be available for local analysis only
-
-Scenario: Collected data is transmitted for pro tier
-  Given the operator is running in pro tier (enabled mode)
-  And the operator has successfully registered with kube9-server
-  When resource inventory is collected
-  Then the data should be sanitized before transmission
-  And the data should be validated against schema
-  And the data should be transmitted to kube9-server via HTTPS POST
-  And the data should conform to the resource-inventory schema
-  And the transmission should include API key authentication
+Scenario: Collected data is stored locally as raw data
+  Given the operator is collecting resource inventory
+  When the collection completes
+  Then the raw, unsanitized data should be stored locally in the operator pod
+  And the data should include actual resource counts and distributions
+  And the data should NOT leave the cluster
+  And the data should be available for verification and future processing
 ```
 
 ## Integration Points
 
 - **Kubernetes API**: Reads namespaces, pods, deployments, statefulSets, replicaSets, and services
-- **kube9-server**: Receives sanitized inventory data (pro tier only)
-- **Local Storage**: Stores data temporarily in operator pod (free tier)
+- **Local Storage**: Stores raw collected data in operator pod
 - **Collection Scheduler**: Manages periodic collection intervals
 
 ## Non-Goals

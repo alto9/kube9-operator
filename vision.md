@@ -29,7 +29,7 @@ kube9-operator will become the **standard way for clusters to participate in the
 - Enable seamless Pro tier activation through operator registration
 
 **Medium-Term (1-2 years)**
-- Expand operator capabilities for advanced metrics collection
+- Complete remaining data collectors (performance metrics, config patterns, security posture)
 - Support for multi-cluster federation and management
 - **Native GitOps with Application CRD**: Replace ArgoCD complexity with integrated GitOps
 - Advanced health checks and predictive analytics
@@ -81,6 +81,7 @@ kube9-operator will become the **standard way for clusters to participate in the
 3. **Minimal Footprint**: Lightweight design that doesn't impact cluster performance
 4. **Security Model**: Transparent security model with minimal permissions and no sensitive data collection
 5. **Progressive Enhancement**: Works in free tier mode, unlocks Pro features when API key provided
+6. **Data Collection Foundation**: Secure, sanitized metrics collection for AI training and insights
 
 ### Differentiation from Competitors
 
@@ -164,7 +165,7 @@ spec:
 
 ### For Alto9
 - **Ecosystem Foundation**: Operator enables Pro tier features and monetization
-- **Data Collection**: Secure, sanitized metrics collection for AI training
+- **Data Collection**: Foundation built for secure, sanitized metrics collection for AI training
 - **Market Differentiation**: Unique zero-ingress architecture sets kube9 apart
 - **Scalability**: Operator scales to thousands of clusters efficiently
 
@@ -194,11 +195,85 @@ spec:
 - 99.9%+ successful Pro tier registrations
 - Graceful degradation under all failure scenarios
 
+## Data Collection Status
+
+### Current Implementation (2/5 Categories Complete)
+
+**✅ Implemented Collectors:**
+- **Cluster Metadata**: Kubernetes version, node count, provider detection (24h intervals)
+- **Resource Inventory**: Namespace counts, pod/deployment/service counts (6h intervals)
+
+**✅ Collection Infrastructure Complete:**
+- Collection scheduler with randomized timing to prevent load spikes
+- Local storage for collected data (raw, unsanitized)
+- Full documentation and public transparency
+
+**❌ Remaining Collectors (3/5):**
+- Resource Configuration Patterns (12h intervals)
+- Performance Metrics with Prometheus integration (15min intervals)
+- Security Posture indicators (24h intervals)
+
+**❌ Future: PII Sanitization & Server Integration (Post-Collection):**
+- Obfuscation library (maintains real name → mock name mappings)
+- Outgoing sanitization (replaces real names with mocks before transmission)
+- Transmission client for Pro tier with retry logic and exponential backoff
+- Incoming reconciliation (reverses mocking on AI responses from server)
+- Validation framework ensuring no sensitive data escapes
+
+**📋 Status**: Collection infrastructure is solid. Two collectors implemented with raw data collection. Sanitization and server transmission are separate future phases.
+
+## Data Lifecycle: Collection → Sanitization → AI → Reconciliation
+
+The kube9-operator manages data through four distinct phases:
+
+### Phase 1: Raw Data Collection (Current)
+- Collectors gather raw, unsanitized data from cluster resources
+- Data includes actual resource names, labels, configurations
+- Stored locally in operator pod for verification and future processing
+- No data leaves the cluster at this phase
+- **Status**: Partially implemented (2/5 collectors complete)
+
+### Phase 2: Obfuscation Library (Future)
+- Maintains bidirectional mappings: real name ↔ mock name
+- Example: `my-app-deployment` → `deployment-a7f3b9`
+- Mappings persist across collections for consistency
+- Library stored locally in operator pod
+- Enables reversible sanitization
+- **Status**: Not yet implemented
+
+### Phase 3: Outgoing Sanitization (Future - Pro Tier Only)
+- Applies obfuscation library to raw collected data
+- Replaces real names with mock equivalents before transmission
+- Ensures no PII or sensitive data leaves the cluster
+- Validates sanitized payload before transmission
+- Transmits to kube9-server via HTTPS POST with API key
+- **Status**: Not yet implemented
+
+### Phase 4: Incoming Reconciliation (Future - Pro Tier Only)
+- Receives AI recommendations from kube9-server
+- AI responses contain mock names (e.g., `deployment-a7f3b9`)
+- Operator reverses obfuscation using local library
+- Reconstructs recommendations with actual resource names
+- Stores AI suggestions locally with proper names for user review
+- **Status**: Not yet implemented
+
+### Design Principles
+
+**Separation of Concerns**: Each phase has a distinct responsibility, enabling independent development and testing.
+
+**Privacy by Default**: Raw data never leaves the cluster. Sanitization is mandatory before any external transmission.
+
+**Reversible Obfuscation**: Mock names can be mapped back to real names, enabling AI recommendations to reference actual cluster resources.
+
+**Free Tier Benefits**: Collection and local storage work without Pro tier, providing value without external connectivity.
+
+**Pro Tier Enhancement**: Sanitization and server integration unlock AI-powered insights while maintaining security.
+
 ## Future Possibilities
 
 ### Advanced Capabilities
 - Multi-cluster federation and management
-- Advanced metrics collection and aggregation
+- Complete remaining data collectors (performance metrics, config patterns, security)
 - **Native GitOps Application CRD**: Integrated GitOps without external tools
 - Edge cluster and air-gapped environment support
 - Custom metrics and health check plugins
