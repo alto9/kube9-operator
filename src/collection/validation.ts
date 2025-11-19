@@ -2,7 +2,7 @@
  * Schema validation utilities for collection data
  */
 
-import type { ClusterMetadata, ResourceInventory } from './types.js';
+import type { ClusterMetadata, ResourceInventory, ResourceConfigurationPatternsData } from './types.js';
 
 /**
  * Custom error class for validation failures
@@ -292,5 +292,144 @@ export function validateResourceInventory(data: unknown): ResourceInventory {
       },
     },
   };
+}
+
+/**
+ * Validates resource configuration patterns data against schema
+ */
+export function validateResourceConfigurationPatterns(data: unknown): ResourceConfigurationPatternsData {
+  const obj = assertObject(data, 'root');
+
+  // Required fields
+  const timestamp = assertString(obj.timestamp, 'timestamp');
+  assertISO8601Timestamp(timestamp, 'timestamp');
+
+  const collectionId = assertString(obj.collectionId, 'collectionId');
+  assertPattern(collectionId, /^coll_[a-z0-9]{32}$/, 'collectionId', 'collection ID format "coll_[32-char-hash]"');
+
+  const clusterId = assertString(obj.clusterId, 'clusterId');
+  assertPattern(clusterId, /^cls_[a-z0-9]{32}$/, 'clusterId', 'cluster ID format "cls_[32-char-hash]"');
+
+  // Validate resourceLimitsRequests
+  const resourceLimitsRequestsObj = assertObject(obj.resourceLimitsRequests, 'resourceLimitsRequests');
+  const containersObj = assertObject(resourceLimitsRequestsObj.containers, 'resourceLimitsRequests.containers');
+  assertArray(containersObj.cpuRequests, 'resourceLimitsRequests.containers.cpuRequests');
+  assertArray(containersObj.cpuLimits, 'resourceLimitsRequests.containers.cpuLimits');
+  assertArray(containersObj.memoryRequests, 'resourceLimitsRequests.containers.memoryRequests');
+  assertArray(containersObj.memoryLimits, 'resourceLimitsRequests.containers.memoryLimits');
+  assertInteger(containersObj.totalCount, 'resourceLimitsRequests.containers.totalCount');
+
+  // Validate replicaCounts
+  const replicaCountsObj = assertObject(obj.replicaCounts, 'replicaCounts');
+  assertArray(replicaCountsObj.deployments, 'replicaCounts.deployments');
+  assertArray(replicaCountsObj.statefulSets, 'replicaCounts.statefulSets');
+  assertInteger(replicaCountsObj.daemonSetCount, 'replicaCounts.daemonSetCount');
+
+  // Validate imagePullPolicies
+  const imagePullPoliciesObj = assertObject(obj.imagePullPolicies, 'imagePullPolicies');
+  const policiesObj = assertObject(imagePullPoliciesObj.policies, 'imagePullPolicies.policies');
+  assertInteger(policiesObj.Always, 'imagePullPolicies.policies.Always');
+  assertInteger(policiesObj.IfNotPresent, 'imagePullPolicies.policies.IfNotPresent');
+  assertInteger(policiesObj.Never, 'imagePullPolicies.policies.Never');
+  assertInteger(policiesObj.notSet, 'imagePullPolicies.policies.notSet');
+  assertInteger(imagePullPoliciesObj.totalContainers, 'imagePullPolicies.totalContainers');
+
+  // Validate securityContexts
+  const securityContextsObj = assertObject(obj.securityContexts, 'securityContexts');
+  const podLevelObj = assertObject(securityContextsObj.podLevel, 'securityContexts.podLevel');
+  const podRunAsNonRootObj = assertObject(podLevelObj.runAsNonRoot, 'securityContexts.podLevel.runAsNonRoot');
+  assertInteger(podRunAsNonRootObj.true, 'securityContexts.podLevel.runAsNonRoot.true');
+  assertInteger(podRunAsNonRootObj.false, 'securityContexts.podLevel.runAsNonRoot.false');
+  assertInteger(podRunAsNonRootObj.notSet, 'securityContexts.podLevel.runAsNonRoot.notSet');
+  const fsGroupObj = assertObject(podLevelObj.fsGroup, 'securityContexts.podLevel.fsGroup');
+  assertInteger(fsGroupObj.set, 'securityContexts.podLevel.fsGroup.set');
+  assertInteger(fsGroupObj.notSet, 'securityContexts.podLevel.fsGroup.notSet');
+
+  const containerLevelObj = assertObject(securityContextsObj.containerLevel, 'securityContexts.containerLevel');
+  const containerRunAsNonRootObj = assertObject(containerLevelObj.runAsNonRoot, 'securityContexts.containerLevel.runAsNonRoot');
+  assertInteger(containerRunAsNonRootObj.true, 'securityContexts.containerLevel.runAsNonRoot.true');
+  assertInteger(containerRunAsNonRootObj.false, 'securityContexts.containerLevel.runAsNonRoot.false');
+  assertInteger(containerRunAsNonRootObj.notSet, 'securityContexts.containerLevel.runAsNonRoot.notSet');
+  const readOnlyRootFilesystemObj = assertObject(containerLevelObj.readOnlyRootFilesystem, 'securityContexts.containerLevel.readOnlyRootFilesystem');
+  assertInteger(readOnlyRootFilesystemObj.true, 'securityContexts.containerLevel.readOnlyRootFilesystem.true');
+  assertInteger(readOnlyRootFilesystemObj.false, 'securityContexts.containerLevel.readOnlyRootFilesystem.false');
+  assertInteger(readOnlyRootFilesystemObj.notSet, 'securityContexts.containerLevel.readOnlyRootFilesystem.notSet');
+  const allowPrivilegeEscalationObj = assertObject(containerLevelObj.allowPrivilegeEscalation, 'securityContexts.containerLevel.allowPrivilegeEscalation');
+  assertInteger(allowPrivilegeEscalationObj.true, 'securityContexts.containerLevel.allowPrivilegeEscalation.true');
+  assertInteger(allowPrivilegeEscalationObj.false, 'securityContexts.containerLevel.allowPrivilegeEscalation.false');
+  assertInteger(allowPrivilegeEscalationObj.notSet, 'securityContexts.containerLevel.allowPrivilegeEscalation.notSet');
+  const capabilitiesObj = assertObject(containerLevelObj.capabilities, 'securityContexts.containerLevel.capabilities');
+  assertArray(capabilitiesObj.added, 'securityContexts.containerLevel.capabilities.added');
+  assertArray(capabilitiesObj.dropped, 'securityContexts.containerLevel.capabilities.dropped');
+  assertInteger(securityContextsObj.totalPods, 'securityContexts.totalPods');
+  assertInteger(securityContextsObj.totalContainers, 'securityContexts.totalContainers');
+
+  // Validate labelsAnnotations
+  const labelsAnnotationsObj = assertObject(obj.labelsAnnotations, 'labelsAnnotations');
+  const labelCountsObj = assertObject(labelsAnnotationsObj.labelCounts, 'labelsAnnotations.labelCounts');
+  assertArray(labelCountsObj.pods, 'labelsAnnotations.labelCounts.pods');
+  assertArray(labelCountsObj.deployments, 'labelsAnnotations.labelCounts.deployments');
+  assertArray(labelCountsObj.services, 'labelsAnnotations.labelCounts.services');
+  const annotationCountsObj = assertObject(labelsAnnotationsObj.annotationCounts, 'labelsAnnotations.annotationCounts');
+  assertArray(annotationCountsObj.pods, 'labelsAnnotations.annotationCounts.pods');
+  assertArray(annotationCountsObj.deployments, 'labelsAnnotations.annotationCounts.deployments');
+  assertArray(annotationCountsObj.services, 'labelsAnnotations.annotationCounts.services');
+  assertArray(labelsAnnotationsObj.commonLabelKeys, 'labelsAnnotations.commonLabelKeys');
+
+  // Validate volumes
+  const volumesObj = assertObject(obj.volumes, 'volumes');
+  const volumeTypesObj = assertObject(volumesObj.volumeTypes, 'volumes.volumeTypes');
+  assertInteger(volumeTypesObj.configMap, 'volumes.volumeTypes.configMap');
+  assertInteger(volumeTypesObj.secret, 'volumes.volumeTypes.secret');
+  assertInteger(volumeTypesObj.emptyDir, 'volumes.volumeTypes.emptyDir');
+  assertInteger(volumeTypesObj.persistentVolumeClaim, 'volumes.volumeTypes.persistentVolumeClaim');
+  assertInteger(volumeTypesObj.hostPath, 'volumes.volumeTypes.hostPath');
+  assertInteger(volumeTypesObj.downwardAPI, 'volumes.volumeTypes.downwardAPI');
+  assertInteger(volumeTypesObj.projected, 'volumes.volumeTypes.projected');
+  assertInteger(volumeTypesObj.other, 'volumes.volumeTypes.other');
+  assertArray(volumesObj.volumesPerPod, 'volumes.volumesPerPod');
+  assertArray(volumesObj.volumeMountsPerContainer, 'volumes.volumeMountsPerContainer');
+  assertInteger(volumesObj.totalPods, 'volumes.totalPods');
+
+  // Validate services
+  const servicesObj = assertObject(obj.services, 'services');
+  const serviceTypesObj = assertObject(servicesObj.serviceTypes, 'services.serviceTypes');
+  assertInteger(serviceTypesObj.ClusterIP, 'services.serviceTypes.ClusterIP');
+  assertInteger(serviceTypesObj.NodePort, 'services.serviceTypes.NodePort');
+  assertInteger(serviceTypesObj.LoadBalancer, 'services.serviceTypes.LoadBalancer');
+  assertInteger(serviceTypesObj.ExternalName, 'services.serviceTypes.ExternalName');
+  assertArray(servicesObj.portsPerService, 'services.portsPerService');
+  assertInteger(servicesObj.totalServices, 'services.totalServices');
+
+  // Validate probes
+  const probesObj = assertObject(obj.probes, 'probes');
+  
+  // Helper to validate ProbeConfigData
+  const validateProbeConfig = (probeObj: Record<string, unknown>, path: string) => {
+    assertInteger(probeObj.configured, `${path}.configured`);
+    assertInteger(probeObj.notConfigured, `${path}.notConfigured`);
+    const probeTypesObj = assertObject(probeObj.probeTypes, `${path}.probeTypes`);
+    assertInteger(probeTypesObj.http, `${path}.probeTypes.http`);
+    assertInteger(probeTypesObj.tcp, `${path}.probeTypes.tcp`);
+    assertInteger(probeTypesObj.exec, `${path}.probeTypes.exec`);
+    assertInteger(probeTypesObj.grpc, `${path}.probeTypes.grpc`);
+    assertArray(probeObj.initialDelaySeconds, `${path}.initialDelaySeconds`);
+    assertArray(probeObj.timeoutSeconds, `${path}.timeoutSeconds`);
+    assertArray(probeObj.periodSeconds, `${path}.periodSeconds`);
+  };
+
+  const livenessProbesObj = assertObject(probesObj.livenessProbes, 'probes.livenessProbes');
+  validateProbeConfig(livenessProbesObj, 'probes.livenessProbes');
+  
+  const readinessProbesObj = assertObject(probesObj.readinessProbes, 'probes.readinessProbes');
+  validateProbeConfig(readinessProbesObj, 'probes.readinessProbes');
+  
+  const startupProbesObj = assertObject(probesObj.startupProbes, 'probes.startupProbes');
+  validateProbeConfig(startupProbesObj, 'probes.startupProbes');
+  
+  assertInteger(probesObj.totalContainers, 'probes.totalContainers');
+
+  // Return validated data (type assertion is safe after all validations)
+  return data as ResourceConfigurationPatternsData;
 }
 

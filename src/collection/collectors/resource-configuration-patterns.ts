@@ -6,6 +6,7 @@
  * on a 12-hour interval.
  */
 
+import { randomBytes } from 'crypto';
 import * as k8s from '@kubernetes/client-node';
 import type {
   ResourceLimitsRequestsData,
@@ -18,7 +19,15 @@ import type {
   ProbesData,
   ProbeConfigData,
   ResourceConfigurationPatternsData,
+  CollectionPayload,
 } from '../types.js';
+import { validateResourceConfigurationPatterns } from '../validation.js';
+import { LocalStorage } from '../storage.js';
+import { TransmissionClient } from '../transmission.js';
+import { KubernetesClient } from '../../kubernetes/client.js';
+import { generateClusterIdForCollection } from '../../cluster/identifier.js';
+import type { Config } from '../../config/types.js';
+import { logger } from '../../logging/logger.js';
 
 /**
  * Initializes an empty ResourceLimitsRequestsData structure
@@ -515,5 +524,184 @@ export function processServiceType(
   
   // Increment total services
   data.services.totalServices++;
+}
+
+/**
+ * ResourceConfigurationPatternsCollector collects resource configuration patterns
+ * and processes them through validation, storage (free tier), or transmission (pro tier).
+ */
+export class ResourceConfigurationPatternsCollector {
+  private readonly kubernetesClient: KubernetesClient;
+  private readonly localStorage: LocalStorage;
+  private readonly transmissionClient: TransmissionClient | null;
+  private readonly config: Config;
+
+  /**
+   * Creates a new ResourceConfigurationPatternsCollector instance
+   * 
+   * @param kubernetesClient - Kubernetes client for API access
+   * @param localStorage - Local storage for free tier
+   * @param transmissionClient - Transmission client for pro tier (null if free tier)
+   * @param config - Configuration to determine tier
+   */
+  constructor(
+    kubernetesClient: KubernetesClient,
+    localStorage: LocalStorage,
+    transmissionClient: TransmissionClient | null,
+    config: Config
+  ) {
+    this.kubernetesClient = kubernetesClient;
+    this.localStorage = localStorage;
+    this.transmissionClient = transmissionClient;
+    this.config = config;
+  }
+
+  /**
+   * Collects resource configuration patterns from the Kubernetes API
+   * 
+   * @returns Promise resolving to collected resource configuration patterns data
+   * @throws Error if collection fails (will be caught by scheduler)
+   */
+  async collect(): Promise<ResourceConfigurationPatternsData> {
+    logger.info('Starting resource configuration patterns collection');
+
+    try {
+      // Initialize data structure
+      const data: ResourceConfigurationPatternsData = {
+        timestamp: new Date().toISOString(),
+        collectionId: this.generateCollectionId(),
+        clusterId: generateClusterIdForCollection(),
+        resourceLimitsRequests: initResourceLimitsRequestsData(),
+        replicaCounts: initReplicaCountsData(),
+        imagePullPolicies: initImagePullPoliciesData(),
+        securityContexts: initSecurityContextsData(),
+        labelsAnnotations: initLabelsAnnotationsData(),
+        volumes: initVolumesData(),
+        services: initServicesData(),
+        probes: initProbesData(),
+      };
+
+      // Collect from pods
+      const podList = await this.kubernetesClient.coreApi.listPodForAllNamespaces();
+      for (const pod of podList.body.items || []) {
+        // Process pod-level data
+        processPodSecurityContext(data, pod.spec?.securityContext);
+        processPodLabelsAnnotations(data, pod.metadata);
+        processVolumes(data, pod.spec?.volumes);
+
+        // Process each container
+        const containers = pod.spec?.containers || [];
+        for (const container of containers) {
+          processContainerResources(data, container.resources);
+          processImagePullPolicy(data, container.imagePullPolicy);
+          processContainerSecurityContext(data, container.securityContext);
+          processProbes(data, container);
+        }
+      }
+
+      // Collect from deployments
+      const deploymentList = await this.kubernetesClient.appsApi.listDeploymentForAllNamespaces();
+      for (const deployment of deploymentList.body.items || []) {
+        if (deployment.spec?.replicas !== undefined) {
+          data.replicaCounts.deployments.push(deployment.spec.replicas);
+        }
+        processLabelsAnnotations(data, 'deployments', deployment.metadata);
+      }
+
+      // Collect from statefulSets
+      const statefulSetList = await this.kubernetesClient.appsApi.listStatefulSetForAllNamespaces();
+      for (const statefulSet of statefulSetList.body.items || []) {
+        if (statefulSet.spec?.replicas !== undefined) {
+          data.replicaCounts.statefulSets.push(statefulSet.spec.replicas);
+        }
+      }
+
+      // Collect from daemonSets
+      const daemonSetList = await this.kubernetesClient.appsApi.listDaemonSetForAllNamespaces();
+      data.replicaCounts.daemonSetCount = daemonSetList.body.items?.length || 0;
+
+      // Collect from services
+      const serviceList = await this.kubernetesClient.coreApi.listServiceForAllNamespaces();
+      for (const service of serviceList.body.items || []) {
+        processServiceType(data, service.spec?.type, service.spec?.ports);
+        processLabelsAnnotations(data, 'services', service.metadata);
+      }
+
+      logger.info('Resource configuration patterns collected successfully', {
+        collectionId: data.collectionId,
+        clusterId: data.clusterId,
+        totalPods: data.securityContexts.totalPods,
+        totalContainers: data.securityContexts.totalContainers,
+        totalServices: data.services.totalServices,
+      });
+
+      return data;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to collect resource configuration patterns', { error: errorMessage });
+      throw error;
+    }
+  }
+
+  /**
+   * Processes collected data: validates, wraps in payload, and stores/transmits
+   * 
+   * @param data - Collected resource configuration patterns data
+   * @returns Promise that resolves when processing is complete
+   */
+  async processCollection(data: ResourceConfigurationPatternsData): Promise<void> {
+    try {
+      // Validate the collected data
+      const validatedData = validateResourceConfigurationPatterns(data);
+
+      // Wrap in collection payload with sanitization metadata
+      const payload: CollectionPayload = {
+        version: 'v1.0.0',
+        type: 'resource-configuration-patterns',
+        data: validatedData,
+        sanitization: {
+          rulesApplied: ['no-resource-names', 'aggregated-configuration-data'],
+          timestamp: new Date().toISOString(),
+        },
+      };
+
+      // Determine tier and process accordingly
+      if (this.config.apiKey && this.transmissionClient) {
+        // Pro tier: transmit to server
+        logger.info('Transmitting resource configuration patterns collection (pro tier)', {
+          collectionId: validatedData.collectionId,
+        });
+        await this.transmissionClient.transmit(payload);
+      } else {
+        // Free tier: store locally
+        logger.info('Storing resource configuration patterns collection locally (free tier)', {
+          collectionId: validatedData.collectionId,
+        });
+        await this.localStorage.store(payload);
+      }
+
+      logger.info('Resource configuration patterns collection processed successfully', {
+        collectionId: validatedData.collectionId,
+        tier: this.config.apiKey ? 'pro' : 'free',
+      });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to process resource configuration patterns collection', {
+        error: errorMessage,
+        collectionId: data.collectionId,
+      });
+      // Don't throw - graceful degradation
+    }
+  }
+
+  /**
+   * Generates a unique collection ID in format coll_[32-char-hash]
+   * 
+   * @returns Collection ID string
+   */
+  private generateCollectionId(): string {
+    const random = randomBytes(16).toString('hex');
+    return `coll_${random}`;
+  }
 }
 

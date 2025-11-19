@@ -38,5 +38,11 @@ export interface Config {
    * Default: 21600 (6 hours), Minimum: 1800 (30 minutes)
    */
   resourceInventoryIntervalSeconds: number;
+
+  /**
+   * Resource configuration patterns collection interval in seconds
+   * Default: 43200 (12 hours), Minimum: 3600 (1 hour)
+   */
+  resourceConfigurationPatternsIntervalSeconds: number;
 }
 

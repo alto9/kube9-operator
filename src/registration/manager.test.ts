@@ -22,6 +22,7 @@ function createMockConfig(apiKey: string | null = 'kdy_prod_test123'): Config {
     reregistrationIntervalHours: 24,
     clusterMetadataIntervalSeconds: 86400,
     resourceInventoryIntervalSeconds: 21600,
+    resourceConfigurationPatternsIntervalSeconds: 43200,
   };
 }
 

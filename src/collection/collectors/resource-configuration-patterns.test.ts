@@ -20,6 +20,7 @@ import {
   processPodLabelsAnnotations,
   processLabelsAnnotations,
   processServiceType,
+  ResourceConfigurationPatternsCollector,
 } from './resource-configuration-patterns.js';
 
 // Helper function to create a full ResourceConfigurationPatternsData structure for testing
@@ -939,5 +940,334 @@ test('processServiceType - handles multiple services', () => {
   assert.strictEqual(data.services.serviceTypes.LoadBalancer, 1);
   assert.deepStrictEqual(data.services.portsPerService, [1, 2, 1, 0]);
   assert.strictEqual(data.services.totalServices, 4);
+});
+
+// ResourceConfigurationPatternsCollector tests
+test('ResourceConfigurationPatternsCollector - collect() generates valid collection ID', async () => {
+  // Mock KubernetesClient
+  const mockKubernetesClient = {
+    coreApi: {
+      listPodForAllNamespaces: async () => ({ body: { items: [] } }),
+      listServiceForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+    appsApi: {
+      listDeploymentForAllNamespaces: async () => ({ body: { items: [] } }),
+      listStatefulSetForAllNamespaces: async () => ({ body: { items: [] } }),
+      listDaemonSetForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+  };
+
+  // Mock LocalStorage
+  const mockLocalStorage = {
+    store: async () => {},
+  };
+
+  // Mock Config
+  const mockConfig = {
+    apiKey: undefined,
+  };
+
+  const collector = new ResourceConfigurationPatternsCollector(
+    mockKubernetesClient as any,
+    mockLocalStorage as any,
+    null,
+    mockConfig as any
+  );
+
+  const data = await collector.collect();
+
+  // Verify collectionId format
+  assert.ok(data.collectionId.startsWith('coll_'), 'Collection ID should start with "coll_"');
+  assert.strictEqual(data.collectionId.length, 37, 'Collection ID should be 37 characters (coll_ + 32 hex chars)');
+  assert.match(data.collectionId, /^coll_[a-z0-9]{32}$/, 'Collection ID should match pattern');
+});
+
+test('ResourceConfigurationPatternsCollector - collect() includes timestamp', async () => {
+  const mockKubernetesClient = {
+    coreApi: {
+      listPodForAllNamespaces: async () => ({ body: { items: [] } }),
+      listServiceForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+    appsApi: {
+      listDeploymentForAllNamespaces: async () => ({ body: { items: [] } }),
+      listStatefulSetForAllNamespaces: async () => ({ body: { items: [] } }),
+      listDaemonSetForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+  };
+
+  const mockLocalStorage = { store: async () => {} };
+  const mockConfig = { apiKey: undefined };
+
+  const collector = new ResourceConfigurationPatternsCollector(
+    mockKubernetesClient as any,
+    mockLocalStorage as any,
+    null,
+    mockConfig as any
+  );
+
+  const data = await collector.collect();
+
+  // Verify timestamp is in ISO 8601 format
+  assert.ok(data.timestamp, 'Timestamp should exist');
+  const date = new Date(data.timestamp);
+  assert.ok(!isNaN(date.getTime()), 'Timestamp should be valid date');
+  assert.match(data.timestamp, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/, 'Timestamp should be ISO 8601 format');
+});
+
+test('ResourceConfigurationPatternsCollector - collect() processes pods', async () => {
+  const mockPods = [
+    {
+      metadata: { labels: { app: 'test' } },
+      spec: {
+        securityContext: { runAsNonRoot: true },
+        volumes: [{ name: 'vol1', configMap: { name: 'config' } }],
+        containers: [
+          {
+            name: 'container1',
+            resources: { requests: { cpu: '100m', memory: '128Mi' } },
+            imagePullPolicy: 'Always',
+            securityContext: { readOnlyRootFilesystem: true },
+          },
+        ],
+      },
+    },
+  ];
+
+  const mockKubernetesClient = {
+    coreApi: {
+      listPodForAllNamespaces: async () => ({ body: { items: mockPods } }),
+      listServiceForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+    appsApi: {
+      listDeploymentForAllNamespaces: async () => ({ body: { items: [] } }),
+      listStatefulSetForAllNamespaces: async () => ({ body: { items: [] } }),
+      listDaemonSetForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+  };
+
+  const mockLocalStorage = { store: async () => {} };
+  const mockConfig = { apiKey: undefined };
+
+  const collector = new ResourceConfigurationPatternsCollector(
+    mockKubernetesClient as any,
+    mockLocalStorage as any,
+    null,
+    mockConfig as any
+  );
+
+  const data = await collector.collect();
+
+  // Verify pod data was processed
+  assert.strictEqual(data.securityContexts.totalPods, 1, 'Should process 1 pod');
+  assert.strictEqual(data.securityContexts.totalContainers, 1, 'Should process 1 container');
+  assert.strictEqual(data.resourceLimitsRequests.containers.totalCount, 1, 'Should process container resources');
+  assert.strictEqual(data.imagePullPolicies.totalContainers, 1, 'Should process image pull policy');
+  assert.strictEqual(data.volumes.totalPods, 1, 'Should process volumes');
+});
+
+test('ResourceConfigurationPatternsCollector - collect() processes deployments', async () => {
+  const mockDeployments = [
+    {
+      metadata: { labels: { app: 'test' }, annotations: { version: '1.0' } },
+      spec: { replicas: 3 },
+    },
+    {
+      metadata: { labels: { app: 'test2' } },
+      spec: { replicas: 5 },
+    },
+  ];
+
+  const mockKubernetesClient = {
+    coreApi: {
+      listPodForAllNamespaces: async () => ({ body: { items: [] } }),
+      listServiceForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+    appsApi: {
+      listDeploymentForAllNamespaces: async () => ({ body: { items: mockDeployments } }),
+      listStatefulSetForAllNamespaces: async () => ({ body: { items: [] } }),
+      listDaemonSetForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+  };
+
+  const mockLocalStorage = { store: async () => {} };
+  const mockConfig = { apiKey: undefined };
+
+  const collector = new ResourceConfigurationPatternsCollector(
+    mockKubernetesClient as any,
+    mockLocalStorage as any,
+    null,
+    mockConfig as any
+  );
+
+  const data = await collector.collect();
+
+  // Verify deployment data was processed
+  assert.deepStrictEqual(data.replicaCounts.deployments, [3, 5], 'Should capture replica counts');
+  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.deployments, [1, 1], 'Should capture label counts');
+  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.deployments, [1, 0], 'Should capture annotation counts');
+});
+
+test('ResourceConfigurationPatternsCollector - collect() processes services', async () => {
+  const mockServices = [
+    {
+      metadata: { labels: { app: 'test' } },
+      spec: { type: 'ClusterIP', ports: [{ port: 80 }] },
+    },
+    {
+      metadata: {},
+      spec: { type: 'LoadBalancer', ports: [{ port: 80 }, { port: 443 }] },
+    },
+  ];
+
+  const mockKubernetesClient = {
+    coreApi: {
+      listPodForAllNamespaces: async () => ({ body: { items: [] } }),
+      listServiceForAllNamespaces: async () => ({ body: { items: mockServices } }),
+    },
+    appsApi: {
+      listDeploymentForAllNamespaces: async () => ({ body: { items: [] } }),
+      listStatefulSetForAllNamespaces: async () => ({ body: { items: [] } }),
+      listDaemonSetForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+  };
+
+  const mockLocalStorage = { store: async () => {} };
+  const mockConfig = { apiKey: undefined };
+
+  const collector = new ResourceConfigurationPatternsCollector(
+    mockKubernetesClient as any,
+    mockLocalStorage as any,
+    null,
+    mockConfig as any
+  );
+
+  const data = await collector.collect();
+
+  // Verify service data was processed
+  assert.strictEqual(data.services.totalServices, 2, 'Should process 2 services');
+  assert.strictEqual(data.services.serviceTypes.ClusterIP, 1, 'Should count ClusterIP services');
+  assert.strictEqual(data.services.serviceTypes.LoadBalancer, 1, 'Should count LoadBalancer services');
+  assert.deepStrictEqual(data.services.portsPerService, [1, 2], 'Should capture port counts');
+});
+
+test('ResourceConfigurationPatternsCollector - processCollection() stores data locally for free tier', async () => {
+  let storedPayload: any = null;
+
+  const mockKubernetesClient = {
+    coreApi: {
+      listPodForAllNamespaces: async () => ({ body: { items: [] } }),
+      listServiceForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+    appsApi: {
+      listDeploymentForAllNamespaces: async () => ({ body: { items: [] } }),
+      listStatefulSetForAllNamespaces: async () => ({ body: { items: [] } }),
+      listDaemonSetForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+  };
+
+  const mockLocalStorage = {
+    store: async (payload: any) => {
+      storedPayload = payload;
+    },
+  };
+
+  const mockConfig = { apiKey: undefined }; // Free tier
+
+  const collector = new ResourceConfigurationPatternsCollector(
+    mockKubernetesClient as any,
+    mockLocalStorage as any,
+    null,
+    mockConfig as any
+  );
+
+  const data = await collector.collect();
+  await collector.processCollection(data);
+
+  // Verify data was stored
+  assert.ok(storedPayload, 'Payload should be stored');
+  assert.strictEqual(storedPayload.version, 'v1.0.0', 'Payload version should be v1.0.0');
+  assert.strictEqual(storedPayload.type, 'resource-configuration-patterns', 'Payload type should be correct');
+  assert.deepStrictEqual(storedPayload.sanitization.rulesApplied, ['no-resource-names', 'aggregated-configuration-data'], 'Sanitization rules should be correct');
+});
+
+test('ResourceConfigurationPatternsCollector - processCollection() transmits data for pro tier', async () => {
+  let transmittedPayload: any = null;
+
+  const mockKubernetesClient = {
+    coreApi: {
+      listPodForAllNamespaces: async () => ({ body: { items: [] } }),
+      listServiceForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+    appsApi: {
+      listDeploymentForAllNamespaces: async () => ({ body: { items: [] } }),
+      listStatefulSetForAllNamespaces: async () => ({ body: { items: [] } }),
+      listDaemonSetForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+  };
+
+  const mockLocalStorage = {
+    store: async () => {
+      throw new Error('Should not store locally for pro tier');
+    },
+  };
+
+  const mockTransmissionClient = {
+    transmit: async (payload: any) => {
+      transmittedPayload = payload;
+    },
+  };
+
+  const mockConfig = { apiKey: 'test-api-key' }; // Pro tier
+
+  const collector = new ResourceConfigurationPatternsCollector(
+    mockKubernetesClient as any,
+    mockLocalStorage as any,
+    mockTransmissionClient as any,
+    mockConfig as any
+  );
+
+  const data = await collector.collect();
+  await collector.processCollection(data);
+
+  // Verify data was transmitted
+  assert.ok(transmittedPayload, 'Payload should be transmitted');
+  assert.strictEqual(transmittedPayload.type, 'resource-configuration-patterns', 'Payload type should be correct');
+});
+
+test('ResourceConfigurationPatternsCollector - processCollection() handles errors gracefully', async () => {
+  const mockKubernetesClient = {
+    coreApi: {
+      listPodForAllNamespaces: async () => ({ body: { items: [] } }),
+      listServiceForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+    appsApi: {
+      listDeploymentForAllNamespaces: async () => ({ body: { items: [] } }),
+      listStatefulSetForAllNamespaces: async () => ({ body: { items: [] } }),
+      listDaemonSetForAllNamespaces: async () => ({ body: { items: [] } }),
+    },
+  };
+
+  const mockLocalStorage = {
+    store: async () => {
+      throw new Error('Storage error');
+    },
+  };
+
+  const mockConfig = { apiKey: undefined };
+
+  const collector = new ResourceConfigurationPatternsCollector(
+    mockKubernetesClient as any,
+    mockLocalStorage as any,
+    null,
+    mockConfig as any
+  );
+
+  const data = await collector.collect();
+
+  // Should not throw - graceful degradation
+  await assert.doesNotReject(
+    async () => await collector.processCollection(data),
+    'processCollection should handle errors gracefully'
+  );
 });
 

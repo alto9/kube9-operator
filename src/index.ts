@@ -15,6 +15,7 @@ import { gracefulShutdown } from './shutdown/handler.js';
 import { CollectionScheduler } from './collection/scheduler.js';
 import { ClusterMetadataCollector } from './collection/collectors/cluster-metadata.js';
 import { ResourceInventoryCollector } from './collection/collectors/resource-inventory.js';
+import { ResourceConfigurationPatternsCollector } from './collection/collectors/resource-configuration-patterns.js';
 import { LocalStorage } from './collection/storage.js';
 import { TransmissionClient } from './collection/transmission.js';
 import { recordCollection } from './collection/metrics.js';
@@ -199,6 +200,41 @@ async function main() {
           // Record failed collection
           const durationSeconds = (Date.now() - startTime) / 1000;
           recordCollection('resource-inventory', 'failed', durationSeconds);
+          // Don't throw - scheduler will retry on next interval
+        }
+      }
+    );
+    
+    // Initialize resource configuration patterns collector
+    const resourceConfigurationPatternsCollector = new ResourceConfigurationPatternsCollector(
+      kubernetesClient,
+      localStorage,
+      transmissionClient,
+      config
+    );
+    
+    // Register resource configuration patterns collection task
+    collectionScheduler.register(
+      'resource-configuration-patterns',
+      config.resourceConfigurationPatternsIntervalSeconds,
+      3600,  // 1 hour minimum interval
+      3600,  // 0-1 hour random offset range
+      async () => {
+        const startTime = Date.now();
+        try {
+          const data = await resourceConfigurationPatternsCollector.collect();
+          await resourceConfigurationPatternsCollector.processCollection(data);
+          
+          // Record successful collection
+          const durationSeconds = (Date.now() - startTime) / 1000;
+          recordCollection('resource-configuration-patterns', 'success', durationSeconds);
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error('Resource configuration patterns collection failed', { error: errorMessage });
+          
+          // Record failed collection
+          const durationSeconds = (Date.now() - startTime) / 1000;
+          recordCollection('resource-configuration-patterns', 'failed', durationSeconds);
           // Don't throw - scheduler will retry on next interval
         }
       }
