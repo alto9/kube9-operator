@@ -3,7 +3,7 @@ story_id: add-workload-service-helpers
 session_id: resource-configuration-patterns
 feature_id: [resource-configuration-patterns-collection]
 spec_id: [resource-configuration-patterns-collection-spec]
-status: pending
+status: completed
 priority: high
 estimated_minutes: 20
 ---

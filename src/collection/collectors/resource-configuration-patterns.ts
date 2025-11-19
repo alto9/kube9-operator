@@ -462,3 +462,58 @@ export function processPodLabelsAnnotations(
   data.labelsAnnotations.annotationCounts.pods.push(annotationCount);
 }
 
+/**
+ * Processes labels and annotations from deployment or service metadata
+ * 
+ * @param data - Resource configuration patterns data to update
+ * @param resourceType - Type of resource ('deployments' or 'services')
+ * @param metadata - Resource metadata from Kubernetes API
+ */
+export function processLabelsAnnotations(
+  data: ResourceConfigurationPatternsData,
+  resourceType: 'deployments' | 'services',
+  metadata: k8s.V1ObjectMeta | undefined
+): void {
+  // Count labels
+  const labelCount = Object.keys(metadata?.labels || {}).length;
+  data.labelsAnnotations.labelCounts[resourceType].push(labelCount);
+  
+  // Count annotations
+  const annotationCount = Object.keys(metadata?.annotations || {}).length;
+  data.labelsAnnotations.annotationCounts[resourceType].push(annotationCount);
+}
+
+/**
+ * Processes service type and port configuration
+ * 
+ * @param data - Resource configuration patterns data to update
+ * @param serviceType - Service type from Kubernetes API
+ * @param ports - Service ports from Kubernetes API
+ */
+export function processServiceType(
+  data: ResourceConfigurationPatternsData,
+  serviceType: string | undefined,
+  ports: k8s.V1ServicePort[] | undefined
+): void {
+  // Default to ClusterIP if not specified
+  const type = serviceType || 'ClusterIP';
+  
+  // Increment service type counter
+  if (type === 'ClusterIP') {
+    data.services.serviceTypes.ClusterIP++;
+  } else if (type === 'NodePort') {
+    data.services.serviceTypes.NodePort++;
+  } else if (type === 'LoadBalancer') {
+    data.services.serviceTypes.LoadBalancer++;
+  } else if (type === 'ExternalName') {
+    data.services.serviceTypes.ExternalName++;
+  }
+  
+  // Record port count
+  const portCount = ports?.length || 0;
+  data.services.portsPerService.push(portCount);
+  
+  // Increment total services
+  data.services.totalServices++;
+}
+

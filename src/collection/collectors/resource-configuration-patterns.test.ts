@@ -18,6 +18,8 @@ import {
   processProbes,
   processVolumes,
   processPodLabelsAnnotations,
+  processLabelsAnnotations,
+  processServiceType,
 } from './resource-configuration-patterns.js';
 
 // Helper function to create a full ResourceConfigurationPatternsData structure for testing
@@ -764,5 +766,178 @@ test('processPodLabelsAnnotations - handles multiple pods', () => {
   
   assert.deepStrictEqual(data.labelsAnnotations.labelCounts.pods, [2, 1, 0]);
   assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.pods, [1, 0, 0]);
+});
+
+// processLabelsAnnotations tests
+test('processLabelsAnnotations - counts labels and annotations for deployments', () => {
+  const data = createTestData();
+  
+  processLabelsAnnotations(data, 'deployments', {
+    labels: {
+      app: 'myapp',
+      version: 'v1',
+      environment: 'prod',
+    },
+    annotations: {
+      'deployment.kubernetes.io/revision': '3',
+      'kubectl.kubernetes.io/last-applied-configuration': '{}',
+    },
+  });
+  
+  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.deployments, [3]);
+  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.deployments, [2]);
+});
+
+test('processLabelsAnnotations - counts labels and annotations for services', () => {
+  const data = createTestData();
+  
+  processLabelsAnnotations(data, 'services', {
+    labels: {
+      app: 'myapp',
+      tier: 'backend',
+    },
+    annotations: {
+      'service.beta.kubernetes.io/aws-load-balancer-type': 'nlb',
+    },
+  });
+  
+  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.services, [2]);
+  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.services, [1]);
+});
+
+test('processLabelsAnnotations - handles undefined metadata', () => {
+  const data = createTestData();
+  
+  processLabelsAnnotations(data, 'deployments', undefined);
+  
+  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.deployments, [0]);
+  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.deployments, [0]);
+});
+
+test('processLabelsAnnotations - handles empty labels and annotations', () => {
+  const data = createTestData();
+  
+  processLabelsAnnotations(data, 'services', {
+    labels: {},
+    annotations: {},
+  });
+  
+  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.services, [0]);
+  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.services, [0]);
+});
+
+test('processLabelsAnnotations - handles multiple resources', () => {
+  const data = createTestData();
+  
+  processLabelsAnnotations(data, 'deployments', {
+    labels: { app: 'app1', version: 'v1' },
+    annotations: { note: 'test' },
+  });
+  processLabelsAnnotations(data, 'deployments', {
+    labels: { app: 'app2' },
+  });
+  processLabelsAnnotations(data, 'services', {
+    labels: { app: 'svc1', tier: 'backend', component: 'api' },
+  });
+  
+  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.deployments, [2, 1]);
+  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.deployments, [1, 0]);
+  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.services, [3]);
+});
+
+// processServiceType tests
+test('processServiceType - counts ClusterIP service type', () => {
+  const data = createTestData();
+  
+  processServiceType(data, 'ClusterIP', [
+    { port: 80, targetPort: 8080 },
+    { port: 443, targetPort: 8443 },
+  ]);
+  
+  assert.strictEqual(data.services.serviceTypes.ClusterIP, 1);
+  assert.strictEqual(data.services.serviceTypes.NodePort, 0);
+  assert.strictEqual(data.services.serviceTypes.LoadBalancer, 0);
+  assert.strictEqual(data.services.serviceTypes.ExternalName, 0);
+  assert.deepStrictEqual(data.services.portsPerService, [2]);
+  assert.strictEqual(data.services.totalServices, 1);
+});
+
+test('processServiceType - counts NodePort service type', () => {
+  const data = createTestData();
+  
+  processServiceType(data, 'NodePort', [
+    { port: 80, targetPort: 8080, nodePort: 30080 },
+  ]);
+  
+  assert.strictEqual(data.services.serviceTypes.NodePort, 1);
+  assert.deepStrictEqual(data.services.portsPerService, [1]);
+  assert.strictEqual(data.services.totalServices, 1);
+});
+
+test('processServiceType - counts LoadBalancer service type', () => {
+  const data = createTestData();
+  
+  processServiceType(data, 'LoadBalancer', [
+    { port: 443, targetPort: 8443 },
+  ]);
+  
+  assert.strictEqual(data.services.serviceTypes.LoadBalancer, 1);
+  assert.deepStrictEqual(data.services.portsPerService, [1]);
+  assert.strictEqual(data.services.totalServices, 1);
+});
+
+test('processServiceType - counts ExternalName service type', () => {
+  const data = createTestData();
+  
+  processServiceType(data, 'ExternalName', undefined);
+  
+  assert.strictEqual(data.services.serviceTypes.ExternalName, 1);
+  assert.deepStrictEqual(data.services.portsPerService, [0]);
+  assert.strictEqual(data.services.totalServices, 1);
+});
+
+test('processServiceType - defaults to ClusterIP when undefined', () => {
+  const data = createTestData();
+  
+  processServiceType(data, undefined, [
+    { port: 80, targetPort: 8080 },
+  ]);
+  
+  assert.strictEqual(data.services.serviceTypes.ClusterIP, 1);
+  assert.deepStrictEqual(data.services.portsPerService, [1]);
+  assert.strictEqual(data.services.totalServices, 1);
+});
+
+test('processServiceType - handles services with no ports', () => {
+  const data = createTestData();
+  
+  processServiceType(data, 'ClusterIP', undefined);
+  
+  assert.deepStrictEqual(data.services.portsPerService, [0]);
+  assert.strictEqual(data.services.totalServices, 1);
+});
+
+test('processServiceType - handles services with empty ports array', () => {
+  const data = createTestData();
+  
+  processServiceType(data, 'ClusterIP', []);
+  
+  assert.deepStrictEqual(data.services.portsPerService, [0]);
+  assert.strictEqual(data.services.totalServices, 1);
+});
+
+test('processServiceType - handles multiple services', () => {
+  const data = createTestData();
+  
+  processServiceType(data, 'ClusterIP', [{ port: 80, targetPort: 8080 }]);
+  processServiceType(data, 'NodePort', [{ port: 80, targetPort: 8080 }, { port: 443, targetPort: 8443 }]);
+  processServiceType(data, 'LoadBalancer', [{ port: 443, targetPort: 8443 }]);
+  processServiceType(data, undefined, undefined);
+  
+  assert.strictEqual(data.services.serviceTypes.ClusterIP, 2); // One explicit, one default
+  assert.strictEqual(data.services.serviceTypes.NodePort, 1);
+  assert.strictEqual(data.services.serviceTypes.LoadBalancer, 1);
+  assert.deepStrictEqual(data.services.portsPerService, [1, 2, 1, 0]);
+  assert.strictEqual(data.services.totalServices, 4);
 });
 
