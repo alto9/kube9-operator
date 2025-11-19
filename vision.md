@@ -31,7 +31,7 @@ kube9-operator will become the **standard way for clusters to participate in the
 **Medium-Term (1-2 years)**
 - Complete remaining data collectors (performance metrics, config patterns, security posture)
 - Support for multi-cluster federation and management
-- **Native GitOps with Application CRD**: Replace ArgoCD complexity with integrated GitOps
+- **ArgoCD Integration**: Seamless integration with ArgoCD for enhanced drift detection and GitOps intelligence
 - Advanced health checks and predictive analytics
 
 **Long-Term (2+ years)**
@@ -90,64 +90,53 @@ kube9-operator will become the **standard way for clusters to participate in the
 - **vs. Cloud-Specific Operators**: Works with any cluster vs. cloud-specific solutions
 - **vs. Generic Operators**: Purpose-built for kube9 ecosystem vs. generic functionality
 
-## GitOps Vision: Application CRD
+## ArgoCD Integration Vision
 
-### The GitOps Revolution for kube9
+### Making ArgoCD Smarter with AI
 
-**Problem**: Teams want GitOps capabilities but ArgoCD/Flux introduce complexity with separate UIs, steep learning curves, and additional operational overhead.
+**Opportunity**: ArgoCD is the market-leading GitOps solution, deployed in production clusters worldwide. However, users struggle with understanding drift causes, troubleshooting deployment failures, and optimizing GitOps configurations. ArgoCD provides excellent deployment mechanics but lacks intelligent insights.
 
-**Solution**: Native GitOps built directly into the kube9 operator through an Application CRD that provides continuous deployment with drift detection and correction.
+**Solution**: Seamless integration with ArgoCD through the kube9 operator to provide enhanced drift detection visualization, AI-powered troubleshooting recommendations, and intelligent insights based on GitOps deployment patterns.
 
-### Application CRD Capabilities
+### Integration Capabilities
 
-1. **Simple Git Integration**: Point to any git repository, branch, or commit
-2. **Automatic Drift Detection**: Continuously monitors cluster state vs. git source
-3. **Auto-Correction**: Automatically syncs drift back to desired state
-4. **VS Code Native**: Full management through kube9 VS Code extension
-5. **Security First**: Uses operator's zero-trust outbound communication model
+1. **Drift Detection Enhancement**: Monitor and visualize ArgoCD-detected drift with context and root cause analysis
+2. **AI-Powered Troubleshooting**: Analyze deployment failures and provide actionable recommendations
+3. **VS Code Native Views**: View ArgoCD Applications and sync status directly in VS Code
+4. **Conditional Integration**: Automatically detects ArgoCD presence - works with or without it
+5. **Free Tier Feature**: ArgoCD integration available in free tier to drive adoption
 
-### Key Differentiators from ArgoCD
+### How It Works
 
-- **No Separate UI**: Everything managed through VS Code
-- **Zero Additional Infrastructure**: Leverages existing operator
-- **Simplified Configuration**: Focus on common use cases over complex features
-- **Integrated Security**: Same security model as the operator
-- **Pro Tier Integration**: GitOps capabilities unlocked with Pro subscription
+**Detection Phase**:
+- Operator detects ArgoCD installation in cluster
+- Monitors ArgoCD Applications and their sync status
+- Collects drift information and deployment events
 
-### Technical Architecture
+**Enhancement Phase (Free Tier)**:
+- Visualize ArgoCD data in VS Code with native UI
+- View sync status, drift alerts, and deployment history
+- Access basic drift detection summaries
 
-```yaml
-apiVersion: kube9.io/v1alpha1
-kind: Application
-metadata:
-  name: my-app
-  namespace: default
-spec:
-  source:
-    repoURL: https://github.com/myorg/my-app
-    path: manifests/
-    targetRevision: main
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-  destination:
-    namespace: default
-```
+**Intelligence Phase (Pro Tier - Future)**:
+- AI analysis of drift patterns and root causes
+- Predictive deployment failure detection
+- Configuration optimization recommendations
+- GitOps best practice suggestions
 
 ### User Experience
 
 **For Developers**:
-- Create Application CRDs directly from VS Code
-- View sync status and drift in real-time
-- Manual sync control when needed
-- Integrated with existing kube9 cluster management
+- View ArgoCD Applications directly in VS Code kube9 tree view
+- See drift alerts and sync status without leaving IDE
+- Get AI-powered recommendations for deployment issues (Pro tier)
+- Unified interface for both cluster resources and GitOps deployments
 
 **For Platform Teams**:
-- Centralized GitOps management across all clusters
-- Consistent deployment patterns
-- Audit trails and compliance reporting
-- Multi-cluster application management
+- Centralized visibility across all clusters with ArgoCD
+- Drift pattern analytics across multiple applications
+- Troubleshooting insights reduce MTTR
+- GitOps configuration optimization recommendations
 
 ## Target Outcomes
 
@@ -274,7 +263,7 @@ The kube9-operator manages data through four distinct phases:
 ### Advanced Capabilities
 - Multi-cluster federation and management
 - Complete remaining data collectors (performance metrics, config patterns, security)
-- **Native GitOps Application CRD**: Integrated GitOps without external tools
+- **Enhanced ArgoCD Integration**: Deep integration with ArgoCD for drift intelligence and AI-powered GitOps insights
 - Edge cluster and air-gapped environment support
 - Custom metrics and health check plugins
 
