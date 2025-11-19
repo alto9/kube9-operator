@@ -3,7 +3,7 @@ story_id: register-collector-with-scheduler
 session_id: resource-configuration-patterns
 feature_id: [resource-configuration-patterns-collection]
 spec_id: [resource-configuration-patterns-collection-spec]
-status: pending
+status: completed
 priority: high
 estimated_minutes: 20
 ---
@@ -35,13 +35,13 @@ The collector must be registered with the scheduler to run on the configured 12-
 
 ## Acceptance Criteria
 
-- [ ] Collector imported from `./collection/collectors/resource-configuration-patterns.js`
-- [ ] Collector instantiated with all required dependencies
-- [ ] Scheduler registration uses correct intervals (12h default, 1h minimum, 1h offset range)
-- [ ] Callback properly chains collect() and processCollection()
-- [ ] Registration follows existing pattern from other collectors
-- [ ] TypeScript compilation succeeds
-- [ ] Operator starts without errors
+- [x] Collector imported from `./collection/collectors/resource-configuration-patterns.js`
+- [x] Collector instantiated with all required dependencies
+- [x] Scheduler registration uses correct intervals (12h default, 1h minimum, 1h offset range)
+- [x] Callback properly chains collect() and processCollection()
+- [x] Registration follows existing pattern from other collectors
+- [x] TypeScript compilation succeeds
+- [x] Operator starts without errors
 
 ## Dependencies
 
