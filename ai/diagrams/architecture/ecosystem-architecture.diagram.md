@@ -31,15 +31,16 @@ This diagram shows how the kube9 operator fits into the overall kube9 ecosystem 
 ]
 
 [<saas>Portal|
-  portal.kube9.dev
+  app.kube9.io
   ---
   User Registration|
   API Key Management|
-  Billing
+  Billing|
+  Helm Charts
 ]
 
 [<saas>Server|
-  api.kube9.dev
+  api.kube9.io
   ---
   API Key Validation|
   Operator Registration|
@@ -92,7 +93,7 @@ This diagram shows how the kube9 operator fits into the overall kube9 ecosystem 
 
 ### Developer (User)
 - Installs VS Code extension from marketplace
-- Registers at portal.kube9.dev for Pro features
+- Registers at app.kube9.io for Pro features
 - Installs operator in their Kubernetes cluster via Helm
 
 ### VS Code Extension
@@ -116,11 +117,12 @@ This diagram shows how the kube9 operator fits into the overall kube9 ecosystem 
 - Serves rich web UIs to extension
 - Provides AI-powered features
 
-### portal.kube9.dev (SaaS)
+### app.kube9.io (SaaS Portal)
 - User registration and authentication
 - API key generation and management
 - Billing and subscription management
 - Documentation and support
+- Helm chart hosting (charts.kube9.io aliases app.kube9.io)
 
 ## Data Flow
 
