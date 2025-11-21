@@ -1,4 +1,30 @@
 /**
+ * Collection statistics for operator status
+ */
+export interface CollectionStats {
+  /**
+   * Total number of successful collections across all types
+   */
+  totalSuccessCount: number;
+  
+  /**
+   * Total number of failed collections across all types
+   */
+  totalFailureCount: number;
+  
+  /**
+   * Number of collections currently stored locally
+   */
+  collectionsStoredCount: number;
+  
+  /**
+   * ISO 8601 timestamp of most recent successful collection
+   * null if no collections have succeeded yet
+   */
+  lastSuccessTime: string | null;
+}
+
+/**
  * Operator Status Model
  * Represents the current state and health of the kube9 operator
  */
@@ -44,6 +70,12 @@ export interface OperatorStatus {
   registered: boolean;
   
   /**
+   * Whether an API key is configured
+   * true when API key is present (regardless of registration status)
+   */
+  apiKeyConfigured: boolean;
+  
+  /**
    * Error message if health is degraded or unhealthy
    * null when health is healthy
    */
@@ -55,6 +87,12 @@ export interface OperatorStatus {
    * @example "cls_abc123def456"
    */
   clusterId?: string;
+  
+  /**
+   * Collection statistics
+   * Tracks data collection activity and status
+   */
+  collectionStats: CollectionStats;
 }
 
 /**

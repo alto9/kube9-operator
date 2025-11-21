@@ -5,6 +5,7 @@ import { stopHealthServer } from '../health/server.js';
 import { getConfig } from '../config/loader.js';
 import type { OperatorStatus } from '../status/types.js';
 import { logger } from '../logging/logger.js';
+import { collectionStatsTracker } from '../collection/stats-tracker.js';
 
 /**
  * Operator version (semver)
@@ -82,6 +83,7 @@ export async function gracefulShutdown(
       : { isRegistered: false, clusterId: undefined, consecutiveFailures: 0 };
 
     // Build final status indicating shutdown
+    const collectionStats = collectionStatsTracker.getStats();
     const finalStatus: OperatorStatus = {
       mode: config.apiKey ? "enabled" : "operated",
       tier: config.apiKey && registrationState.isRegistered ? "pro" : "free",
@@ -89,7 +91,14 @@ export async function gracefulShutdown(
       health: "unhealthy",
       lastUpdate: new Date().toISOString(),
       registered: registrationState.isRegistered,
+      apiKeyConfigured: !!config.apiKey,
       error: "Shutting down",
+      collectionStats: {
+        totalSuccessCount: collectionStats.totalSuccessCount,
+        totalFailureCount: collectionStats.totalFailureCount,
+        collectionsStoredCount: collectionStats.collectionsStoredCount,
+        lastSuccessTime: collectionStats.lastSuccessTime
+      }
     };
 
     // Include clusterId if registered

@@ -4,6 +4,7 @@ import { calculateStatus } from './calculator.js';
 import type { OperatorStatus, RegistrationState } from './types.js';
 import type { RegistrationManager } from '../registration/manager.js';
 import { logger } from '../logging/logger.js';
+import { collectionStatsTracker } from '../collection/stats-tracker.js';
 
 /**
  * Default registration state when registration manager is not available
@@ -183,10 +184,15 @@ export class StatusWriter {
         : DEFAULT_REGISTRATION_STATE;
       
       const canWriteConfigMap = true; // Assume we can write unless proven otherwise
+      
+      // Get current collection statistics
+      const collectionStats = collectionStatsTracker.getStats();
+      
       const status = calculateStatus(
         registrationState,
         this.lastWriteError,
-        canWriteConfigMap
+        canWriteConfigMap,
+        collectionStats
       );
 
       // Convert status to JSON string

@@ -1,5 +1,5 @@
 import { getConfig } from '../config/loader.js';
-import type { OperatorStatus, RegistrationState } from './types.js';
+import type { OperatorStatus, RegistrationState, CollectionStats } from './types.js';
 
 /**
  * Operator version (semver)
@@ -27,12 +27,19 @@ const DEFAULT_REGISTRATION_STATE: RegistrationState = {
  * @param registrationState - Optional registration state (defaults to unregistered)
  * @param lastError - Optional error message from last operation
  * @param canWriteConfigMap - Whether the operator can write to ConfigMap (defaults to true)
+ * @param collectionStats - Optional collection statistics (defaults to zero stats)
  * @returns OperatorStatus object with current operator state
  */
 export function calculateStatus(
   registrationState: RegistrationState = DEFAULT_REGISTRATION_STATE,
   lastError: string | null = null,
-  canWriteConfigMap: boolean = true
+  canWriteConfigMap: boolean = true,
+  collectionStats: CollectionStats = {
+    totalSuccessCount: 0,
+    totalFailureCount: 0,
+    collectionsStoredCount: 0,
+    lastSuccessTime: null
+  }
 ): OperatorStatus {
   const config = getConfig();
   const { isRegistered, clusterId, consecutiveFailures = 0 } = registrationState;
@@ -88,7 +95,14 @@ export function calculateStatus(
     health,
     lastUpdate: new Date().toISOString(),
     registered: isRegistered,
+    apiKeyConfigured: !!config.apiKey,
     error,
+    collectionStats: {
+      totalSuccessCount: collectionStats.totalSuccessCount,
+      totalFailureCount: collectionStats.totalFailureCount,
+      collectionsStoredCount: collectionStats.collectionsStoredCount,
+      lastSuccessTime: collectionStats.lastSuccessTime
+    }
   };
   
   // Include clusterId only when registered (pro tier)

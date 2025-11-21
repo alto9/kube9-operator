@@ -19,6 +19,7 @@ import { ResourceConfigurationPatternsCollector } from './collection/collectors/
 import { LocalStorage } from './collection/storage.js';
 import { TransmissionClient } from './collection/transmission.js';
 import { recordCollection } from './collection/metrics.js';
+import { collectionStatsTracker } from './collection/stats-tracker.js';
 import { logger } from './logging/logger.js';
 
 logger.info('kube9-operator starting...');
@@ -158,6 +159,7 @@ async function main() {
           // Record successful collection
           const durationSeconds = (Date.now() - startTime) / 1000;
           recordCollection('cluster-metadata', 'success', durationSeconds);
+          collectionStatsTracker.recordSuccess('cluster-metadata');
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           logger.error('Cluster metadata collection failed', { error: errorMessage });
@@ -165,6 +167,7 @@ async function main() {
           // Record failed collection
           const durationSeconds = (Date.now() - startTime) / 1000;
           recordCollection('cluster-metadata', 'failed', durationSeconds);
+          collectionStatsTracker.recordFailure('cluster-metadata');
           // Don't throw - scheduler will retry on next interval
         }
       }
@@ -193,6 +196,7 @@ async function main() {
           // Record successful collection
           const durationSeconds = (Date.now() - startTime) / 1000;
           recordCollection('resource-inventory', 'success', durationSeconds);
+          collectionStatsTracker.recordSuccess('resource-inventory');
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           logger.error('Resource inventory collection failed', { error: errorMessage });
@@ -200,6 +204,7 @@ async function main() {
           // Record failed collection
           const durationSeconds = (Date.now() - startTime) / 1000;
           recordCollection('resource-inventory', 'failed', durationSeconds);
+          collectionStatsTracker.recordFailure('resource-inventory');
           // Don't throw - scheduler will retry on next interval
         }
       }
@@ -228,6 +233,7 @@ async function main() {
           // Record successful collection
           const durationSeconds = (Date.now() - startTime) / 1000;
           recordCollection('resource-configuration-patterns', 'success', durationSeconds);
+          collectionStatsTracker.recordSuccess('resource-configuration-patterns');
         } catch (error) {
           const errorMessage = error instanceof Error ? error.message : String(error);
           logger.error('Resource configuration patterns collection failed', { error: errorMessage });
@@ -235,6 +241,7 @@ async function main() {
           // Record failed collection
           const durationSeconds = (Date.now() - startTime) / 1000;
           recordCollection('resource-configuration-patterns', 'failed', durationSeconds);
+          collectionStatsTracker.recordFailure('resource-configuration-patterns');
           // Don't throw - scheduler will retry on next interval
         }
       }
