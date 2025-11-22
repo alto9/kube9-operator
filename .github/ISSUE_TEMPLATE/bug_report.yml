@@ -1,0 +1,131 @@
+name: Bug Report
+description: Report a bug or unexpected behavior in kube9-operator
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the form below to help us understand and fix the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: What went wrong?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this issue?
+      placeholder: |
+        1. Install operator with helm install...
+        2. Check operator logs
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+      placeholder: I expected the operator to write status to ConfigMap...
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+      placeholder: Instead, the operator crashed with...
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Operator Version
+      description: What version of kube9-operator are you using?
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: k8s-version
+    attributes:
+      label: Kubernetes Version
+      description: What version of Kubernetes are you using?
+      placeholder: "1.28.0"
+    validations:
+      required: true
+
+  - type: input
+    id: node-version
+    attributes:
+      label: Node.js Version
+      description: What version of Node.js is the operator running on? (if known)
+      placeholder: "22.0.0"
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      description: What OS is your Kubernetes cluster running on?
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+      default: 0
+
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Operator Tier
+      description: Which tier is the operator running in?
+      options:
+        - Free Tier (no API key)
+        - Pro Tier (with API key)
+      default: 0
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Operator Logs
+      description: Please paste relevant logs from the operator pod
+      render: shell
+      placeholder: |
+        kubectl logs -n kube9-system deployment/kube9-operator
+        [2025-01-01 10:00:00] Error: ...
+
+  - type: textarea
+    id: status
+    attributes:
+      label: Status ConfigMap
+      description: Contents of kube9-operator-status ConfigMap (if relevant)
+      render: yaml
+      placeholder: |
+        kubectl get configmap kube9-operator-status -n kube9-system -o yaml
+
+  - type: textarea
+    id: helm-values
+    attributes:
+      label: Helm Values
+      description: What Helm values were used for installation? (redact API keys)
+      render: yaml
+      placeholder: |
+        apiKey: "***"
+        logLevel: "info"
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context about the problem, cluster info, etc.
+

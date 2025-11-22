@@ -1,0 +1,75 @@
+name: Feature Request
+description: Suggest a new feature or enhancement for kube9-operator
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please fill out the form below to help us understand your needs.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem does this feature solve? What pain point does it address?
+      placeholder: I need the operator to collect additional metrics...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: How would you like this feature to work?
+      placeholder: I would like the operator to collect performance metrics every 15 minutes...
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: What other solutions or workarounds have you tried or considered?
+      placeholder: |
+        - Currently using Prometheus operator
+        - Considered custom collectors
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority
+      description: How important is this feature to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would be helpful
+        - High - Important for my workflow
+        - Critical - Blocking my use of kube9
+      default: 1
+
+  - type: textarea
+    id: use-cases
+    attributes:
+      label: Use Cases
+      description: Describe specific scenarios where this feature would be useful
+      placeholder: |
+        - When monitoring cluster health, I need performance metrics
+        - When troubleshooting issues, I need detailed resource usage data
+
+  - type: dropdown
+    id: tier
+    attributes:
+      label: Tier
+      description: Should this feature be available in Free tier, Pro tier, or both?
+      options:
+        - Free Tier
+        - Pro Tier
+        - Both
+      default: 2
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any mockups, examples, or additional details
+

@@ -483,12 +483,37 @@ kube9-operator/
 
 ## Contributing
 
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for details on:
+
+- How to set up your development environment
+- Local development with minikube
+- Our code style and conventions
+- How to submit pull requests
+- Testing and deployment
+
 This project uses [Forge](https://github.com/alto9/forge) for structured context engineering:
 
 1. Review design docs in `ai/` folder
 2. Check implementation stories in `ai/sessions/mvp/tickets/`
 3. Follow specs and contexts for implementation guidance
 4. Update story status as work progresses
+
+### Quick Start for Contributors
+
+```bash
+# Fork and clone
+git clone https://github.com/alto9/kube9-operator.git
+cd kube9-operator
+
+# Install dependencies
+npm install
+
+# Start minikube
+./scripts/dev-minikube.sh
+
+# Run operator locally with auto-reload
+npm run dev:watch
+```
 
 ## License
 
@@ -497,8 +522,11 @@ MIT License - see [LICENSE](LICENSE) file for details
 ## Support
 
 - **Documentation**: https://docs.kube9.dev
-- **Issues**: https://github.com/alto9/kube9-operator/issues
-- **Discussions**: https://github.com/alto9/kube9/discussions
+- **GitHub Issues**: https://github.com/alto9/kube9-operator/issues - Report bugs, request features
+- **GitHub Discussions**: https://github.com/alto9/kube9-operator/discussions - Ask questions, share ideas
+- **Contributing Guide**: [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute
+- **Security Policy**: [SECURITY.md](SECURITY.md) - Security reporting
+- **Code of Conduct**: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - Community guidelines
 - **Portal Support**: https://portal.kube9.dev/support
 
 ---

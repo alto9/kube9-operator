@@ -1,0 +1,9 @@
+blank_issues_enabled: false
+contact_links:
+  - name: GitHub Discussions
+    url: https://github.com/alto9/kube9-operator/discussions
+    about: Ask questions, share ideas, and discuss kube9-operator with the community
+  - name: Feature Roadmap
+    url: https://github.com/alto9/kube9-operator/issues
+    about: View planned features and vote on what to build next
+
