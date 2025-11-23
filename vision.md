@@ -394,6 +394,12 @@ Each insight contains:
 - Edge cluster and air-gapped environment support
 - Custom metrics and health check plugins
 
+### UI Access Points
+- **VS Code Extension**: Primary interface for VS Code users (kube9-vscode)
+- **Web UI**: Browser-based interface for non-VSCode users (kube9-ui - separate open source project)
+- Both interfaces read from OperatorStatus CRD to display insights and cluster information
+- Operator remains the core - interfaces are access points to operator outputs
+
 ### Ecosystem Integration
 - Integration with other Kubernetes operators
 - Support for operator marketplace
