@@ -3,7 +3,7 @@ story_id: extend-operator-status-interface
 session_id: argocd-awareness
 feature_id: [argocd-awareness]
 spec_id: [argocd-detection-spec]
-status: pending
+status: completed
 priority: high
 estimated_minutes: 10
 ---
@@ -56,11 +56,11 @@ The OperatorStatus interface defines the structure of status data exposed via Co
 
 ## Acceptance Criteria
 
-- [ ] OperatorStatus interface includes argocd field
-- [ ] ArgoCDStatus interface is properly typed
-- [ ] All fields use correct TypeScript types (boolean, string | null, string)
-- [ ] Interface follows existing code style and conventions
-- [ ] TypeScript compilation succeeds without errors
+- [x] OperatorStatus interface includes argocd field
+- [x] ArgoCDStatus interface is properly typed
+- [x] All fields use correct TypeScript types (boolean, string | null, string)
+- [x] Interface follows existing code style and conventions
+- [x] TypeScript compilation succeeds without errors
 
 ## Dependencies
 

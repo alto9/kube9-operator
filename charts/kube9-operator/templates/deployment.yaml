@@ -56,6 +56,23 @@ spec:
           value: {{ .Values.metrics.intervals.resourceInventory | default 21600 | quote }}
         - name: RESOURCE_CONFIGURATION_PATTERNS_INTERVAL_SECONDS
           value: {{ .Values.metrics.intervals.resourceConfigurationPatterns | default 43200 | quote }}
+        # ArgoCD configuration
+        - name: ARGOCD_AUTO_DETECT
+          value: {{ .Values.argocd.autoDetect | quote }}
+        {{- if .Values.argocd.enabled }}
+        - name: ARGOCD_ENABLED
+          value: {{ .Values.argocd.enabled | quote }}
+        {{- end }}
+        {{- if .Values.argocd.namespace }}
+        - name: ARGOCD_NAMESPACE
+          value: {{ .Values.argocd.namespace | quote }}
+        {{- end }}
+        {{- if .Values.argocd.selector }}
+        - name: ARGOCD_SELECTOR
+          value: {{ .Values.argocd.selector | quote }}
+        {{- end }}
+        - name: ARGOCD_DETECTION_INTERVAL
+          value: {{ .Values.argocd.detectionInterval | default 6 | quote }}
         {{- if .Values.apiKey }}
         - name: API_KEY
           valueFrom:

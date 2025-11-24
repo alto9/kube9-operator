@@ -38,6 +38,23 @@ reregistrationIntervalHours: 24
 # kube9-server URL (for pro tier)
 serverUrl: "https://api.kube9.dev"
 
+# ArgoCD integration configuration
+argocd:
+  # Enable automatic ArgoCD detection (default: true)
+  autoDetect: true
+  
+  # Explicitly enable or disable ArgoCD integration (optional)
+  # enabled: true
+  
+  # Custom namespace where ArgoCD is installed (default: "argocd")
+  # namespace: "argocd"
+  
+  # Custom label selector for ArgoCD server deployment (optional)
+  # selector: "app.kubernetes.io/name=argocd-server"
+  
+  # Detection check interval in hours (default: 6)
+  detectionInterval: 6
+
 # Collection interval configuration (for testing/debugging)
 # The operator enforces minimum intervals to prevent abuse
 metrics:

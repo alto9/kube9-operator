@@ -2,7 +2,7 @@
 task_id: update-operator-readme
 session_id: argocd-awareness
 type: documentation
-status: pending
+status: completed
 priority: low
 ---
 

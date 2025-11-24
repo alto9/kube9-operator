@@ -2,6 +2,32 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
+    "argocd": {
+      "type": "object",
+      "properties": {
+        "autoDetect": {
+          "type": "boolean",
+          "default": true
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "namespace": {
+          "type": "string",
+          "default": "argocd"
+        },
+        "selector": {
+          "type": "string",
+          "default": "app.kubernetes.io/name=argocd-server"
+        },
+        "detectionInterval": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 24,
+          "default": 6
+        }
+      }
+    },
     "metrics": {
       "type": "object",
       "description": "Collection metrics configuration",

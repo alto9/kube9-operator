@@ -3,7 +3,7 @@ story_id: add-argocd-helm-config
 session_id: argocd-awareness
 feature_id: [argocd-awareness]
 spec_id: [argocd-detection-spec]
-status: pending
+status: completed
 priority: high
 estimated_minutes: 15
 ---
@@ -76,12 +76,12 @@ This is the first step in implementing ArgoCD awareness. We need to define the c
 
 ## Acceptance Criteria
 
-- [ ] values.yaml contains complete argocd configuration section with comments
-- [ ] All configuration fields have sensible defaults
-- [ ] values.schema.json validates argocd configuration
-- [ ] detectionInterval is constrained between 1-24 hours
-- [ ] Schema validates boolean, string, and integer types correctly
-- [ ] helm lint passes with new configuration
+- [x] values.yaml contains complete argocd configuration section with comments
+- [x] All configuration fields have sensible defaults
+- [x] values.schema.json validates argocd configuration
+- [x] detectionInterval is constrained between 1-24 hours
+- [x] Schema validates boolean, string, and integer types correctly
+- [x] helm lint passes with new configuration
 
 ## Dependencies
 

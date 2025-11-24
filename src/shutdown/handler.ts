@@ -1,11 +1,13 @@
 import type { StatusWriter } from '../status/writer.js';
 import type { RegistrationManager } from '../registration/manager.js';
 import type { CollectionScheduler } from '../collection/scheduler.js';
+import type { ArgoCDDetectionManager } from '../argocd/detection-manager.js';
 import { stopHealthServer } from '../health/server.js';
 import { getConfig } from '../config/loader.js';
 import type { OperatorStatus } from '../status/types.js';
 import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
+import { argocdStatusTracker } from '../argocd/state.js';
 
 /**
  * Operator version (semver)
@@ -27,7 +29,7 @@ let isShuttingDown = false;
  * Gracefully shuts down the operator
  * 
  * Handles SIGTERM and SIGINT signals by:
- * 1. Stopping all background services (collection scheduler, status writer, registration manager, health server)
+ * 1. Stopping all background services (collection scheduler, ArgoCD detection manager, status writer, registration manager, health server)
  * 2. Writing a final status update indicating shutdown
  * 3. Exiting cleanly with code 0
  * 
@@ -36,11 +38,13 @@ let isShuttingDown = false;
  * @param statusWriter - Status writer instance to stop and use for final status update
  * @param registrationManager - Optional registration manager instance to stop
  * @param collectionScheduler - Optional collection scheduler instance to stop
+ * @param argoCDDetectionManager - Optional ArgoCD detection manager instance to stop
  */
 export async function gracefulShutdown(
   statusWriter: StatusWriter,
   registrationManager: RegistrationManager | null,
-  collectionScheduler: CollectionScheduler | null
+  collectionScheduler: CollectionScheduler | null,
+  argoCDDetectionManager: ArgoCDDetectionManager | null
 ): Promise<void> {
   // Prevent multiple shutdown attempts
   if (isShuttingDown) {
@@ -61,6 +65,11 @@ export async function gracefulShutdown(
     // Stop collection scheduler if present (clears all collection timers)
     if (collectionScheduler) {
       collectionScheduler.stop();
+    }
+
+    // Stop ArgoCD detection manager if present (clears periodic detection interval)
+    if (argoCDDetectionManager) {
+      argoCDDetectionManager.stop();
     }
 
     // Stop status writer (clears interval)
@@ -84,6 +93,7 @@ export async function gracefulShutdown(
 
     // Build final status indicating shutdown
     const collectionStats = collectionStatsTracker.getStats();
+    const argocdStatus = argocdStatusTracker.getStatus();
     const finalStatus: OperatorStatus = {
       mode: config.apiKey ? "enabled" : "operated",
       tier: config.apiKey && registrationState.isRegistered ? "pro" : "free",
@@ -98,7 +108,8 @@ export async function gracefulShutdown(
         totalFailureCount: collectionStats.totalFailureCount,
         collectionsStoredCount: collectionStats.collectionsStoredCount,
         lastSuccessTime: collectionStats.lastSuccessTime
-      }
+      },
+      argocd: argocdStatus
     };
 
     // Include clusterId if registered

@@ -2,7 +2,7 @@
 task_id: update-helm-notes
 session_id: argocd-awareness
 type: documentation
-status: pending
+status: completed
 priority: low
 ---
 
@@ -47,12 +47,12 @@ Users should be informed that the operator can detect ArgoCD and how to configur
 
 ## Completion Criteria
 
-- [ ] NOTES.txt includes ArgoCD awareness section
-- [ ] Conditional messages based on argocd.autoDetect value
-- [ ] Shows configured namespace if custom
-- [ ] Provides helm upgrade command to enable detection
-- [ ] helm template renders NOTES.txt correctly
-- [ ] Notes are informative and helpful to users
+- [x] NOTES.txt includes ArgoCD awareness section
+- [x] Conditional messages based on argocd.autoDetect value
+- [x] Shows configured namespace if custom
+- [x] Provides helm upgrade command to enable detection
+- [x] helm template renders NOTES.txt correctly
+- [x] Notes are informative and helpful to users
 
 ## Dependencies
 

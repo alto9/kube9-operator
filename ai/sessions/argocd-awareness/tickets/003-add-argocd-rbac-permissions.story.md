@@ -3,7 +3,7 @@ story_id: add-argocd-rbac-permissions
 session_id: argocd-awareness
 feature_id: [argocd-awareness]
 spec_id: [argocd-detection-spec]
-status: pending
+status: completed
 priority: high
 estimated_minutes: 15
 ---
@@ -41,13 +41,13 @@ The operator needs read-only permissions to detect ArgoCD: check for CRDs, read 
 
 ## Acceptance Criteria
 
-- [ ] ClusterRole includes customresourcedefinitions get/list permissions
-- [ ] ClusterRole includes namespaces get permission
-- [ ] ClusterRole includes deployments get/list permissions
-- [ ] Permissions are read-only (no create, update, delete, patch)
-- [ ] Comment explains ArgoCD detection purpose
-- [ ] helm template renders ClusterRole correctly
-- [ ] Permissions follow principle of least privilege
+- [x] ClusterRole includes customresourcedefinitions get/list permissions
+- [x] ClusterRole includes namespaces get permission
+- [x] ClusterRole includes deployments get/list permissions
+- [x] Permissions are read-only (no create, update, delete, patch)
+- [x] Comment explains ArgoCD detection purpose
+- [x] helm template renders ClusterRole correctly
+- [x] Permissions follow principle of least privilege
 
 ## Dependencies
 

@@ -3,7 +3,7 @@ story_id: implement-version-extraction
 session_id: argocd-awareness
 feature_id: [argocd-awareness]
 spec_id: [argocd-detection-spec]
-status: pending
+status: completed
 priority: medium
 estimated_minutes: 20
 ---
@@ -67,16 +67,16 @@ ArgoCD version helps users understand what version is installed and enables futu
 
 ## Acceptance Criteria
 
-- [ ] extractVersion() checks for app.kubernetes.io/version label
-- [ ] extractVersion() checks for argocd.argoproj.io/version label
-- [ ] extractVersion() checks for generic "version" label
-- [ ] extractVersion() falls back to parsing image tag
-- [ ] extractVersion() returns null if version cannot be determined
-- [ ] Image tag regex correctly extracts semantic versions
-- [ ] Version string includes "v" prefix when extracted from image
-- [ ] DEBUG log when version cannot be determined
-- [ ] detectInNamespace() calls extractVersion() for found deployments
-- [ ] Unit tests cover all version extraction methods
+- [x] extractVersion() checks for app.kubernetes.io/version label
+- [x] extractVersion() checks for argocd.argoproj.io/version label
+- [x] extractVersion() checks for generic "version" label
+- [x] extractVersion() falls back to parsing image tag
+- [x] extractVersion() returns null if version cannot be determined
+- [x] Image tag regex correctly extracts semantic versions
+- [x] Version string includes "v" prefix when extracted from image
+- [x] DEBUG log when version cannot be determined
+- [x] detectInNamespace() calls extractVersion() for found deployments
+- [x] Unit tests cover all version extraction methods
 
 ## Dependencies
 

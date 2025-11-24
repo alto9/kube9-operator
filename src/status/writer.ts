@@ -5,6 +5,7 @@ import type { OperatorStatus, RegistrationState } from './types.js';
 import type { RegistrationManager } from '../registration/manager.js';
 import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
+import { argocdStatusTracker } from '../argocd/state.js';
 
 /**
  * Default registration state when registration manager is not available
@@ -188,11 +189,15 @@ export class StatusWriter {
       // Get current collection statistics
       const collectionStats = collectionStatsTracker.getStats();
       
+      // Get current ArgoCD status
+      const argocdStatus = argocdStatusTracker.getStatus();
+      
       const status = calculateStatus(
         registrationState,
         this.lastWriteError,
         canWriteConfigMap,
-        collectionStats
+        collectionStats,
+        argocdStatus
       );
 
       // Convert status to JSON string

@@ -17,6 +17,25 @@ To upgrade to Pro tier:
      --reuse-values
 {{- end }}
 
+{{- if .Values.argocd.autoDetect }}
+
+🔍 ArgoCD Awareness: Enabled
+The operator will automatically detect if ArgoCD is installed in your cluster.
+{{- if .Values.argocd.namespace }}
+- Checking namespace: {{ .Values.argocd.namespace }}
+{{- else }}
+- Checking default namespace: argocd
+{{- end }}
+{{- else }}
+
+ℹ️  ArgoCD Awareness: Disabled
+ArgoCD detection is disabled. To enable:
+  helm upgrade {{ .Release.Name }} {{ .Chart.Name }} \
+    --set argocd.autoDetect=true \
+    --namespace {{ .Release.Namespace }} \
+    --reuse-values
+{{- end }}
+
 To check operator status:
   kubectl get pods -n {{ .Release.Namespace }}
 
@@ -27,4 +46,5 @@ To view status ConfigMap:
   kubectl get configmap kube9-operator-status -n {{ .Release.Namespace }} -o yaml
 
 For more information, visit https://docs.kube9.dev
+
 

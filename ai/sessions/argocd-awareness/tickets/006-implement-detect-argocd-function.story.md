@@ -4,7 +4,7 @@ session_id: argocd-awareness
 feature_id: [argocd-awareness]
 spec_id: [argocd-detection-spec]
 diagram_id: [argocd-detection-flow]
-status: pending
+status: completed
 priority: high
 estimated_minutes: 25
 ---

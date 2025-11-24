@@ -3,7 +3,7 @@ story_id: integrate-detection-on-startup
 session_id: argocd-awareness
 feature_id: [argocd-awareness]
 spec_id: [argocd-detection-spec]
-status: pending
+status: completed
 priority: high
 estimated_minutes: 20
 ---
@@ -45,17 +45,17 @@ During operator initialization, we need to run ArgoCD detection once and use the
 
 ## Acceptance Criteria
 
-- [ ] ArgoCD configuration parsed from environment variables
-- [ ] Environment variables follow Helm values structure
-- [ ] ARGOCD_AUTO_DETECT defaults to true
-- [ ] ARGOCD_NAMESPACE defaults to "argocd"
-- [ ] ARGOCD_SELECTOR defaults to "app.kubernetes.io/name=argocd-server"
-- [ ] ARGOCD_DETECTION_INTERVAL defaults to 6 hours
-- [ ] detectArgoCDWithTimeout() called during startup
-- [ ] Detection completes before first status update
-- [ ] ArgoCDStatus stored in operator state
-- [ ] Logging indicates detection is starting and result
-- [ ] Operator continues if detection fails or times out
+- [x] ArgoCD configuration parsed from environment variables
+- [x] Environment variables follow Helm values structure
+- [x] ARGOCD_AUTO_DETECT defaults to true
+- [x] ARGOCD_NAMESPACE defaults to "argocd"
+- [x] ARGOCD_SELECTOR defaults to "app.kubernetes.io/name=argocd-server"
+- [x] ARGOCD_DETECTION_INTERVAL defaults to 6 hours
+- [x] detectArgoCDWithTimeout() called during startup
+- [x] Detection completes before first status update
+- [x] ArgoCDStatus stored in operator state
+- [x] Logging indicates detection is starting and result
+- [x] Operator continues if detection fails or times out
 
 ## Dependencies
 

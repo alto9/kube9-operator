@@ -1,5 +1,5 @@
 import { getConfig } from '../config/loader.js';
-import type { OperatorStatus, RegistrationState, CollectionStats } from './types.js';
+import type { OperatorStatus, RegistrationState, CollectionStats, ArgoCDStatus } from './types.js';
 
 /**
  * Operator version (semver)
@@ -22,12 +22,23 @@ const DEFAULT_REGISTRATION_STATE: RegistrationState = {
 };
 
 /**
+ * Default ArgoCD status when ArgoCD detection is not yet implemented
+ */
+const DEFAULT_ARGOCD_STATUS: ArgoCDStatus = {
+  detected: false,
+  namespace: null,
+  version: null,
+  lastChecked: new Date().toISOString(),
+};
+
+/**
  * Calculate the current operator status based on configuration and system state
  * 
  * @param registrationState - Optional registration state (defaults to unregistered)
  * @param lastError - Optional error message from last operation
  * @param canWriteConfigMap - Whether the operator can write to ConfigMap (defaults to true)
  * @param collectionStats - Optional collection statistics (defaults to zero stats)
+ * @param argocdStatus - Optional ArgoCD detection status (defaults to not detected)
  * @returns OperatorStatus object with current operator state
  */
 export function calculateStatus(
@@ -39,7 +50,8 @@ export function calculateStatus(
     totalFailureCount: 0,
     collectionsStoredCount: 0,
     lastSuccessTime: null
-  }
+  },
+  argocdStatus: ArgoCDStatus = DEFAULT_ARGOCD_STATUS
 ): OperatorStatus {
   const config = getConfig();
   const { isRegistered, clusterId, consecutiveFailures = 0 } = registrationState;
@@ -102,7 +114,8 @@ export function calculateStatus(
       totalFailureCount: collectionStats.totalFailureCount,
       collectionsStoredCount: collectionStats.collectionsStoredCount,
       lastSuccessTime: collectionStats.lastSuccessTime
-    }
+    },
+    argocd: argocdStatus
   };
   
   // Include clusterId only when registered (pro tier)
@@ -159,4 +172,5 @@ function calculateHealth(
   
   return "healthy";
 }
+
 

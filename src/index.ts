@@ -21,6 +21,9 @@ import { TransmissionClient } from './collection/transmission.js';
 import { recordCollection } from './collection/metrics.js';
 import { collectionStatsTracker } from './collection/stats-tracker.js';
 import { logger } from './logging/logger.js';
+import { detectArgoCDWithTimeout, type ArgoCDDetectionConfig } from './argocd/detection.js';
+import { argocdStatusTracker } from './argocd/state.js';
+import { ArgoCDDetectionManager } from './argocd/detection-manager.js';
 
 logger.info('kube9-operator starting...');
 
@@ -28,6 +31,7 @@ logger.info('kube9-operator starting...');
 let statusWriterInstance: StatusWriter | null = null;
 let registrationManagerInstance: RegistrationManager | null = null;
 let collectionSchedulerInstance: CollectionScheduler | null = null;
+let argoCDDetectionManagerInstance: ArgoCDDetectionManager | null = null;
 
 // Load configuration
 async function initializeConfig(): Promise<Config> {
@@ -73,6 +77,43 @@ async function testKubernetesClient() {
   }
 }
 
+// Parse ArgoCD configuration from environment variables
+function parseArgoCDConfig(): ArgoCDDetectionConfig {
+  return {
+    autoDetect: process.env.ARGOCD_AUTO_DETECT !== 'false',
+    enabled: process.env.ARGOCD_ENABLED === 'true' ? true : undefined,
+    namespace: process.env.ARGOCD_NAMESPACE || 'argocd',
+    selector: process.env.ARGOCD_SELECTOR || 'app.kubernetes.io/name=argocd-server',
+    detectionInterval: parseInt(process.env.ARGOCD_DETECTION_INTERVAL || '6', 10)
+  };
+}
+
+// Perform initial ArgoCD detection during startup
+async function performInitialArgoCDDetection(): Promise<void> {
+  try {
+    logger.info('Performing initial ArgoCD detection');
+    const argoCDConfig = parseArgoCDConfig();
+    const argoCDStatus = await detectArgoCDWithTimeout(kubernetesClient, argoCDConfig);
+    argocdStatusTracker.setStatus(argoCDStatus);
+    
+    if (argoCDStatus.detected) {
+      logger.info('ArgoCD detection completed', {
+        detected: true,
+        namespace: argoCDStatus.namespace,
+        version: argoCDStatus.version
+      });
+    } else {
+      logger.info('ArgoCD detection completed', {
+        detected: false
+      });
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.warn('ArgoCD detection failed during startup', { error: errorMessage });
+    // Continue with default status (not detected)
+  }
+}
+
 // Initialize and run
 async function main() {
   try {
@@ -110,6 +151,16 @@ async function main() {
     
     // Store reference for shutdown handler
     registrationManagerInstance = registrationManager;
+    
+    // Perform initial ArgoCD detection before starting status writer
+    await performInitialArgoCDDetection();
+    
+    // Start periodic ArgoCD detection manager
+    const argoCDConfig = parseArgoCDConfig();
+    const initialArgoCDStatus = argocdStatusTracker.getStatus();
+    const argoCDDetectionManager = new ArgoCDDetectionManager();
+    argoCDDetectionManager.start(kubernetesClient, argoCDConfig, initialArgoCDStatus);
+    argoCDDetectionManagerInstance = argoCDDetectionManager;
     
     // Start status writer for periodic ConfigMap updates
     logger.info('Starting status writer...');
@@ -263,7 +314,7 @@ async function main() {
     // Register signal handlers for graceful shutdown
     process.on('SIGTERM', () => {
       if (statusWriterInstance) {
-        gracefulShutdown(statusWriterInstance, registrationManagerInstance, collectionSchedulerInstance).catch((error) => {
+        gracefulShutdown(statusWriterInstance, registrationManagerInstance, collectionSchedulerInstance, argoCDDetectionManagerInstance).catch((error) => {
           const errorMessage = error instanceof Error ? error.message : String(error);
           logger.error('Error in shutdown handler', { error: errorMessage });
           process.exit(1);
@@ -273,7 +324,7 @@ async function main() {
     
     process.on('SIGINT', () => {
       if (statusWriterInstance) {
-        gracefulShutdown(statusWriterInstance, registrationManagerInstance, collectionSchedulerInstance).catch((error) => {
+        gracefulShutdown(statusWriterInstance, registrationManagerInstance, collectionSchedulerInstance, argoCDDetectionManagerInstance).catch((error) => {
           const errorMessage = error instanceof Error ? error.message : String(error);
           logger.error('Error in shutdown handler', { error: errorMessage });
           process.exit(1);

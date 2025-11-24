@@ -33,6 +33,14 @@ The operator is installed via Helm and requires no ingress - all communication i
 ✨ Enhanced dashboards and insights  
 ✨ Advanced cluster analytics
 
+### ArgoCD Awareness
+🔍 Automatic ArgoCD detection  
+🔍 Configurable detection behavior  
+🔍 Status exposed via OperatorStatus ConfigMap  
+🔍 Foundation for future GitOps integration
+
+The operator automatically detects if ArgoCD is installed in your cluster and exposes this information through the OperatorStatus. This enables the VS Code extension to conditionally show ArgoCD-related features and provides the foundation for future ArgoCD integration and AI-powered GitOps insights.
+
 ## Architecture
 
 ```
@@ -130,6 +138,11 @@ kubectl get configmap kube9-operator-status -n kube9-system -o yaml
 | `logLevel` | Log level (debug, info, warn, error) | `info` |
 | `statusUpdateIntervalSeconds` | Status update frequency | `60` |
 | `serverUrl` | kube9-server URL (Pro tier) | `https://api.kube9.dev` |
+| `argocd.autoDetect` | Enable automatic ArgoCD detection | `true` |
+| `argocd.enabled` | Explicitly enable or disable ArgoCD integration (optional override) | - |
+| `argocd.namespace` | Custom namespace where ArgoCD is installed | `"argocd"` |
+| `argocd.selector` | Custom label selector for ArgoCD server deployment | `"app.kubernetes.io/name=argocd-server"` |
+| `argocd.detectionInterval` | Detection check interval in hours | `6` |
 
 ### Custom Configuration
 
@@ -158,6 +171,41 @@ helm install kube9-operator kube9/kube9-operator \
   --namespace kube9-system \
   --create-namespace \
   --values values.yaml
+```
+
+### ArgoCD Configuration Examples
+
+**Default auto-detection** (recommended):
+```yaml
+argocd:
+  autoDetect: true
+```
+
+**Custom namespace**:
+```yaml
+argocd:
+  autoDetect: true
+  namespace: "gitops"  # ArgoCD installed in custom namespace
+```
+
+**Explicitly enable ArgoCD integration**:
+```yaml
+argocd:
+  enabled: true  # Bypasses CRD check, directly checks namespace
+  namespace: "argocd"
+```
+
+**Disable ArgoCD detection**:
+```yaml
+argocd:
+  autoDetect: false  # Disables automatic detection
+```
+
+**Custom detection interval**:
+```yaml
+argocd:
+  autoDetect: true
+  detectionInterval: 12  # Check every 12 hours instead of default 6 hours
 ```
 
 ## Upgrading
@@ -367,7 +415,13 @@ data:
       "health": "healthy",
       "lastUpdate": "2025-11-10T15:30:00Z",
       "registered": true,
-      "error": null
+      "error": null,
+      "argocd": {
+        "detected": true,
+        "namespace": "argocd",
+        "version": "v2.8.0",
+        "lastChecked": "2025-11-10T15:30:00Z"
+      }
     }
 ```
 
@@ -429,6 +483,79 @@ kubectl logs -n kube9-system deployment/kube9-operator | grep -i registration
 
 # View status with error details
 kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.status}' | jq .
+```
+
+### ArgoCD detection issues
+
+**ArgoCD not detected when it should be:**
+
+```bash
+# Check operator logs for detection errors
+kubectl logs -n kube9-system deployment/kube9-operator | grep -i argocd
+
+# Verify ArgoCD namespace configuration matches your installation
+kubectl get namespace argocd  # or your custom namespace
+
+# Check if ArgoCD server deployment exists
+kubectl get deployment -n argocd -l app.kubernetes.io/name=argocd-server
+
+# Verify Helm values configuration
+helm get values kube9-operator -n kube9-system | grep argocd
+```
+
+**Permission errors (RBAC):**
+
+ArgoCD detection requires read-only permissions for:
+- CustomResourceDefinitions (to check for `applications.argoproj.io` CRD)
+- Namespaces (to verify ArgoCD namespace exists)
+- Deployments (to find ArgoCD server deployment)
+
+These permissions are automatically included in the ClusterRole when `rbac.create: true` (default). To verify permissions:
+
+```bash
+# Check if operator can read CRDs
+kubectl auth can-i get customresourcedefinitions --namespace=kube9-system --as=system:serviceaccount:kube9-system:kube9-operator
+
+# Check if operator can read namespaces
+kubectl auth can-i get namespaces --namespace=kube9-system --as=system:serviceaccount:kube9-system:kube9-operator
+
+# Check if operator can list deployments
+kubectl auth can-i list deployments --namespace=argocd --as=system:serviceaccount:kube9-system:kube9-operator
+```
+
+If permissions are missing, ensure `rbac.create: true` in your Helm values or manually add the required permissions to your ClusterRole.
+
+**How to check detection status:**
+
+```bash
+# View ArgoCD status from ConfigMap
+kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.status}' | jq '.argocd'
+```
+
+The `argocd` field contains:
+- `detected`: `true` if ArgoCD is detected, `false` otherwise
+- `namespace`: Namespace where ArgoCD was detected (or `null` if not detected)
+- `version`: ArgoCD version extracted from deployment (or `null` if unavailable)
+- `lastChecked`: ISO 8601 timestamp of the last detection check
+
+Example output when ArgoCD is detected:
+```json
+{
+  "detected": true,
+  "namespace": "argocd",
+  "version": "v2.8.0",
+  "lastChecked": "2025-11-20T15:30:00Z"
+}
+```
+
+Example output when ArgoCD is not detected:
+```json
+{
+  "detected": false,
+  "namespace": null,
+  "version": null,
+  "lastChecked": "2025-11-20T15:30:00Z"
+}
 ```
 
 ## Project Structure

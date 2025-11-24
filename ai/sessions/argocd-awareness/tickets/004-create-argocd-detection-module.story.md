@@ -4,7 +4,7 @@ session_id: argocd-awareness
 feature_id: [argocd-awareness]
 spec_id: [argocd-detection-spec]
 diagram_id: [argocd-detection-flow]
-status: pending
+status: completed
 priority: high
 estimated_minutes: 30
 ---
@@ -99,16 +99,16 @@ This is the core detection logic. The module will check for ArgoCD's Application
 
 ## Acceptance Criteria
 
-- [ ] detection.ts module exists with all interfaces
-- [ ] checkForApplicationCRD() successfully detects CRD presence
-- [ ] checkForApplicationCRD() returns false for 404 errors
-- [ ] checkForApplicationCRD() logs warnings for other errors
-- [ ] detectInNamespace() checks namespace existence
-- [ ] detectInNamespace() lists deployments with label selector
-- [ ] detectInNamespace() returns correct ArgoCDStatus structure
-- [ ] All error cases are handled gracefully
-- [ ] Logging follows winston patterns from context
-- [ ] TypeScript compiles without errors
+- [x] detection.ts module exists with all interfaces
+- [x] checkForApplicationCRD() successfully detects CRD presence
+- [x] checkForApplicationCRD() returns false for 404 errors
+- [x] checkForApplicationCRD() logs warnings for other errors
+- [x] detectInNamespace() checks namespace existence
+- [x] detectInNamespace() lists deployments with label selector
+- [x] detectInNamespace() returns correct ArgoCDStatus structure
+- [x] All error cases are handled gracefully
+- [x] Logging follows winston patterns from context
+- [x] TypeScript compiles without errors
 
 ## Dependencies
 
