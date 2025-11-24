@@ -17,7 +17,7 @@ import type { ArgoCDStatus } from '../status/types.js';
  */
 export class ArgoCDDetectionManager {
   private intervalHandle: NodeJS.Timeout | null = null;
-  private currentStatus: ArgoCDStatus;
+  private currentStatus!: ArgoCDStatus;
 
   /**
    * Starts periodic ArgoCD detection
