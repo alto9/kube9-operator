@@ -1,26 +1,30 @@
 # kube9-operator
 
-**Kubernetes Operator for the kube9 VS Code Extension**
+**Kubernetes Operator for the kube9 Ecosystem**
 
-The kube9-operator runs in your Kubernetes cluster to enable enhanced features in the [kube9 VS Code extension](https://github.com/alto9/kube9-vscode). It provides tier detection, status reporting, and optional Pro tier features with AI-powered insights.
+The kube9-operator is the core component of the kube9 open source toolkit. It runs in your Kubernetes cluster to perform Well-Architected Framework validation, provide cluster insights, and enable enhanced features in the [kube9 VS Code extension](https://github.com/alto9/kube9-vscode) and optional Helm-based UI components.
 
 ![Node.js](https://img.shields.io/badge/Node.js-22+-green) ![Kubernetes](https://img.shields.io/badge/Kubernetes-1.24+-blue) ![License](https://img.shields.io/badge/License-MIT-blue)
 
 ## Overview
 
-The kube9-operator bridges your Kubernetes cluster with the kube9 VS Code extension, enabling the extension to determine whether your cluster is in:
+The kube9-operator is the foundation of the kube9 ecosystem. It performs Kubernetes Well-Architected Framework validation on a schedule, providing continuous cluster assessment across all 6 framework pillars (Security, Reliability, Performance Efficiency, Cost Optimization, Operational Excellence, Sustainability).
 
-- **Basic mode** (no operator) - kubectl-only operations
-- **Free tier** (operated mode) - Local webviews and basic resource management
-- **Pro tier** (enabled mode) - AI-powered insights, advanced dashboards, and rich UIs
+The operator works with the kube9 VS Code extension and optional Helm-based UI components to provide cluster management capabilities:
+
+- **Basic mode** (no operator) - VS Code extension provides kubectl-only operations
+- **Free tier** (operated mode) - Operator performs Well-Architected Framework checks and generates point-in-time reports. VS Code extension provides local webviews and basic resource management
+- **Pro tier** (enabled mode) - Operator establishes scheduled data reporting to kube9-server. AI-powered insights, advanced dashboards, and rich UIs are enabled
 
 The operator is installed via Helm and requires no ingress - all communication is outbound to kube9-server for Pro tier features.
 
 ## Features
 
 ### Free Tier (No API Key)
+✅ Kubernetes Well-Architected Framework validation on schedule  
+✅ Point-in-time framework assessment reports  
 ✅ Status exposure via ConfigMap  
-✅ Cluster tier detection for VS Code extension  
+✅ Cluster tier detection for VS Code extension and UI components  
 ✅ Health monitoring  
 ✅ Minimal resource footprint (~100m CPU, 128Mi RAM)  
 ✅ No external communication
@@ -28,10 +32,12 @@ The operator is installed via Helm and requires no ingress - all communication i
 ### Pro Tier (With API Key)
 ✨ All Free tier features  
 ✨ Registration with kube9-server  
-✨ API key validation  
+✨ Scheduled data reporting (sanitized metrics transmission)  
+✨ Server responses include updated insights and recommendations  
 ✨ Enables AI-powered features in VS Code extension  
 ✨ Enhanced dashboards and insights  
-✨ Advanced cluster analytics
+✨ Advanced cluster analytics  
+✨ Continuous framework compliance tracking
 
 ### ArgoCD Awareness
 🔍 Automatic ArgoCD detection  

@@ -2,11 +2,11 @@
 
 ## Mission
 
-kube9-operator bridges Kubernetes clusters with the kube9 ecosystem, enabling intelligent cluster management through secure, outbound communication. The operator runs silently in clusters, exposing status information and enabling Pro tier features without requiring ingress or exposing cluster internals.
+kube9-operator is the core component of the kube9 open source toolkit, providing Kubernetes Well-Architected Framework validation and cluster insights. The operator runs in clusters, performing scheduled framework assessments and enabling integration with the kube9 VS Code extension and optional Helm-based UI components through secure, outbound communication.
 
 ## Core Purpose
 
-**Why kube9-operator exists**: Kubernetes clusters need a lightweight, secure way to participate in the kube9 ecosystem. The operator provides tier detection, health monitoring, and optional Pro tier features while maintaining strict security boundaries and minimal resource footprint.
+**Why kube9-operator exists**: Kubernetes clusters need continuous Well-Architected Framework validation and intelligent cluster management. The operator performs framework checks on a schedule, generating point-in-time reports in free tier mode and establishing scheduled data reporting to kube9-server when an API key is configured. It serves as the foundation for the kube9 ecosystem, enabling VS Code extension and UI components to provide cluster management capabilities while maintaining strict security boundaries and minimal resource footprint.
 
 ## Long-Term Vision
 
@@ -14,11 +14,12 @@ kube9-operator bridges Kubernetes clusters with the kube9 ecosystem, enabling in
 
 kube9-operator will become the **standard way for clusters to participate in the kube9 ecosystem**, providing:
 
-1. **Zero-Trust Security**: No ingress required, all communication is outbound
-2. **Tier Detection**: Enables VS Code extension to adapt features based on cluster capabilities
-3. **Health Monitoring**: Continuous cluster health assessment and status reporting
-4. **Pro Tier Gateway**: Secure bridge to kube9-server for AI-powered features
-5. **Minimal Footprint**: Lightweight operator that doesn't impact cluster performance
+1. **Well-Architected Framework Validation**: Scheduled assessment across all 6 framework pillars
+2. **Zero-Trust Security**: No ingress required, all communication is outbound
+3. **Tier Detection**: Enables VS Code extension and UI components to adapt features based on cluster capabilities
+4. **Health Monitoring**: Continuous cluster health assessment and status reporting
+5. **Pro Tier Gateway**: Secure bridge to kube9-server for AI-powered features via scheduled data reporting
+6. **Minimal Footprint**: Lightweight operator that doesn't impact cluster performance
 
 ### Strategic Goals
 
@@ -32,6 +33,7 @@ kube9-operator will become the **standard way for clusters to participate in the
 - Complete remaining data collectors (performance metrics, config patterns, security posture)
 - Support for multi-cluster federation and management
 - **ArgoCD Integration**: Seamless integration with ArgoCD for enhanced drift detection and GitOps intelligence
+- **Kubernetes Well-Architected Framework**: Operator-side validation for all 6 framework pillars (Security, Reliability, Performance Efficiency, Cost Optimization, Operational Excellence, Sustainability)
 - Advanced health checks and predictive analytics
 
 **Long-Term (2+ years)**
@@ -89,6 +91,59 @@ kube9-operator will become the **standard way for clusters to participate in the
 - **vs. Other Observability Operators**: No ingress required vs. requiring cluster ingress
 - **vs. Cloud-Specific Operators**: Works with any cluster vs. cloud-specific solutions
 - **vs. Generic Operators**: Purpose-built for kube9 ecosystem vs. generic functionality
+
+## Kubernetes Well-Architected Framework
+
+### Free Tier Framework Validation
+
+**Role**: The kube9-operator is the foundation for implementing the Kubernetes Well-Architected Framework, providing validation for all 6 framework pillars. Free tier checks run without an API key, while Pro tier analysis requires scheduled data reporting.
+
+**Framework Documentation**: Complete framework documentation with all criteria: https://alto9.github.io/kube9/well-architected-framework.html
+
+**Free Tier Responsibilities:**
+
+The operator performs validation checks that require real resource names and cluster access. These checks are available without an API key:
+
+**Security Pillar:**
+- Image CVE vulnerability scanning (Trivy/Grype integration)
+- CIS Kubernetes Benchmark compliance checks
+- NSA/CISA hardening guide validation
+- Security context validation (RunAsNonRoot, privileged containers, capabilities)
+- RBAC policy analysis (wildcard permissions, cluster-admin misuse)
+- Secret management audits
+
+**Reliability Pillar:**
+- High availability configuration validation (multi-replica, PDB, anti-affinity)
+- Resource limits and requests validation
+- Health check configuration (liveness/readiness probes)
+- Backup and disaster recovery validation
+
+**Performance Efficiency Pillar:**
+- Autoscaling configuration (HPA, VPA, cluster autoscaler)
+- Resource quotas and limits validation
+- Node affinity and anti-affinity checks
+
+**Cost Optimization Pillar:**
+- Resource configuration validation (requests/limits presence and ratios)
+- Spot instance configuration validation
+
+**Operational Excellence Pillar:**
+- Monitoring and observability validation (Prometheus, metrics endpoints)
+- Logging and audit trail configuration
+- Deployment strategy validation (rolling, canary, blue-green)
+- GitOps best practices (ArgoCD/Flux detection and validation)
+
+**Sustainability Pillar:**
+- Resource efficiency metrics (planned)
+- Workload consolidation opportunities (planned)
+
+**Dual-Tier Architecture:**
+
+The operator works in conjunction with kube9-server Pro tier analysis:
+- **Free Tier**: Validates configurations requiring real names (CVE scanning, compliance checks). Available without API key.
+- **Pro Tier**: Analyzes patterns and trends using obfuscated data (exposure detection, trend analysis). Requires API key for scheduled data reporting.
+
+This dual-tier approach provides comprehensive framework coverage while maintaining data privacy.
 
 ## ArgoCD Integration Vision
 
@@ -238,12 +293,13 @@ The kube9-operator manages data through four distinct phases:
 - Transmits to kube9-server via HTTPS POST with API key
 - **Status**: Not yet implemented
 
-### Phase 4: Incoming Reconciliation (Future - Pro Tier Only)
-- Receives AI insights from kube9-server via polling
+### Phase 4: Response Processing (Future - Pro Tier Only)
+- Server processes sanitized data and generates AI insights
+- Server response includes updated insights, recommendations, and framework assessment results
 - AI insights contain mock names (e.g., `deployment-a7f3b9`)
 - Operator reverses obfuscation using local library
 - Reconstructs insights with actual resource names
-- Stores AI insights in OperatorStatus CRD for VS Code extension
+- Stores AI insights and updated data in OperatorStatus CRD for VS Code extension and UI components
 - **Status**: Not yet implemented
 
 ### Design Principles
@@ -269,14 +325,15 @@ The operator participates in a sophisticated AI insights system that provides pr
 **1. Metrics Upload (Every 15-60 minutes)**
 - Operator collects and sanitizes metrics
 - POST to kube9-server `/api/metrics`
-- Server stores for analysis, returns success immediately
-- No AI processing happens during this call
+- Server stores for analysis and processes AI insights
+- Server response includes updated insights and recommendations
+- Operator receives and stores updated data from response
 
-**2. Insights Polling (Every ~1 hour)**
-- Operator polls via GET `/api/insights?cluster_id=X`
-- Receives cached insights generated by server background jobs
+**2. Insights Retrieval**
+- Updated insights and recommendations included in metrics upload response
+- Server processes AI analysis and includes results in response payload
 - Insights contain obfuscated object names
-- Fast response (~100ms), no waiting for AI
+- Operator de-obfuscates and stores locally
 
 **3. Local De-obfuscation**
 - Operator reverses mock names to real names
@@ -303,11 +360,12 @@ The operator participates in a sophisticated AI insights system that provides pr
   ```
 
 **5. Acknowledgement Sync**
-- User acknowledges insight in VS Code
-- Extension patches OperatorStatus CRD locally
+- User acknowledges insight in VS Code or UI component
+- Extension/UI patches OperatorStatus CRD locally
 - Operator detects change and syncs to server
 - POST to `/api/insights/{id}/acknowledge`
 - Server marks insight as acknowledged
+- Updated acknowledgement status included in next metrics upload response
 
 ### Insight Data Model
 
