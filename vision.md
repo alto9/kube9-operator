@@ -299,7 +299,8 @@ The kube9-operator manages data through four distinct phases:
 - AI insights contain mock names (e.g., `deployment-a7f3b9`)
 - Operator reverses obfuscation using local library
 - Reconstructs insights with actual resource names
-- Stores AI insights and updated data in OperatorStatus CRD for VS Code extension and UI components
+- Stores AI insights and updated data in SQLite database for CLI-based querying
+- VS Code extension and UI components query via `kubectl exec` to CLI tool
 - **Status**: Not yet implemented
 
 ### Design Principles
@@ -341,23 +342,12 @@ The operator participates in a sophisticated AI insights system that provides pr
 - Uses local obfuscation library for mapping
 - Reconstructed insights reference actual cluster objects
 
-**4. Storage in OperatorStatus CRD**
-- Stores de-obfuscated insights in custom resource status
-- VS Code extension reads locally (no server call)
-- Structure:
-  ```yaml
-  status:
-    insights:
-      - id: "uuid"
-        object_kind: "Deployment"
-        object_namespace: "default"
-        object_name: "my-app-deployment"
-        severity: "high"
-        title: "Pod CPU throttling detected"
-        insight_text: "AI analysis..."
-        recommendation: "Increase CPU to 500m"
-        status: "active"
-  ```
+**4. Storage in SQLite Database**
+- Stores de-obfuscated insights in local SQLite database (`/data/kube9.db`)
+- VS Code extension queries via `kubectl exec` to CLI tool
+- No server call required - all data local to cluster
+- Queryable with filters (severity, namespace, date range, etc.)
+- See "Data Storage & Query Architecture" section for full schema and CLI commands
 
 **5. Acknowledgement Sync**
 - User acknowledges insight in VS Code or UI component
@@ -443,6 +433,363 @@ Each insight contains:
 - No impact on cluster performance
 - Efficient caching minimizes overhead
 
+## Data Storage & Query Architecture
+
+### Architectural Decision: CLI-Based Query Interface
+
+After evaluating multiple approaches for storing and retrieving operator-managed data (AI insights, framework assessments, derived analytics), we chose a **CLI-based query interface** backed by **SQLite** over alternatives like ConfigMaps or Custom Resource Definitions (CRDs).
+
+#### Why Not ConfigMaps?
+
+ConfigMaps were the initial implementation but have significant drawbacks:
+
+| Concern | ConfigMap Limitation |
+|---------|---------------------|
+| Semantic fit | Designed for configuration, not runtime state |
+| Size | 1MB limit becomes problematic as data grows |
+| Schema validation | None - data corruption possible |
+| Query capability | None - must retrieve entire ConfigMap |
+| Versioning | Manual, error-prone |
+
+#### Why Not CRDs?
+
+CRDs are more Kubernetes-native but still limited:
+
+| Concern | CRD Limitation |
+|---------|---------------|
+| Query capability | Limited - must retrieve entire resource |
+| Complex data | Awkward for relational data (insights → assessments → resources) |
+| Historical data | Not designed for time-series or historical queries |
+| Size | While larger than ConfigMaps, still constrained |
+
+#### Why CLI + SQLite?
+
+The CLI-based approach provides:
+
+1. **Rich query capability** - Full SQL underneath, exposed through purpose-built commands
+2. **Complex data modeling** - Relational data with proper foreign keys and indexes
+3. **Historical queries** - Time-series data, trending, "since" filters
+4. **Versioned API contract** - CLI commands are the API, can be versioned and evolved
+5. **Testable in isolation** - CLI can be tested without Kubernetes
+6. **Clean JSON output** - No parsing issues, proper structured data
+7. **Single artifact** - Same binary for operator and CLI (Go makes this trivial)
+8. **Debuggable** - Ops team can exec into pod and run queries manually
+
+### Architecture Overview
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                         kube9-operator pod                          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│   ┌─────────────────┐         ┌─────────────────────────────────┐  │
+│   │  Operator Loop  │         │      SQLite Database            │  │
+│   │  (serve mode)   │────────▶│      /data/kube9.db             │  │
+│   │                 │  writes │                                 │  │
+│   │  - Collectors   │         │  Tables:                        │  │
+│   │  - Server sync  │         │  - operator_status              │  │
+│   │  - Assessments  │         │  - insights                     │  │
+│   └─────────────────┘         │  - assessments                  │  │
+│                               │  - assessment_history           │  │
+│   ┌─────────────────┐         │  - argocd_apps                  │  │
+│   │   CLI Tool      │────────▶│  - collections                  │  │
+│   │  (query mode)   │  reads  │  - obfuscation_map              │  │
+│   └─────────────────┘         └─────────────────────────────────┘  │
+│          ▲                                                          │
+└──────────│──────────────────────────────────────────────────────────┘
+           │
+           │ kubectl exec ... kube9-operator query <command>
+           │
+┌──────────│──────────────────────────────────────────────────────────┐
+│          │              kube9-vscode / kube9-ui                     │
+│          │                                                          │
+│   OperatorQueryClient                                               │
+│   - getStatus()                                                     │
+│   - getInsights(filters)                                            │
+│   - getAssessments(filters)                                         │
+│   - getArgoCDApps()                                                 │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Single Binary, Multiple Modes
+
+The kube9-operator binary serves double duty:
+
+```
+kube9-operator
+├── serve                    # Default: run the operator
+│   └── (reconcile loop, collectors, server sync, assessments)
+│
+└── query                    # CLI mode: query stored data
+    ├── status               # Operator status, health, registration
+    ├── insights             # AI insights from kube9-server
+    │   ├── list             # List with filters (severity, namespace, since)
+    │   └── get <id>         # Get specific insight by ID
+    ├── assessments          # Framework assessment results
+    │   ├── list             # List assessments (by pillar, status)
+    │   ├── summary          # Current compliance summary across all pillars
+    │   └── history          # Historical results for trending
+    ├── argocd               # ArgoCD integration data
+    │   ├── apps             # Application status and sync state
+    │   └── drift            # Drift detection results
+    └── collections          # Raw collection data (debug/advanced)
+        ├── list             # List recent collections
+        └── get <id>         # Get specific collection
+```
+
+### CLI Command Examples
+
+**Operator Status:**
+```bash
+kubectl exec -n kube9-system deploy/kube9-operator -- \
+  kube9-operator query status --format=json
+```
+
+**List High-Severity Insights:**
+```bash
+kubectl exec -n kube9-system deploy/kube9-operator -- \
+  kube9-operator query insights list \
+    --severity=high,critical \
+    --namespace=production \
+    --since=24h \
+    --format=json
+```
+
+**Framework Assessment Summary:**
+```bash
+kubectl exec -n kube9-system deploy/kube9-operator -- \
+  kube9-operator query assessments summary --format=json
+```
+
+**Security Pillar Failing Checks:**
+```bash
+kubectl exec -n kube9-system deploy/kube9-operator -- \
+  kube9-operator query assessments list \
+    --pillar=security \
+    --status=failing \
+    --format=json
+```
+
+**ArgoCD Application Status:**
+```bash
+kubectl exec -n kube9-system deploy/kube9-operator -- \
+  kube9-operator query argocd apps --format=json
+```
+
+### SQLite Database Schema
+
+The operator maintains a SQLite database at `/data/kube9.db`:
+
+```sql
+-- Operator status (single row, updated frequently)
+CREATE TABLE operator_status (
+  id INTEGER PRIMARY KEY CHECK (id = 1),
+  mode TEXT NOT NULL,           -- 'operated' | 'enabled'
+  tier TEXT NOT NULL,           -- 'free' | 'pro'
+  version TEXT NOT NULL,
+  health TEXT NOT NULL,         -- 'healthy' | 'degraded' | 'unhealthy'
+  registered BOOLEAN NOT NULL,
+  cluster_id TEXT,
+  error TEXT,
+  last_update TEXT NOT NULL
+);
+
+-- AI insights from kube9-server
+CREATE TABLE insights (
+  id TEXT PRIMARY KEY,
+  cluster_id TEXT NOT NULL,
+  object_kind TEXT NOT NULL,
+  object_namespace TEXT,
+  object_name TEXT NOT NULL,
+  insight_type TEXT NOT NULL,   -- 'issue' | 'optimization' | 'security' | etc.
+  severity TEXT NOT NULL,       -- 'critical' | 'high' | 'medium' | 'low' | 'info'
+  title TEXT NOT NULL,
+  insight_text TEXT NOT NULL,
+  recommendation TEXT,
+  status TEXT NOT NULL,         -- 'active' | 'acknowledged' | 'resolved' | 'dismissed'
+  confidence REAL,
+  created_at TEXT NOT NULL,
+  acknowledged_at TEXT,
+  expires_at TEXT
+);
+
+-- Framework assessment results
+CREATE TABLE assessments (
+  id TEXT PRIMARY KEY,
+  pillar TEXT NOT NULL,         -- 'security' | 'reliability' | 'performance' | etc.
+  check_id TEXT NOT NULL,
+  check_name TEXT NOT NULL,
+  status TEXT NOT NULL,         -- 'passing' | 'failing' | 'warning' | 'skipped'
+  object_kind TEXT,
+  object_namespace TEXT,
+  object_name TEXT,
+  message TEXT,
+  remediation TEXT,
+  assessed_at TEXT NOT NULL
+);
+
+-- Historical assessment results for trending
+CREATE TABLE assessment_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  pillar TEXT NOT NULL,
+  passing_count INTEGER NOT NULL,
+  failing_count INTEGER NOT NULL,
+  warning_count INTEGER NOT NULL,
+  assessed_at TEXT NOT NULL
+);
+
+-- ArgoCD application data
+CREATE TABLE argocd_apps (
+  name TEXT PRIMARY KEY,
+  namespace TEXT NOT NULL,
+  project TEXT NOT NULL,
+  sync_status TEXT NOT NULL,    -- 'Synced' | 'OutOfSync' | 'Unknown'
+  health_status TEXT NOT NULL,  -- 'Healthy' | 'Degraded' | 'Progressing' | etc.
+  repo_url TEXT,
+  path TEXT,
+  target_revision TEXT,
+  last_sync_at TEXT,
+  updated_at TEXT NOT NULL
+);
+
+-- Name obfuscation mappings (for server communication)
+CREATE TABLE obfuscation_map (
+  real_name TEXT PRIMARY KEY,
+  mock_name TEXT NOT NULL UNIQUE,
+  object_kind TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+-- Raw collection data (debug/advanced use)
+CREATE TABLE collections (
+  id TEXT PRIMARY KEY,
+  collection_type TEXT NOT NULL,
+  data TEXT NOT NULL,           -- JSON blob
+  collected_at TEXT NOT NULL
+);
+
+-- Indexes for common queries
+CREATE INDEX idx_insights_severity ON insights(severity);
+CREATE INDEX idx_insights_namespace ON insights(object_namespace);
+CREATE INDEX idx_insights_status ON insights(status);
+CREATE INDEX idx_insights_created ON insights(created_at);
+CREATE INDEX idx_assessments_pillar ON assessments(pillar);
+CREATE INDEX idx_assessments_status ON assessments(status);
+CREATE INDEX idx_assessment_history_date ON assessment_history(assessed_at);
+```
+
+### Data Persistence
+
+The SQLite database is stored on a PersistentVolumeClaim:
+
+```yaml
+# In Helm chart
+volumes:
+  - name: data
+    persistentVolumeClaim:
+      claimName: kube9-operator-data
+
+volumeMounts:
+  - name: data
+    mountPath: /data
+
+# PVC definition
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kube9-operator-data
+  namespace: kube9-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi  # Plenty for SQLite
+```
+
+### RBAC Requirements
+
+The CLI approach requires `exec` permission rather than just `get configmap`:
+
+```yaml
+# For extension users querying operator data
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: kube9-query
+  namespace: kube9-system
+rules:
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get"]  # To resolve deploy/kube9-operator to pod
+```
+
+### CLI Output Format
+
+All CLI commands support `--format` flag:
+
+| Format | Use Case |
+|--------|----------|
+| `json` | Default, for programmatic consumption |
+| `yaml` | Human-readable structured output |
+| `table` | Human-readable tabular output |
+
+Example JSON output for `query status`:
+```json
+{
+  "mode": "enabled",
+  "tier": "pro",
+  "version": "1.2.0",
+  "health": "healthy",
+  "registered": true,
+  "clusterId": "cls_abc123def456",
+  "error": null,
+  "lastUpdate": "2025-11-27T10:30:00Z"
+}
+```
+
+Example JSON output for `query insights list`:
+```json
+{
+  "insights": [
+    {
+      "id": "ins_abc123",
+      "objectKind": "Deployment",
+      "objectNamespace": "production",
+      "objectName": "api-server",
+      "insightType": "issue",
+      "severity": "high",
+      "title": "CPU throttling detected",
+      "insightText": "The api-server deployment is experiencing CPU throttling...",
+      "recommendation": "Increase CPU limits to 500m",
+      "status": "active",
+      "confidence": 0.92,
+      "createdAt": "2025-11-27T09:15:00Z"
+    }
+  ],
+  "total": 1,
+  "filters": {
+    "severity": ["high", "critical"],
+    "namespace": "production",
+    "since": "24h"
+  }
+}
+```
+
+### Migration from ConfigMap
+
+The current implementation uses a ConfigMap for status. The migration path:
+
+1. **Phase 1 (Current)**: ConfigMap-based status (simple, limited)
+2. **Phase 2 (Next)**: Add SQLite + CLI alongside ConfigMap (parallel operation)
+3. **Phase 3 (Future)**: Deprecate ConfigMap, CLI becomes primary interface
+4. **Phase 4 (Final)**: Remove ConfigMap code
+
+This allows gradual migration without breaking existing extension versions.
+
 ## Future Possibilities
 
 ### Advanced Capabilities
@@ -455,7 +802,8 @@ Each insight contains:
 ### UI Access Points
 - **VS Code Extension**: Primary interface for VS Code users (kube9-vscode)
 - **Web UI**: Browser-based interface for non-VSCode users (kube9-ui - separate open source project)
-- Both interfaces read from OperatorStatus CRD to display insights and cluster information
+- Both interfaces query the operator via `kubectl exec` to the CLI tool
+- CLI provides rich query capabilities (filters, date ranges, aggregations)
 - Operator remains the core - interfaces are access points to operator outputs
 
 ### Ecosystem Integration
