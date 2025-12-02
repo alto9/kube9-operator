@@ -30,3 +30,10 @@ export const logger = winston.createLogger({
   exitOnError: false,
 });
 
+/**
+ * Close all logger transports (for cleanup during tests)
+ */
+export function closeLogger(): void {
+  logger.close();
+}
+

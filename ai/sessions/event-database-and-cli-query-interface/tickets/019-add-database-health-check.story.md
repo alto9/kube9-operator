@@ -3,7 +3,7 @@ story_id: 019-add-database-health-check
 session_id: event-database-and-cli-query-interface
 feature_id: [event-database-storage]
 spec_id: [event-database-schema-spec]
-status: pending
+status: completed
 ---
 
 # Story: Add Database Health Check to /healthz Endpoint

@@ -1,5 +1,5 @@
-import { test } from 'node:test';
-import * as assert from 'node:assert';
+import { describe, it, expect } from 'vitest';
+
 import type { ResourceConfigurationPatternsData } from '../types.js';
 import {
   initResourceLimitsRequestsData,
@@ -40,294 +40,294 @@ function createTestData(): ResourceConfigurationPatternsData {
   };
 }
 
-test('initResourceLimitsRequestsData - returns proper structure', () => {
+it('initResourceLimitsRequestsData - returns proper structure', () => {
   const data = initResourceLimitsRequestsData();
   
   // Verify structure
-  assert.ok(data.containers, 'Should have containers object');
-  assert.ok(Array.isArray(data.containers.cpuRequests), 'Should have cpuRequests array');
-  assert.ok(Array.isArray(data.containers.cpuLimits), 'Should have cpuLimits array');
-  assert.ok(Array.isArray(data.containers.memoryRequests), 'Should have memoryRequests array');
-  assert.ok(Array.isArray(data.containers.memoryLimits), 'Should have memoryLimits array');
-  assert.strictEqual(typeof data.containers.totalCount, 'number', 'Should have totalCount number');
+  expect(data.containers).toBeTruthy();
+  expect(Array.isArray(data.containers.cpuRequests)).toBeTruthy();
+  expect(Array.isArray(data.containers.cpuLimits)).toBeTruthy();
+  expect(Array.isArray(data.containers.memoryRequests)).toBeTruthy();
+  expect(Array.isArray(data.containers.memoryLimits)).toBeTruthy();
+  expect(typeof data.containers.totalCount).toBe('number');
 });
 
-test('initResourceLimitsRequestsData - all arrays are empty', () => {
+it('initResourceLimitsRequestsData - all arrays are empty', () => {
   const data = initResourceLimitsRequestsData();
   
-  assert.strictEqual(data.containers.cpuRequests.length, 0, 'cpuRequests should be empty');
-  assert.strictEqual(data.containers.cpuLimits.length, 0, 'cpuLimits should be empty');
-  assert.strictEqual(data.containers.memoryRequests.length, 0, 'memoryRequests should be empty');
-  assert.strictEqual(data.containers.memoryLimits.length, 0, 'memoryLimits should be empty');
+  expect(data.containers.cpuRequests.length).toBe(0);
+  expect(data.containers.cpuLimits.length).toBe(0);
+  expect(data.containers.memoryRequests.length).toBe(0);
+  expect(data.containers.memoryLimits.length).toBe(0);
 });
 
-test('initResourceLimitsRequestsData - totalCount is zero', () => {
+it('initResourceLimitsRequestsData - totalCount is zero', () => {
   const data = initResourceLimitsRequestsData();
   
-  assert.strictEqual(data.containers.totalCount, 0, 'totalCount should be 0');
+  expect(data.containers.totalCount).toBe(0);
 });
 
-test('initReplicaCountsData - returns proper structure', () => {
+it('initReplicaCountsData - returns proper structure', () => {
   const data = initReplicaCountsData();
   
-  assert.ok(Array.isArray(data.deployments), 'Should have deployments array');
-  assert.ok(Array.isArray(data.statefulSets), 'Should have statefulSets array');
-  assert.strictEqual(typeof data.daemonSetCount, 'number', 'Should have daemonSetCount number');
+  expect(Array.isArray(data.deployments)).toBeTruthy();
+  expect(Array.isArray(data.statefulSets)).toBeTruthy();
+  expect(typeof data.daemonSetCount).toBe('number');
 });
 
-test('initReplicaCountsData - all arrays are empty and count is zero', () => {
+it('initReplicaCountsData - all arrays are empty and count is zero', () => {
   const data = initReplicaCountsData();
   
-  assert.strictEqual(data.deployments.length, 0, 'deployments should be empty');
-  assert.strictEqual(data.statefulSets.length, 0, 'statefulSets should be empty');
-  assert.strictEqual(data.daemonSetCount, 0, 'daemonSetCount should be 0');
+  expect(data.deployments.length).toBe(0);
+  expect(data.statefulSets.length).toBe(0);
+  expect(data.daemonSetCount).toBe(0);
 });
 
-test('initImagePullPoliciesData - returns proper structure', () => {
+it('initImagePullPoliciesData - returns proper structure', () => {
   const data = initImagePullPoliciesData();
   
-  assert.ok(data.policies, 'Should have policies object');
-  assert.strictEqual(typeof data.policies.Always, 'number', 'Should have Always count');
-  assert.strictEqual(typeof data.policies.IfNotPresent, 'number', 'Should have IfNotPresent count');
-  assert.strictEqual(typeof data.policies.Never, 'number', 'Should have Never count');
-  assert.strictEqual(typeof data.policies.notSet, 'number', 'Should have notSet count');
-  assert.strictEqual(typeof data.totalContainers, 'number', 'Should have totalContainers count');
+  expect(data.policies).toBeTruthy();
+  expect(typeof data.policies.Always).toBe('number');
+  expect(typeof data.policies.IfNotPresent).toBe('number');
+  expect(typeof data.policies.Never).toBe('number');
+  expect(typeof data.policies.notSet).toBe('number');
+  expect(typeof data.totalContainers).toBe('number');
 });
 
-test('initImagePullPoliciesData - all counts are zero', () => {
+it('initImagePullPoliciesData - all counts are zero', () => {
   const data = initImagePullPoliciesData();
   
-  assert.strictEqual(data.policies.Always, 0, 'Always should be 0');
-  assert.strictEqual(data.policies.IfNotPresent, 0, 'IfNotPresent should be 0');
-  assert.strictEqual(data.policies.Never, 0, 'Never should be 0');
-  assert.strictEqual(data.policies.notSet, 0, 'notSet should be 0');
-  assert.strictEqual(data.totalContainers, 0, 'totalContainers should be 0');
+  expect(data.policies.Always).toBe(0);
+  expect(data.policies.IfNotPresent).toBe(0);
+  expect(data.policies.Never).toBe(0);
+  expect(data.policies.notSet).toBe(0);
+  expect(data.totalContainers).toBe(0);
 });
 
-test('initSecurityContextsData - returns proper structure', () => {
+it('initSecurityContextsData - returns proper structure', () => {
   const data = initSecurityContextsData();
   
   // Pod level
-  assert.ok(data.podLevel, 'Should have podLevel object');
-  assert.ok(data.podLevel.runAsNonRoot, 'Should have podLevel.runAsNonRoot object');
-  assert.ok(data.podLevel.fsGroup, 'Should have podLevel.fsGroup object');
+  expect(data.podLevel).toBeTruthy(); // Should have podLevel object');
+  expect(data.podLevel.runAsNonRoot).toBeTruthy(); // Should have podLevel.runAsNonRoot object');
+  expect(data.podLevel.fsGroup).toBeTruthy(); // Should have podLevel.fsGroup object');
   
   // Container level
-  assert.ok(data.containerLevel, 'Should have containerLevel object');
-  assert.ok(data.containerLevel.runAsNonRoot, 'Should have containerLevel.runAsNonRoot object');
-  assert.ok(data.containerLevel.readOnlyRootFilesystem, 'Should have containerLevel.readOnlyRootFilesystem object');
-  assert.ok(data.containerLevel.allowPrivilegeEscalation, 'Should have containerLevel.allowPrivilegeEscalation object');
-  assert.ok(data.containerLevel.capabilities, 'Should have containerLevel.capabilities object');
+  expect(data.containerLevel).toBeTruthy(); // Should have containerLevel object');
+  expect(data.containerLevel.runAsNonRoot).toBeTruthy(); // Should have containerLevel.runAsNonRoot object');
+  expect(data.containerLevel.readOnlyRootFilesystem).toBeTruthy(); // Should have containerLevel.readOnlyRootFilesystem object');
+  expect(data.containerLevel.allowPrivilegeEscalation).toBeTruthy(); // Should have containerLevel.allowPrivilegeEscalation object');
+  expect(data.containerLevel.capabilities).toBeTruthy(); // Should have containerLevel.capabilities object');
   
   // Totals
-  assert.strictEqual(typeof data.totalPods, 'number', 'Should have totalPods number');
-  assert.strictEqual(typeof data.totalContainers, 'number', 'Should have totalContainers number');
+  expect(typeof data.totalPods).toBe('number');
+  expect(typeof data.totalContainers).toBe('number');
 });
 
-test('initSecurityContextsData - all counts are zero', () => {
+it('initSecurityContextsData - all counts are zero', () => {
   const data = initSecurityContextsData();
   
   // Pod level counts
-  assert.strictEqual(data.podLevel.runAsNonRoot.true, 0, 'podLevel.runAsNonRoot.true should be 0');
-  assert.strictEqual(data.podLevel.runAsNonRoot.false, 0, 'podLevel.runAsNonRoot.false should be 0');
-  assert.strictEqual(data.podLevel.runAsNonRoot.notSet, 0, 'podLevel.runAsNonRoot.notSet should be 0');
-  assert.strictEqual(data.podLevel.fsGroup.set, 0, 'podLevel.fsGroup.set should be 0');
-  assert.strictEqual(data.podLevel.fsGroup.notSet, 0, 'podLevel.fsGroup.notSet should be 0');
+  expect(data.podLevel.runAsNonRoot.true).toBe(0);
+  expect(data.podLevel.runAsNonRoot.false).toBe(0);
+  expect(data.podLevel.runAsNonRoot.notSet).toBe(0);
+  expect(data.podLevel.fsGroup.set).toBe(0);
+  expect(data.podLevel.fsGroup.notSet).toBe(0);
   
   // Container level counts
-  assert.strictEqual(data.containerLevel.runAsNonRoot.true, 0, 'containerLevel.runAsNonRoot.true should be 0');
-  assert.strictEqual(data.containerLevel.runAsNonRoot.false, 0, 'containerLevel.runAsNonRoot.false should be 0');
-  assert.strictEqual(data.containerLevel.runAsNonRoot.notSet, 0, 'containerLevel.runAsNonRoot.notSet should be 0');
-  assert.strictEqual(data.containerLevel.readOnlyRootFilesystem.true, 0, 'containerLevel.readOnlyRootFilesystem.true should be 0');
-  assert.strictEqual(data.containerLevel.readOnlyRootFilesystem.false, 0, 'containerLevel.readOnlyRootFilesystem.false should be 0');
-  assert.strictEqual(data.containerLevel.readOnlyRootFilesystem.notSet, 0, 'containerLevel.readOnlyRootFilesystem.notSet should be 0');
-  assert.strictEqual(data.containerLevel.allowPrivilegeEscalation.true, 0, 'containerLevel.allowPrivilegeEscalation.true should be 0');
-  assert.strictEqual(data.containerLevel.allowPrivilegeEscalation.false, 0, 'containerLevel.allowPrivilegeEscalation.false should be 0');
-  assert.strictEqual(data.containerLevel.allowPrivilegeEscalation.notSet, 0, 'containerLevel.allowPrivilegeEscalation.notSet should be 0');
+  expect(data.containerLevel.runAsNonRoot.true).toBe(0);
+  expect(data.containerLevel.runAsNonRoot.false).toBe(0);
+  expect(data.containerLevel.runAsNonRoot.notSet).toBe(0);
+  expect(data.containerLevel.readOnlyRootFilesystem.true).toBe(0);
+  expect(data.containerLevel.readOnlyRootFilesystem.false).toBe(0);
+  expect(data.containerLevel.readOnlyRootFilesystem.notSet).toBe(0);
+  expect(data.containerLevel.allowPrivilegeEscalation.true).toBe(0);
+  expect(data.containerLevel.allowPrivilegeEscalation.false).toBe(0);
+  expect(data.containerLevel.allowPrivilegeEscalation.notSet).toBe(0);
   
   // Totals
-  assert.strictEqual(data.totalPods, 0, 'totalPods should be 0');
-  assert.strictEqual(data.totalContainers, 0, 'totalContainers should be 0');
+  expect(data.totalPods).toBe(0);
+  expect(data.totalContainers).toBe(0);
 });
 
-test('initSecurityContextsData - capabilities arrays are empty', () => {
+it('initSecurityContextsData - capabilities arrays are empty', () => {
   const data = initSecurityContextsData();
   
-  assert.ok(Array.isArray(data.containerLevel.capabilities.added), 'capabilities.added should be array');
-  assert.ok(Array.isArray(data.containerLevel.capabilities.dropped), 'capabilities.dropped should be array');
-  assert.strictEqual(data.containerLevel.capabilities.added.length, 0, 'capabilities.added should be empty');
-  assert.strictEqual(data.containerLevel.capabilities.dropped.length, 0, 'capabilities.dropped should be empty');
+  expect(Array.isArray(data.containerLevel.capabilities.added), 'capabilities.added should be array');
+  expect(Array.isArray(data.containerLevel.capabilities.dropped), 'capabilities.dropped should be array');
+  expect(data.containerLevel.capabilities.added.length).toBe(0);
+  expect(data.containerLevel.capabilities.dropped.length).toBe(0);
 });
 
-test('initLabelsAnnotationsData - returns proper structure', () => {
+it('initLabelsAnnotationsData - returns proper structure', () => {
   const data = initLabelsAnnotationsData();
   
-  assert.ok(data.labelCounts, 'Should have labelCounts object');
-  assert.ok(Array.isArray(data.labelCounts.pods), 'Should have labelCounts.pods array');
-  assert.ok(Array.isArray(data.labelCounts.deployments), 'Should have labelCounts.deployments array');
-  assert.ok(Array.isArray(data.labelCounts.services), 'Should have labelCounts.services array');
+  expect(data.labelCounts).toBeTruthy(); // Should have labelCounts object');
+  expect(Array.isArray(data.labelCounts.pods)).toBeTruthy(); // Should have labelCounts.pods array');
+  expect(Array.isArray(data.labelCounts.deployments)).toBeTruthy(); // Should have labelCounts.deployments array');
+  expect(Array.isArray(data.labelCounts.services)).toBeTruthy(); // Should have labelCounts.services array');
   
-  assert.ok(data.annotationCounts, 'Should have annotationCounts object');
-  assert.ok(Array.isArray(data.annotationCounts.pods), 'Should have annotationCounts.pods array');
-  assert.ok(Array.isArray(data.annotationCounts.deployments), 'Should have annotationCounts.deployments array');
-  assert.ok(Array.isArray(data.annotationCounts.services), 'Should have annotationCounts.services array');
+  expect(data.annotationCounts).toBeTruthy(); // Should have annotationCounts object');
+  expect(Array.isArray(data.annotationCounts.pods)).toBeTruthy(); // Should have annotationCounts.pods array');
+  expect(Array.isArray(data.annotationCounts.deployments)).toBeTruthy(); // Should have annotationCounts.deployments array');
+  expect(Array.isArray(data.annotationCounts.services)).toBeTruthy(); // Should have annotationCounts.services array');
   
-  assert.ok(Array.isArray(data.commonLabelKeys), 'Should have commonLabelKeys array');
+  expect(Array.isArray(data.commonLabelKeys)).toBeTruthy(); // Should have commonLabelKeys array');
 });
 
-test('initLabelsAnnotationsData - all arrays are empty', () => {
+it('initLabelsAnnotationsData - all arrays are empty', () => {
   const data = initLabelsAnnotationsData();
   
-  assert.strictEqual(data.labelCounts.pods.length, 0, 'labelCounts.pods should be empty');
-  assert.strictEqual(data.labelCounts.deployments.length, 0, 'labelCounts.deployments should be empty');
-  assert.strictEqual(data.labelCounts.services.length, 0, 'labelCounts.services should be empty');
+  expect(data.labelCounts.pods.length).toBe(0);
+  expect(data.labelCounts.deployments.length).toBe(0);
+  expect(data.labelCounts.services.length).toBe(0);
   
-  assert.strictEqual(data.annotationCounts.pods.length, 0, 'annotationCounts.pods should be empty');
-  assert.strictEqual(data.annotationCounts.deployments.length, 0, 'annotationCounts.deployments should be empty');
-  assert.strictEqual(data.annotationCounts.services.length, 0, 'annotationCounts.services should be empty');
+  expect(data.annotationCounts.pods.length).toBe(0);
+  expect(data.annotationCounts.deployments.length).toBe(0);
+  expect(data.annotationCounts.services.length).toBe(0);
   
-  assert.strictEqual(data.commonLabelKeys.length, 0, 'commonLabelKeys should be empty');
+  expect(data.commonLabelKeys.length).toBe(0);
 });
 
-test('initVolumesData - returns proper structure', () => {
+it('initVolumesData - returns proper structure', () => {
   const data = initVolumesData();
   
-  assert.ok(data.volumeTypes, 'Should have volumeTypes object');
-  assert.strictEqual(typeof data.volumeTypes.configMap, 'number', 'Should have configMap count');
-  assert.strictEqual(typeof data.volumeTypes.secret, 'number', 'Should have secret count');
-  assert.strictEqual(typeof data.volumeTypes.emptyDir, 'number', 'Should have emptyDir count');
-  assert.strictEqual(typeof data.volumeTypes.persistentVolumeClaim, 'number', 'Should have persistentVolumeClaim count');
-  assert.strictEqual(typeof data.volumeTypes.hostPath, 'number', 'Should have hostPath count');
-  assert.strictEqual(typeof data.volumeTypes.downwardAPI, 'number', 'Should have downwardAPI count');
-  assert.strictEqual(typeof data.volumeTypes.projected, 'number', 'Should have projected count');
-  assert.strictEqual(typeof data.volumeTypes.other, 'number', 'Should have other count');
+  expect(data.volumeTypes).toBeTruthy(); // Should have volumeTypes object');
+  expect(typeof data.volumeTypes.configMap).toBe('number');
+  expect(typeof data.volumeTypes.secret).toBe('number');
+  expect(typeof data.volumeTypes.emptyDir).toBe('number');
+  expect(typeof data.volumeTypes.persistentVolumeClaim).toBe('number');
+  expect(typeof data.volumeTypes.hostPath).toBe('number');
+  expect(typeof data.volumeTypes.downwardAPI).toBe('number');
+  expect(typeof data.volumeTypes.projected).toBe('number');
+  expect(typeof data.volumeTypes.other).toBe('number');
   
-  assert.ok(Array.isArray(data.volumesPerPod), 'Should have volumesPerPod array');
-  assert.ok(Array.isArray(data.volumeMountsPerContainer), 'Should have volumeMountsPerContainer array');
-  assert.strictEqual(typeof data.totalPods, 'number', 'Should have totalPods number');
+  expect(Array.isArray(data.volumesPerPod)).toBeTruthy(); // Should have volumesPerPod array');
+  expect(Array.isArray(data.volumeMountsPerContainer)).toBeTruthy(); // Should have volumeMountsPerContainer array');
+  expect(typeof data.totalPods).toBe('number');
 });
 
-test('initVolumesData - all counts are zero and arrays are empty', () => {
+it('initVolumesData - all counts are zero and arrays are empty', () => {
   const data = initVolumesData();
   
-  assert.strictEqual(data.volumeTypes.configMap, 0, 'configMap should be 0');
-  assert.strictEqual(data.volumeTypes.secret, 0, 'secret should be 0');
-  assert.strictEqual(data.volumeTypes.emptyDir, 0, 'emptyDir should be 0');
-  assert.strictEqual(data.volumeTypes.persistentVolumeClaim, 0, 'persistentVolumeClaim should be 0');
-  assert.strictEqual(data.volumeTypes.hostPath, 0, 'hostPath should be 0');
-  assert.strictEqual(data.volumeTypes.downwardAPI, 0, 'downwardAPI should be 0');
-  assert.strictEqual(data.volumeTypes.projected, 0, 'projected should be 0');
-  assert.strictEqual(data.volumeTypes.other, 0, 'other should be 0');
+  expect(data.volumeTypes.configMap).toBe(0);
+  expect(data.volumeTypes.secret).toBe(0);
+  expect(data.volumeTypes.emptyDir).toBe(0);
+  expect(data.volumeTypes.persistentVolumeClaim).toBe(0);
+  expect(data.volumeTypes.hostPath).toBe(0);
+  expect(data.volumeTypes.downwardAPI).toBe(0);
+  expect(data.volumeTypes.projected).toBe(0);
+  expect(data.volumeTypes.other).toBe(0);
   
-  assert.strictEqual(data.volumesPerPod.length, 0, 'volumesPerPod should be empty');
-  assert.strictEqual(data.volumeMountsPerContainer.length, 0, 'volumeMountsPerContainer should be empty');
-  assert.strictEqual(data.totalPods, 0, 'totalPods should be 0');
+  expect(data.volumesPerPod.length).toBe(0);
+  expect(data.volumeMountsPerContainer.length).toBe(0);
+  expect(data.totalPods).toBe(0);
 });
 
-test('initServicesData - returns proper structure', () => {
+it('initServicesData - returns proper structure', () => {
   const data = initServicesData();
   
-  assert.ok(data.serviceTypes, 'Should have serviceTypes object');
-  assert.strictEqual(typeof data.serviceTypes.ClusterIP, 'number', 'Should have ClusterIP count');
-  assert.strictEqual(typeof data.serviceTypes.NodePort, 'number', 'Should have NodePort count');
-  assert.strictEqual(typeof data.serviceTypes.LoadBalancer, 'number', 'Should have LoadBalancer count');
-  assert.strictEqual(typeof data.serviceTypes.ExternalName, 'number', 'Should have ExternalName count');
+  expect(data.serviceTypes).toBeTruthy(); // Should have serviceTypes object');
+  expect(typeof data.serviceTypes.ClusterIP).toBe('number');
+  expect(typeof data.serviceTypes.NodePort).toBe('number');
+  expect(typeof data.serviceTypes.LoadBalancer).toBe('number');
+  expect(typeof data.serviceTypes.ExternalName).toBe('number');
   
-  assert.ok(Array.isArray(data.portsPerService), 'Should have portsPerService array');
-  assert.strictEqual(typeof data.totalServices, 'number', 'Should have totalServices number');
+  expect(Array.isArray(data.portsPerService)).toBeTruthy(); // Should have portsPerService array');
+  expect(typeof data.totalServices).toBe('number');
 });
 
-test('initServicesData - all counts are zero and array is empty', () => {
+it('initServicesData - all counts are zero and array is empty', () => {
   const data = initServicesData();
   
-  assert.strictEqual(data.serviceTypes.ClusterIP, 0, 'ClusterIP should be 0');
-  assert.strictEqual(data.serviceTypes.NodePort, 0, 'NodePort should be 0');
-  assert.strictEqual(data.serviceTypes.LoadBalancer, 0, 'LoadBalancer should be 0');
-  assert.strictEqual(data.serviceTypes.ExternalName, 0, 'ExternalName should be 0');
+  expect(data.serviceTypes.ClusterIP).toBe(0);
+  expect(data.serviceTypes.NodePort).toBe(0);
+  expect(data.serviceTypes.LoadBalancer).toBe(0);
+  expect(data.serviceTypes.ExternalName).toBe(0);
   
-  assert.strictEqual(data.portsPerService.length, 0, 'portsPerService should be empty');
-  assert.strictEqual(data.totalServices, 0, 'totalServices should be 0');
+  expect(data.portsPerService.length).toBe(0);
+  expect(data.totalServices).toBe(0);
 });
 
-test('initProbeConfigData - returns proper structure', () => {
+it('initProbeConfigData - returns proper structure', () => {
   const data = initProbeConfigData();
   
-  assert.strictEqual(typeof data.configured, 'number', 'Should have configured count');
-  assert.strictEqual(typeof data.notConfigured, 'number', 'Should have notConfigured count');
+  expect(typeof data.configured).toBe('number');
+  expect(typeof data.notConfigured).toBe('number');
   
-  assert.ok(data.probeTypes, 'Should have probeTypes object');
-  assert.strictEqual(typeof data.probeTypes.http, 'number', 'Should have http count');
-  assert.strictEqual(typeof data.probeTypes.tcp, 'number', 'Should have tcp count');
-  assert.strictEqual(typeof data.probeTypes.exec, 'number', 'Should have exec count');
-  assert.strictEqual(typeof data.probeTypes.grpc, 'number', 'Should have grpc count');
+  expect(data.probeTypes).toBeTruthy(); // Should have probeTypes object');
+  expect(typeof data.probeTypes.http).toBe('number');
+  expect(typeof data.probeTypes.tcp).toBe('number');
+  expect(typeof data.probeTypes.exec).toBe('number');
+  expect(typeof data.probeTypes.grpc).toBe('number');
   
-  assert.ok(Array.isArray(data.initialDelaySeconds), 'Should have initialDelaySeconds array');
-  assert.ok(Array.isArray(data.timeoutSeconds), 'Should have timeoutSeconds array');
-  assert.ok(Array.isArray(data.periodSeconds), 'Should have periodSeconds array');
+  expect(Array.isArray(data.initialDelaySeconds)).toBeTruthy(); // Should have initialDelaySeconds array');
+  expect(Array.isArray(data.timeoutSeconds)).toBeTruthy(); // Should have timeoutSeconds array');
+  expect(Array.isArray(data.periodSeconds)).toBeTruthy(); // Should have periodSeconds array');
 });
 
-test('initProbeConfigData - all counts are zero and arrays are empty', () => {
+it('initProbeConfigData - all counts are zero and arrays are empty', () => {
   const data = initProbeConfigData();
   
-  assert.strictEqual(data.configured, 0, 'configured should be 0');
-  assert.strictEqual(data.notConfigured, 0, 'notConfigured should be 0');
+  expect(data.configured).toBe(0);
+  expect(data.notConfigured).toBe(0);
   
-  assert.strictEqual(data.probeTypes.http, 0, 'http should be 0');
-  assert.strictEqual(data.probeTypes.tcp, 0, 'tcp should be 0');
-  assert.strictEqual(data.probeTypes.exec, 0, 'exec should be 0');
-  assert.strictEqual(data.probeTypes.grpc, 0, 'grpc should be 0');
+  expect(data.probeTypes.http).toBe(0);
+  expect(data.probeTypes.tcp).toBe(0);
+  expect(data.probeTypes.exec).toBe(0);
+  expect(data.probeTypes.grpc).toBe(0);
   
-  assert.strictEqual(data.initialDelaySeconds.length, 0, 'initialDelaySeconds should be empty');
-  assert.strictEqual(data.timeoutSeconds.length, 0, 'timeoutSeconds should be empty');
-  assert.strictEqual(data.periodSeconds.length, 0, 'periodSeconds should be empty');
+  expect(data.initialDelaySeconds.length).toBe(0);
+  expect(data.timeoutSeconds.length).toBe(0);
+  expect(data.periodSeconds.length).toBe(0);
 });
 
-test('initProbesData - returns proper structure', () => {
+it('initProbesData - returns proper structure', () => {
   const data = initProbesData();
   
-  assert.ok(data.livenessProbes, 'Should have livenessProbes object');
-  assert.ok(data.readinessProbes, 'Should have readinessProbes object');
-  assert.ok(data.startupProbes, 'Should have startupProbes object');
-  assert.strictEqual(typeof data.totalContainers, 'number', 'Should have totalContainers number');
+  expect(data.livenessProbes).toBeTruthy(); // Should have livenessProbes object');
+  expect(data.readinessProbes).toBeTruthy(); // Should have readinessProbes object');
+  expect(data.startupProbes).toBeTruthy(); // Should have startupProbes object');
+  expect(typeof data.totalContainers).toBe('number');
 });
 
-test('initProbesData - all probe configs are initialized', () => {
+it('initProbesData - all probe configs are initialized', () => {
   const data = initProbesData();
   
   // Verify liveness probes initialized
-  assert.strictEqual(data.livenessProbes.configured, 0, 'livenessProbes.configured should be 0');
-  assert.strictEqual(data.livenessProbes.notConfigured, 0, 'livenessProbes.notConfigured should be 0');
-  assert.ok(data.livenessProbes.probeTypes, 'livenessProbes should have probeTypes');
+  expect(data.livenessProbes.configured).toBe(0);
+  expect(data.livenessProbes.notConfigured).toBe(0);
+  expect(data.livenessProbes.probeTypes, 'livenessProbes should have probeTypes');
   
   // Verify readiness probes initialized
-  assert.strictEqual(data.readinessProbes.configured, 0, 'readinessProbes.configured should be 0');
-  assert.strictEqual(data.readinessProbes.notConfigured, 0, 'readinessProbes.notConfigured should be 0');
-  assert.ok(data.readinessProbes.probeTypes, 'readinessProbes should have probeTypes');
+  expect(data.readinessProbes.configured).toBe(0);
+  expect(data.readinessProbes.notConfigured).toBe(0);
+  expect(data.readinessProbes.probeTypes, 'readinessProbes should have probeTypes');
   
   // Verify startup probes initialized
-  assert.strictEqual(data.startupProbes.configured, 0, 'startupProbes.configured should be 0');
-  assert.strictEqual(data.startupProbes.notConfigured, 0, 'startupProbes.notConfigured should be 0');
-  assert.ok(data.startupProbes.probeTypes, 'startupProbes should have probeTypes');
+  expect(data.startupProbes.configured).toBe(0);
+  expect(data.startupProbes.notConfigured).toBe(0);
+  expect(data.startupProbes.probeTypes, 'startupProbes should have probeTypes');
   
   // Verify total
-  assert.strictEqual(data.totalContainers, 0, 'totalContainers should be 0');
+  expect(data.totalContainers).toBe(0);
 });
 
-test('initProbesData - probe configs have independent instances', () => {
+it('initProbesData - probe configs have independent instances', () => {
   const data = initProbesData();
   
   // Modify one probe config
   data.livenessProbes.configured = 5;
   
   // Verify others are not affected
-  assert.strictEqual(data.readinessProbes.configured, 0, 'readinessProbes should not be affected');
-  assert.strictEqual(data.startupProbes.configured, 0, 'startupProbes should not be affected');
+  expect(data.readinessProbes.configured).toBe(0);
+  expect(data.startupProbes.configured).toBe(0);
 });
 
 // ========== Helper Function Tests ==========
 
 // processContainerResources tests
-test('processContainerResources - processes valid resource requests and limits', () => {
+it('processContainerResources - processes valid resource requests and limits', () => {
   const data = createTestData();
   
   processContainerResources(data, {
@@ -335,27 +335,27 @@ test('processContainerResources - processes valid resource requests and limits',
     limits: { cpu: '500m', memory: '512Mi' },
   });
   
-  assert.strictEqual(data.resourceLimitsRequests.containers.cpuRequests.length, 1);
-  assert.strictEqual(data.resourceLimitsRequests.containers.cpuRequests[0], '100m');
-  assert.strictEqual(data.resourceLimitsRequests.containers.memoryRequests[0], '256Mi');
-  assert.strictEqual(data.resourceLimitsRequests.containers.cpuLimits[0], '500m');
-  assert.strictEqual(data.resourceLimitsRequests.containers.memoryLimits[0], '512Mi');
-  assert.strictEqual(data.resourceLimitsRequests.containers.totalCount, 1);
+  expect(data.resourceLimitsRequests.containers.cpuRequests.length).toBe(1);
+  expect(data.resourceLimitsRequests.containers.cpuRequests[0]).toBe('100m');
+  expect(data.resourceLimitsRequests.containers.memoryRequests[0]).toBe('256Mi');
+  expect(data.resourceLimitsRequests.containers.cpuLimits[0]).toBe('500m');
+  expect(data.resourceLimitsRequests.containers.memoryLimits[0]).toBe('512Mi');
+  expect(data.resourceLimitsRequests.containers.totalCount).toBe(1);
 });
 
-test('processContainerResources - handles undefined resources', () => {
+it('processContainerResources - handles undefined resources', () => {
   const data = createTestData();
   
   processContainerResources(data, undefined);
   
-  assert.strictEqual(data.resourceLimitsRequests.containers.cpuRequests[0], null);
-  assert.strictEqual(data.resourceLimitsRequests.containers.memoryRequests[0], null);
-  assert.strictEqual(data.resourceLimitsRequests.containers.cpuLimits[0], null);
-  assert.strictEqual(data.resourceLimitsRequests.containers.memoryLimits[0], null);
-  assert.strictEqual(data.resourceLimitsRequests.containers.totalCount, 1);
+  expect(data.resourceLimitsRequests.containers.cpuRequests[0]).toBe(null);
+  expect(data.resourceLimitsRequests.containers.memoryRequests[0]).toBe(null);
+  expect(data.resourceLimitsRequests.containers.cpuLimits[0]).toBe(null);
+  expect(data.resourceLimitsRequests.containers.memoryLimits[0]).toBe(null);
+  expect(data.resourceLimitsRequests.containers.totalCount).toBe(1);
 });
 
-test('processContainerResources - handles partial resource definitions', () => {
+it('processContainerResources - handles partial resource definitions', () => {
   const data = createTestData();
   
   processContainerResources(data, {
@@ -363,79 +363,79 @@ test('processContainerResources - handles partial resource definitions', () => {
     limits: { memory: '512Mi' },
   });
   
-  assert.strictEqual(data.resourceLimitsRequests.containers.cpuRequests[0], '100m');
-  assert.strictEqual(data.resourceLimitsRequests.containers.memoryRequests[0], null);
-  assert.strictEqual(data.resourceLimitsRequests.containers.cpuLimits[0], null);
-  assert.strictEqual(data.resourceLimitsRequests.containers.memoryLimits[0], '512Mi');
-  assert.strictEqual(data.resourceLimitsRequests.containers.totalCount, 1);
+  expect(data.resourceLimitsRequests.containers.cpuRequests[0]).toBe('100m');
+  expect(data.resourceLimitsRequests.containers.memoryRequests[0]).toBe(null);
+  expect(data.resourceLimitsRequests.containers.cpuLimits[0]).toBe(null);
+  expect(data.resourceLimitsRequests.containers.memoryLimits[0]).toBe('512Mi');
+  expect(data.resourceLimitsRequests.containers.totalCount).toBe(1);
 });
 
-test('processContainerResources - handles multiple containers', () => {
+it('processContainerResources - handles multiple containers', () => {
   const data = createTestData();
   
   processContainerResources(data, { requests: { cpu: '100m' } });
   processContainerResources(data, { limits: { memory: '512Mi' } });
   processContainerResources(data, undefined);
   
-  assert.strictEqual(data.resourceLimitsRequests.containers.totalCount, 3);
-  assert.strictEqual(data.resourceLimitsRequests.containers.cpuRequests.length, 3);
+  expect(data.resourceLimitsRequests.containers.totalCount).toBe(3);
+  expect(data.resourceLimitsRequests.containers.cpuRequests.length).toBe(3);
 });
 
 // processImagePullPolicy tests
-test('processImagePullPolicy - counts Always policy', () => {
+it('processImagePullPolicy - counts Always policy', () => {
   const data = createTestData();
   
   processImagePullPolicy(data, 'Always');
   
-  assert.strictEqual(data.imagePullPolicies.policies.Always, 1);
-  assert.strictEqual(data.imagePullPolicies.policies.IfNotPresent, 0);
-  assert.strictEqual(data.imagePullPolicies.policies.Never, 0);
-  assert.strictEqual(data.imagePullPolicies.policies.notSet, 0);
-  assert.strictEqual(data.imagePullPolicies.totalContainers, 1);
+  expect(data.imagePullPolicies.policies.Always).toBe(1);
+  expect(data.imagePullPolicies.policies.IfNotPresent).toBe(0);
+  expect(data.imagePullPolicies.policies.Never).toBe(0);
+  expect(data.imagePullPolicies.policies.notSet).toBe(0);
+  expect(data.imagePullPolicies.totalContainers).toBe(1);
 });
 
-test('processImagePullPolicy - counts IfNotPresent policy', () => {
+it('processImagePullPolicy - counts IfNotPresent policy', () => {
   const data = createTestData();
   
   processImagePullPolicy(data, 'IfNotPresent');
   
-  assert.strictEqual(data.imagePullPolicies.policies.IfNotPresent, 1);
-  assert.strictEqual(data.imagePullPolicies.totalContainers, 1);
+  expect(data.imagePullPolicies.policies.IfNotPresent).toBe(1);
+  expect(data.imagePullPolicies.totalContainers).toBe(1);
 });
 
-test('processImagePullPolicy - counts Never policy', () => {
+it('processImagePullPolicy - counts Never policy', () => {
   const data = createTestData();
   
   processImagePullPolicy(data, 'Never');
   
-  assert.strictEqual(data.imagePullPolicies.policies.Never, 1);
-  assert.strictEqual(data.imagePullPolicies.totalContainers, 1);
+  expect(data.imagePullPolicies.policies.Never).toBe(1);
+  expect(data.imagePullPolicies.totalContainers).toBe(1);
 });
 
-test('processImagePullPolicy - counts notSet for undefined', () => {
+it('processImagePullPolicy - counts notSet for undefined', () => {
   const data = createTestData();
   
   processImagePullPolicy(data, undefined);
   
-  assert.strictEqual(data.imagePullPolicies.policies.notSet, 1);
-  assert.strictEqual(data.imagePullPolicies.totalContainers, 1);
+  expect(data.imagePullPolicies.policies.notSet).toBe(1);
+  expect(data.imagePullPolicies.totalContainers).toBe(1);
 });
 
-test('processImagePullPolicy - handles multiple containers', () => {
+it('processImagePullPolicy - handles multiple containers', () => {
   const data = createTestData();
   
   processImagePullPolicy(data, 'Always');
   processImagePullPolicy(data, 'IfNotPresent');
   processImagePullPolicy(data, undefined);
   
-  assert.strictEqual(data.imagePullPolicies.policies.Always, 1);
-  assert.strictEqual(data.imagePullPolicies.policies.IfNotPresent, 1);
-  assert.strictEqual(data.imagePullPolicies.policies.notSet, 1);
-  assert.strictEqual(data.imagePullPolicies.totalContainers, 3);
+  expect(data.imagePullPolicies.policies.Always).toBe(1);
+  expect(data.imagePullPolicies.policies.IfNotPresent).toBe(1);
+  expect(data.imagePullPolicies.policies.notSet).toBe(1);
+  expect(data.imagePullPolicies.totalContainers).toBe(3);
 });
 
 // processContainerSecurityContext tests
-test('processContainerSecurityContext - tracks all security settings', () => {
+it('processContainerSecurityContext - tracks all security settings', () => {
   const data = createTestData();
   
   processContainerSecurityContext(data, {
@@ -448,39 +448,39 @@ test('processContainerSecurityContext - tracks all security settings', () => {
     },
   });
   
-  assert.strictEqual(data.securityContexts.containerLevel.runAsNonRoot.true, 1);
-  assert.strictEqual(data.securityContexts.containerLevel.readOnlyRootFilesystem.false, 1);
-  assert.strictEqual(data.securityContexts.containerLevel.allowPrivilegeEscalation.true, 1);
-  assert.deepStrictEqual(data.securityContexts.containerLevel.capabilities.added, ['NET_ADMIN', 'SYS_TIME']);
-  assert.deepStrictEqual(data.securityContexts.containerLevel.capabilities.dropped, ['ALL']);
-  assert.strictEqual(data.securityContexts.totalContainers, 1);
+  expect(data.securityContexts.containerLevel.runAsNonRoot.true).toBe(1);
+    expect(data.securityContexts.containerLevel.readOnlyRootFilesystem.false).toBe(1);
+    expect(data.securityContexts.containerLevel.allowPrivilegeEscalation.true).toBe(1);
+    expect(data.securityContexts.containerLevel.capabilities.added).toEqual(['NET_ADMIN', 'SYS_TIME']);
+    expect(data.securityContexts.containerLevel.capabilities.dropped).toEqual(['ALL']);
+    expect(data.securityContexts.totalContainers).toBe(1);
 });
 
-test('processContainerSecurityContext - handles undefined context', () => {
+it('processContainerSecurityContext - handles undefined context', () => {
   const data = createTestData();
   
   processContainerSecurityContext(data, undefined);
   
-  assert.strictEqual(data.securityContexts.containerLevel.runAsNonRoot.notSet, 1);
-  assert.strictEqual(data.securityContexts.containerLevel.readOnlyRootFilesystem.notSet, 1);
-  assert.strictEqual(data.securityContexts.containerLevel.allowPrivilegeEscalation.notSet, 1);
-  assert.strictEqual(data.securityContexts.totalContainers, 1);
+  expect(data.securityContexts.containerLevel.runAsNonRoot.notSet).toBe(1);
+  expect(data.securityContexts.containerLevel.readOnlyRootFilesystem.notSet).toBe(1);
+  expect(data.securityContexts.containerLevel.allowPrivilegeEscalation.notSet).toBe(1);
+  expect(data.securityContexts.totalContainers).toBe(1);
 });
 
-test('processContainerSecurityContext - handles partial context', () => {
+it('processContainerSecurityContext - handles partial context', () => {
   const data = createTestData();
   
   processContainerSecurityContext(data, {
     runAsNonRoot: false,
   });
   
-  assert.strictEqual(data.securityContexts.containerLevel.runAsNonRoot.false, 1);
-  assert.strictEqual(data.securityContexts.containerLevel.readOnlyRootFilesystem.notSet, 1);
-  assert.strictEqual(data.securityContexts.containerLevel.allowPrivilegeEscalation.notSet, 1);
-  assert.strictEqual(data.securityContexts.totalContainers, 1);
+  expect(data.securityContexts.containerLevel.runAsNonRoot.false).toBe(1);
+  expect(data.securityContexts.containerLevel.readOnlyRootFilesystem.notSet).toBe(1);
+  expect(data.securityContexts.containerLevel.allowPrivilegeEscalation.notSet).toBe(1);
+  expect(data.securityContexts.totalContainers).toBe(1);
 });
 
-test('processContainerSecurityContext - accumulates capabilities', () => {
+it('processContainerSecurityContext - accumulates capabilities', () => {
   const data = createTestData();
   
   processContainerSecurityContext(data, {
@@ -490,13 +490,13 @@ test('processContainerSecurityContext - accumulates capabilities', () => {
     capabilities: { add: ['SYS_TIME'], drop: ['ALL'] },
   });
   
-  assert.deepStrictEqual(data.securityContexts.containerLevel.capabilities.added, ['NET_ADMIN', 'SYS_TIME']);
-  assert.deepStrictEqual(data.securityContexts.containerLevel.capabilities.dropped, ['ALL']);
-  assert.strictEqual(data.securityContexts.totalContainers, 2);
+  expect(data.securityContexts.containerLevel.capabilities.added).toEqual(['NET_ADMIN', 'SYS_TIME']);
+  expect(data.securityContexts.containerLevel.capabilities.dropped).toEqual(['ALL']);
+  expect(data.securityContexts.totalContainers).toBe(2);
 });
 
 // processPodSecurityContext tests
-test('processPodSecurityContext - tracks pod-level security settings', () => {
+it('processPodSecurityContext - tracks pod-level security settings', () => {
   const data = createTestData();
   
   processPodSecurityContext(data, {
@@ -504,48 +504,48 @@ test('processPodSecurityContext - tracks pod-level security settings', () => {
     fsGroup: 1000,
   });
   
-  assert.strictEqual(data.securityContexts.podLevel.runAsNonRoot.true, 1);
-  assert.strictEqual(data.securityContexts.podLevel.fsGroup.set, 1);
-  assert.strictEqual(data.securityContexts.totalPods, 1);
+  expect(data.securityContexts.podLevel.runAsNonRoot.true).toBe(1);
+  expect(data.securityContexts.podLevel.fsGroup.set).toBe(1);
+  expect(data.securityContexts.totalPods).toBe(1);
 });
 
-test('processPodSecurityContext - handles undefined context', () => {
+it('processPodSecurityContext - handles undefined context', () => {
   const data = createTestData();
   
   processPodSecurityContext(data, undefined);
   
-  assert.strictEqual(data.securityContexts.podLevel.runAsNonRoot.notSet, 1);
-  assert.strictEqual(data.securityContexts.podLevel.fsGroup.notSet, 1);
-  assert.strictEqual(data.securityContexts.totalPods, 1);
+  expect(data.securityContexts.podLevel.runAsNonRoot.notSet).toBe(1);
+  expect(data.securityContexts.podLevel.fsGroup.notSet).toBe(1);
+  expect(data.securityContexts.totalPods).toBe(1);
 });
 
-test('processPodSecurityContext - handles false values', () => {
+it('processPodSecurityContext - handles false values', () => {
   const data = createTestData();
   
   processPodSecurityContext(data, {
     runAsNonRoot: false,
   });
   
-  assert.strictEqual(data.securityContexts.podLevel.runAsNonRoot.false, 1);
-  assert.strictEqual(data.securityContexts.podLevel.fsGroup.notSet, 1);
-  assert.strictEqual(data.securityContexts.totalPods, 1);
+  expect(data.securityContexts.podLevel.runAsNonRoot.false).toBe(1);
+  expect(data.securityContexts.podLevel.fsGroup.notSet).toBe(1);
+  expect(data.securityContexts.totalPods).toBe(1);
 });
 
-test('processPodSecurityContext - handles multiple pods', () => {
+it('processPodSecurityContext - handles multiple pods', () => {
   const data = createTestData();
   
   processPodSecurityContext(data, { runAsNonRoot: true, fsGroup: 1000 });
   processPodSecurityContext(data, { runAsNonRoot: false });
   processPodSecurityContext(data, undefined);
   
-  assert.strictEqual(data.securityContexts.podLevel.runAsNonRoot.true, 1);
-  assert.strictEqual(data.securityContexts.podLevel.runAsNonRoot.false, 1);
-  assert.strictEqual(data.securityContexts.podLevel.runAsNonRoot.notSet, 1);
-  assert.strictEqual(data.securityContexts.totalPods, 3);
+  expect(data.securityContexts.podLevel.runAsNonRoot.true).toBe(1);
+  expect(data.securityContexts.podLevel.runAsNonRoot.false).toBe(1);
+  expect(data.securityContexts.podLevel.runAsNonRoot.notSet).toBe(1);
+  expect(data.securityContexts.totalPods).toBe(3);
 });
 
 // processProbes tests
-test('processProbes - tracks all probe types', () => {
+it('processProbes - tracks all probe types', () => {
   const data = createTestData();
   
   processProbes(data, {
@@ -567,22 +567,22 @@ test('processProbes - tracks all probe types', () => {
     },
   });
   
-  assert.strictEqual(data.probes.livenessProbes.configured, 1);
-  assert.strictEqual(data.probes.livenessProbes.probeTypes.http, 1);
-  assert.deepStrictEqual(data.probes.livenessProbes.initialDelaySeconds, [10]);
-  assert.deepStrictEqual(data.probes.livenessProbes.timeoutSeconds, [5]);
-  assert.deepStrictEqual(data.probes.livenessProbes.periodSeconds, [30]);
+  expect(data.probes.livenessProbes.configured).toBe(1);
+  expect(data.probes.livenessProbes.probeTypes.http).toBe(1);
+  expect(data.probes.livenessProbes.initialDelaySeconds).toEqual([10]);
+  expect(data.probes.livenessProbes.timeoutSeconds).toEqual([5]);
+  expect(data.probes.livenessProbes.periodSeconds).toEqual([30]);
   
-  assert.strictEqual(data.probes.readinessProbes.configured, 1);
-  assert.strictEqual(data.probes.readinessProbes.probeTypes.tcp, 1);
+  expect(data.probes.readinessProbes.configured).toBe(1);
+  expect(data.probes.readinessProbes.probeTypes.tcp).toBe(1);
   
-  assert.strictEqual(data.probes.startupProbes.configured, 1);
-  assert.strictEqual(data.probes.startupProbes.probeTypes.exec, 1);
+  expect(data.probes.startupProbes.configured).toBe(1);
+  expect(data.probes.startupProbes.probeTypes.exec).toBe(1);
   
-  assert.strictEqual(data.probes.totalContainers, 1);
+  expect(data.probes.totalContainers).toBe(1);
 });
 
-test('processProbes - tracks notConfigured for missing probes', () => {
+it('processProbes - tracks notConfigured for missing probes', () => {
   const data = createTestData();
   
   processProbes(data, {
@@ -590,13 +590,13 @@ test('processProbes - tracks notConfigured for missing probes', () => {
     image: 'test:latest',
   });
   
-  assert.strictEqual(data.probes.livenessProbes.notConfigured, 1);
-  assert.strictEqual(data.probes.readinessProbes.notConfigured, 1);
-  assert.strictEqual(data.probes.startupProbes.notConfigured, 1);
-  assert.strictEqual(data.probes.totalContainers, 1);
+  expect(data.probes.livenessProbes.notConfigured).toBe(1);
+  expect(data.probes.readinessProbes.notConfigured).toBe(1);
+  expect(data.probes.startupProbes.notConfigured).toBe(1);
+  expect(data.probes.totalContainers).toBe(1);
 });
 
-test('processProbes - handles grpc probe type', () => {
+it('processProbes - handles grpc probe type', () => {
   const data = createTestData();
   
   processProbes(data, {
@@ -607,10 +607,10 @@ test('processProbes - handles grpc probe type', () => {
     },
   });
   
-  assert.strictEqual(data.probes.livenessProbes.probeTypes.grpc, 1);
+  expect(data.probes.livenessProbes.probeTypes.grpc).toBe(1);
 });
 
-test('processProbes - handles multiple containers', () => {
+it('processProbes - handles multiple containers', () => {
   const data = createTestData();
   
   processProbes(data, {
@@ -623,13 +623,13 @@ test('processProbes - handles multiple containers', () => {
     image: 'test:latest',
   });
   
-  assert.strictEqual(data.probes.livenessProbes.configured, 1);
-  assert.strictEqual(data.probes.livenessProbes.notConfigured, 1);
-  assert.strictEqual(data.probes.totalContainers, 2);
+  expect(data.probes.livenessProbes.configured).toBe(1);
+  expect(data.probes.livenessProbes.notConfigured).toBe(1);
+  expect(data.probes.totalContainers).toBe(2);
 });
 
 // processVolumes tests
-test('processVolumes - processes different volume types', () => {
+it('processVolumes - processes different volume types', () => {
   const data = createTestData();
   
   processVolumes(data, [
@@ -639,15 +639,15 @@ test('processVolumes - processes different volume types', () => {
     { name: 'pvc', persistentVolumeClaim: { claimName: 'my-pvc' } },
   ]);
   
-  assert.strictEqual(data.volumes.volumeTypes.configMap, 1);
-  assert.strictEqual(data.volumes.volumeTypes.secret, 1);
-  assert.strictEqual(data.volumes.volumeTypes.emptyDir, 1);
-  assert.strictEqual(data.volumes.volumeTypes.persistentVolumeClaim, 1);
-  assert.deepStrictEqual(data.volumes.volumesPerPod, [4]);
-  assert.strictEqual(data.volumes.totalPods, 1);
+  expect(data.volumes.volumeTypes.configMap).toBe(1);
+  expect(data.volumes.volumeTypes.secret).toBe(1);
+  expect(data.volumes.volumeTypes.emptyDir).toBe(1);
+  expect(data.volumes.volumeTypes.persistentVolumeClaim).toBe(1);
+  expect(data.volumes.volumesPerPod).toEqual([4]);
+  expect(data.volumes.totalPods).toBe(1);
 });
 
-test('processVolumes - handles all volume types', () => {
+it('processVolumes - handles all volume types', () => {
   const data = createTestData();
   
   processVolumes(data, [
@@ -656,52 +656,52 @@ test('processVolumes - handles all volume types', () => {
     { name: 'projected', projected: { sources: [] } },
   ]);
   
-  assert.strictEqual(data.volumes.volumeTypes.hostPath, 1);
-  assert.strictEqual(data.volumes.volumeTypes.downwardAPI, 1);
-  assert.strictEqual(data.volumes.volumeTypes.projected, 1);
+  expect(data.volumes.volumeTypes.hostPath).toBe(1);
+  expect(data.volumes.volumeTypes.downwardAPI).toBe(1);
+  expect(data.volumes.volumeTypes.projected).toBe(1);
 });
 
-test('processVolumes - handles undefined volumes', () => {
+it('processVolumes - handles undefined volumes', () => {
   const data = createTestData();
   
   processVolumes(data, undefined);
   
-  assert.deepStrictEqual(data.volumes.volumesPerPod, [0]);
-  assert.strictEqual(data.volumes.totalPods, 1);
+  expect(data.volumes.volumesPerPod).toEqual([0]);
+  expect(data.volumes.totalPods).toBe(1);
 });
 
-test('processVolumes - handles empty volumes array', () => {
+it('processVolumes - handles empty volumes array', () => {
   const data = createTestData();
   
   processVolumes(data, []);
   
-  assert.deepStrictEqual(data.volumes.volumesPerPod, [0]);
-  assert.strictEqual(data.volumes.totalPods, 1);
+  expect(data.volumes.volumesPerPod).toEqual([0]);
+  expect(data.volumes.totalPods).toBe(1);
 });
 
-test('processVolumes - tracks other volume types', () => {
+it('processVolumes - tracks other volume types', () => {
   const data = createTestData();
   
   processVolumes(data, [
     { name: 'unknown', csi: { driver: 'some-csi-driver' } },
   ]);
   
-  assert.strictEqual(data.volumes.volumeTypes.other, 1);
+  expect(data.volumes.volumeTypes.other).toBe(1);
 });
 
-test('processVolumes - handles multiple pods', () => {
+it('processVolumes - handles multiple pods', () => {
   const data = createTestData();
   
   processVolumes(data, [{ name: 'vol1', emptyDir: {} }]);
   processVolumes(data, [{ name: 'vol1', emptyDir: {} }, { name: 'vol2', emptyDir: {} }]);
   processVolumes(data, undefined);
   
-  assert.deepStrictEqual(data.volumes.volumesPerPod, [1, 2, 0]);
-  assert.strictEqual(data.volumes.totalPods, 3);
+  expect(data.volumes.volumesPerPod).toEqual([1, 2, 0]);
+  expect(data.volumes.totalPods).toBe(3);
 });
 
 // processPodLabelsAnnotations tests
-test('processPodLabelsAnnotations - counts labels and annotations', () => {
+it('processPodLabelsAnnotations - counts labels and annotations', () => {
   const data = createTestData();
   
   processPodLabelsAnnotations(data, {
@@ -716,20 +716,20 @@ test('processPodLabelsAnnotations - counts labels and annotations', () => {
     },
   });
   
-  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.pods, [3]);
-  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.pods, [2]);
+  expect(data.labelsAnnotations.labelCounts.pods).toEqual([3]);
+  expect(data.labelsAnnotations.annotationCounts.pods).toEqual([2]);
 });
 
-test('processPodLabelsAnnotations - handles undefined metadata', () => {
+it('processPodLabelsAnnotations - handles undefined metadata', () => {
   const data = createTestData();
   
   processPodLabelsAnnotations(data, undefined);
   
-  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.pods, [0]);
-  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.pods, [0]);
+  expect(data.labelsAnnotations.labelCounts.pods).toEqual([0]);
+  expect(data.labelsAnnotations.annotationCounts.pods).toEqual([0]);
 });
 
-test('processPodLabelsAnnotations - handles empty labels and annotations', () => {
+it('processPodLabelsAnnotations - handles empty labels and annotations', () => {
   const data = createTestData();
   
   processPodLabelsAnnotations(data, {
@@ -737,11 +737,11 @@ test('processPodLabelsAnnotations - handles empty labels and annotations', () =>
     annotations: {},
   });
   
-  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.pods, [0]);
-  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.pods, [0]);
+  expect(data.labelsAnnotations.labelCounts.pods).toEqual([0]);
+  expect(data.labelsAnnotations.annotationCounts.pods).toEqual([0]);
 });
 
-test('processPodLabelsAnnotations - handles metadata without labels or annotations', () => {
+it('processPodLabelsAnnotations - handles metadata without labels or annotations', () => {
   const data = createTestData();
   
   processPodLabelsAnnotations(data, {
@@ -749,11 +749,11 @@ test('processPodLabelsAnnotations - handles metadata without labels or annotatio
     namespace: 'default',
   });
   
-  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.pods, [0]);
-  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.pods, [0]);
+  expect(data.labelsAnnotations.labelCounts.pods).toEqual([0]);
+  expect(data.labelsAnnotations.annotationCounts.pods).toEqual([0]);
 });
 
-test('processPodLabelsAnnotations - handles multiple pods', () => {
+it('processPodLabelsAnnotations - handles multiple pods', () => {
   const data = createTestData();
   
   processPodLabelsAnnotations(data, {
@@ -765,12 +765,12 @@ test('processPodLabelsAnnotations - handles multiple pods', () => {
   });
   processPodLabelsAnnotations(data, undefined);
   
-  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.pods, [2, 1, 0]);
-  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.pods, [1, 0, 0]);
+  expect(data.labelsAnnotations.labelCounts.pods).toEqual([2, 1, 0]);
+  expect(data.labelsAnnotations.annotationCounts.pods).toEqual([1, 0, 0]);
 });
 
 // processLabelsAnnotations tests
-test('processLabelsAnnotations - counts labels and annotations for deployments', () => {
+it('processLabelsAnnotations - counts labels and annotations for deployments', () => {
   const data = createTestData();
   
   processLabelsAnnotations(data, 'deployments', {
@@ -785,11 +785,11 @@ test('processLabelsAnnotations - counts labels and annotations for deployments',
     },
   });
   
-  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.deployments, [3]);
-  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.deployments, [2]);
+  expect(data.labelsAnnotations.labelCounts.deployments).toEqual([3]);
+  expect(data.labelsAnnotations.annotationCounts.deployments).toEqual([2]);
 });
 
-test('processLabelsAnnotations - counts labels and annotations for services', () => {
+it('processLabelsAnnotations - counts labels and annotations for services', () => {
   const data = createTestData();
   
   processLabelsAnnotations(data, 'services', {
@@ -802,20 +802,20 @@ test('processLabelsAnnotations - counts labels and annotations for services', ()
     },
   });
   
-  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.services, [2]);
-  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.services, [1]);
+  expect(data.labelsAnnotations.labelCounts.services).toEqual([2]);
+  expect(data.labelsAnnotations.annotationCounts.services).toEqual([1]);
 });
 
-test('processLabelsAnnotations - handles undefined metadata', () => {
+it('processLabelsAnnotations - handles undefined metadata', () => {
   const data = createTestData();
   
   processLabelsAnnotations(data, 'deployments', undefined);
   
-  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.deployments, [0]);
-  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.deployments, [0]);
+  expect(data.labelsAnnotations.labelCounts.deployments).toEqual([0]);
+  expect(data.labelsAnnotations.annotationCounts.deployments).toEqual([0]);
 });
 
-test('processLabelsAnnotations - handles empty labels and annotations', () => {
+it('processLabelsAnnotations - handles empty labels and annotations', () => {
   const data = createTestData();
   
   processLabelsAnnotations(data, 'services', {
@@ -823,11 +823,11 @@ test('processLabelsAnnotations - handles empty labels and annotations', () => {
     annotations: {},
   });
   
-  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.services, [0]);
-  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.services, [0]);
+  expect(data.labelsAnnotations.labelCounts.services).toEqual([0]);
+  expect(data.labelsAnnotations.annotationCounts.services).toEqual([0]);
 });
 
-test('processLabelsAnnotations - handles multiple resources', () => {
+it('processLabelsAnnotations - handles multiple resources', () => {
   const data = createTestData();
   
   processLabelsAnnotations(data, 'deployments', {
@@ -841,13 +841,13 @@ test('processLabelsAnnotations - handles multiple resources', () => {
     labels: { app: 'svc1', tier: 'backend', component: 'api' },
   });
   
-  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.deployments, [2, 1]);
-  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.deployments, [1, 0]);
-  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.services, [3]);
+  expect(data.labelsAnnotations.labelCounts.deployments).toEqual([2, 1]);
+  expect(data.labelsAnnotations.annotationCounts.deployments).toEqual([1, 0]);
+  expect(data.labelsAnnotations.labelCounts.services).toEqual([3]);
 });
 
 // processServiceType tests
-test('processServiceType - counts ClusterIP service type', () => {
+it('processServiceType - counts ClusterIP service type', () => {
   const data = createTestData();
   
   processServiceType(data, 'ClusterIP', [
@@ -855,79 +855,79 @@ test('processServiceType - counts ClusterIP service type', () => {
     { port: 443, targetPort: 8443 },
   ]);
   
-  assert.strictEqual(data.services.serviceTypes.ClusterIP, 1);
-  assert.strictEqual(data.services.serviceTypes.NodePort, 0);
-  assert.strictEqual(data.services.serviceTypes.LoadBalancer, 0);
-  assert.strictEqual(data.services.serviceTypes.ExternalName, 0);
-  assert.deepStrictEqual(data.services.portsPerService, [2]);
-  assert.strictEqual(data.services.totalServices, 1);
+  expect(data.services.serviceTypes.ClusterIP).toBe(1);
+  expect(data.services.serviceTypes.NodePort).toBe(0);
+  expect(data.services.serviceTypes.LoadBalancer).toBe(0);
+  expect(data.services.serviceTypes.ExternalName).toBe(0);
+  expect(data.services.portsPerService).toEqual([2]);
+  expect(data.services.totalServices).toBe(1);
 });
 
-test('processServiceType - counts NodePort service type', () => {
+it('processServiceType - counts NodePort service type', () => {
   const data = createTestData();
   
   processServiceType(data, 'NodePort', [
     { port: 80, targetPort: 8080, nodePort: 30080 },
   ]);
   
-  assert.strictEqual(data.services.serviceTypes.NodePort, 1);
-  assert.deepStrictEqual(data.services.portsPerService, [1]);
-  assert.strictEqual(data.services.totalServices, 1);
+  expect(data.services.serviceTypes.NodePort).toBe(1);
+  expect(data.services.portsPerService).toEqual([1]);
+  expect(data.services.totalServices).toBe(1);
 });
 
-test('processServiceType - counts LoadBalancer service type', () => {
+it('processServiceType - counts LoadBalancer service type', () => {
   const data = createTestData();
   
   processServiceType(data, 'LoadBalancer', [
     { port: 443, targetPort: 8443 },
   ]);
   
-  assert.strictEqual(data.services.serviceTypes.LoadBalancer, 1);
-  assert.deepStrictEqual(data.services.portsPerService, [1]);
-  assert.strictEqual(data.services.totalServices, 1);
+  expect(data.services.serviceTypes.LoadBalancer).toBe(1);
+  expect(data.services.portsPerService).toEqual([1]);
+  expect(data.services.totalServices).toBe(1);
 });
 
-test('processServiceType - counts ExternalName service type', () => {
+it('processServiceType - counts ExternalName service type', () => {
   const data = createTestData();
   
   processServiceType(data, 'ExternalName', undefined);
   
-  assert.strictEqual(data.services.serviceTypes.ExternalName, 1);
-  assert.deepStrictEqual(data.services.portsPerService, [0]);
-  assert.strictEqual(data.services.totalServices, 1);
+  expect(data.services.serviceTypes.ExternalName).toBe(1);
+  expect(data.services.portsPerService).toEqual([0]);
+  expect(data.services.totalServices).toBe(1);
 });
 
-test('processServiceType - defaults to ClusterIP when undefined', () => {
+it('processServiceType - defaults to ClusterIP when undefined', () => {
   const data = createTestData();
   
   processServiceType(data, undefined, [
     { port: 80, targetPort: 8080 },
   ]);
   
-  assert.strictEqual(data.services.serviceTypes.ClusterIP, 1);
-  assert.deepStrictEqual(data.services.portsPerService, [1]);
-  assert.strictEqual(data.services.totalServices, 1);
+  expect(data.services.serviceTypes.ClusterIP).toBe(1);
+  expect(data.services.portsPerService).toEqual([1]);
+  expect(data.services.totalServices).toBe(1);
 });
 
-test('processServiceType - handles services with no ports', () => {
+it('processServiceType - handles services with no ports', () => {
   const data = createTestData();
   
   processServiceType(data, 'ClusterIP', undefined);
   
-  assert.deepStrictEqual(data.services.portsPerService, [0]);
-  assert.strictEqual(data.services.totalServices, 1);
+  expect(data.services.portsPerService).toEqual([0]);
+  expect(data.services.totalServices).toBe(1);
 });
 
-test('processServiceType - handles services with empty ports array', () => {
+it('processServiceType - handles services with empty ports array', () => {
   const data = createTestData();
   
   processServiceType(data, 'ClusterIP', []);
   
-  assert.deepStrictEqual(data.services.portsPerService, [0]);
-  assert.strictEqual(data.services.totalServices, 1);
+  expect(data.services.portsPerService).toEqual([0]);
+  expect(data.services.totalServices).toBe(1);
 });
 
-test('processServiceType - handles multiple services', () => {
+it('processServiceType - handles multiple services', () => {
   const data = createTestData();
   
   processServiceType(data, 'ClusterIP', [{ port: 80, targetPort: 8080 }]);
@@ -935,15 +935,15 @@ test('processServiceType - handles multiple services', () => {
   processServiceType(data, 'LoadBalancer', [{ port: 443, targetPort: 8443 }]);
   processServiceType(data, undefined, undefined);
   
-  assert.strictEqual(data.services.serviceTypes.ClusterIP, 2); // One explicit, one default
-  assert.strictEqual(data.services.serviceTypes.NodePort, 1);
-  assert.strictEqual(data.services.serviceTypes.LoadBalancer, 1);
-  assert.deepStrictEqual(data.services.portsPerService, [1, 2, 1, 0]);
-  assert.strictEqual(data.services.totalServices, 4);
+  expect(data.services.serviceTypes.ClusterIP).toBe(2); // One explicit, one default
+  expect(data.services.serviceTypes.NodePort).toBe(1);
+  expect(data.services.serviceTypes.LoadBalancer).toBe(1);
+  expect(data.services.portsPerService).toEqual([1, 2, 1, 0]);
+  expect(data.services.totalServices).toBe(4);
 });
 
 // ResourceConfigurationPatternsCollector tests
-test('ResourceConfigurationPatternsCollector - collect() generates valid collection ID', async () => {
+it('ResourceConfigurationPatternsCollector - collect() generates valid collection ID', async () => {
   // Mock KubernetesClient
   const mockKubernetesClient = {
     coreApi: {
@@ -977,12 +977,12 @@ test('ResourceConfigurationPatternsCollector - collect() generates valid collect
   const data = await collector.collect();
 
   // Verify collectionId format
-  assert.ok(data.collectionId.startsWith('coll_'), 'Collection ID should start with "coll_"');
-  assert.strictEqual(data.collectionId.length, 37, 'Collection ID should be 37 characters (coll_ + 32 hex chars)');
-  assert.match(data.collectionId, /^coll_[a-z0-9]{32}$/, 'Collection ID should match pattern');
+  expect(data.collectionId.startsWith('coll_')).toBeTruthy();
+  expect(data.collectionId.length).toBe(37);
+  expect(data.collectionId).toMatch(/^coll_[a-z0-9]{32}$/);
 });
 
-test('ResourceConfigurationPatternsCollector - collect() includes timestamp', async () => {
+it('ResourceConfigurationPatternsCollector - collect() includes timestamp', async () => {
   const mockKubernetesClient = {
     coreApi: {
       listPodForAllNamespaces: async () => ({ body: { items: [] } }),
@@ -1008,13 +1008,13 @@ test('ResourceConfigurationPatternsCollector - collect() includes timestamp', as
   const data = await collector.collect();
 
   // Verify timestamp is in ISO 8601 format
-  assert.ok(data.timestamp, 'Timestamp should exist');
+  expect(data.timestamp, 'Timestamp should exist');
   const date = new Date(data.timestamp);
-  assert.ok(!isNaN(date.getTime()), 'Timestamp should be valid date');
-  assert.match(data.timestamp, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/, 'Timestamp should be ISO 8601 format');
+  expect(!isNaN(date.getTime())).toBeTruthy();
+  expect(data.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
 });
 
-test('ResourceConfigurationPatternsCollector - collect() processes pods', async () => {
+it('ResourceConfigurationPatternsCollector - collect() processes pods', async () => {
   const mockPods = [
     {
       metadata: { labels: { app: 'test' } },
@@ -1058,14 +1058,14 @@ test('ResourceConfigurationPatternsCollector - collect() processes pods', async 
   const data = await collector.collect();
 
   // Verify pod data was processed
-  assert.strictEqual(data.securityContexts.totalPods, 1, 'Should process 1 pod');
-  assert.strictEqual(data.securityContexts.totalContainers, 1, 'Should process 1 container');
-  assert.strictEqual(data.resourceLimitsRequests.containers.totalCount, 1, 'Should process container resources');
-  assert.strictEqual(data.imagePullPolicies.totalContainers, 1, 'Should process image pull policy');
-  assert.strictEqual(data.volumes.totalPods, 1, 'Should process volumes');
+  expect(data.securityContexts.totalPods).toBe(1);
+  expect(data.securityContexts.totalContainers).toBe(1);
+  expect(data.resourceLimitsRequests.containers.totalCount).toBe(1);
+  expect(data.imagePullPolicies.totalContainers).toBe(1);
+  expect(data.volumes.totalPods).toBe(1);
 });
 
-test('ResourceConfigurationPatternsCollector - collect() processes deployments', async () => {
+it('ResourceConfigurationPatternsCollector - collect() processes deployments', async () => {
   const mockDeployments = [
     {
       metadata: { labels: { app: 'test' }, annotations: { version: '1.0' } },
@@ -1102,12 +1102,12 @@ test('ResourceConfigurationPatternsCollector - collect() processes deployments',
   const data = await collector.collect();
 
   // Verify deployment data was processed
-  assert.deepStrictEqual(data.replicaCounts.deployments, [3, 5], 'Should capture replica counts');
-  assert.deepStrictEqual(data.labelsAnnotations.labelCounts.deployments, [1, 1], 'Should capture label counts');
-  assert.deepStrictEqual(data.labelsAnnotations.annotationCounts.deployments, [1, 0], 'Should capture annotation counts');
+  expect(data.replicaCounts.deployments).toEqual([3, 5]);
+  expect(data.labelsAnnotations.labelCounts.deployments).toEqual([1, 1]);
+  expect(data.labelsAnnotations.annotationCounts.deployments).toEqual([1, 0]);
 });
 
-test('ResourceConfigurationPatternsCollector - collect() processes services', async () => {
+it('ResourceConfigurationPatternsCollector - collect() processes services', async () => {
   const mockServices = [
     {
       metadata: { labels: { app: 'test' } },
@@ -1144,13 +1144,13 @@ test('ResourceConfigurationPatternsCollector - collect() processes services', as
   const data = await collector.collect();
 
   // Verify service data was processed
-  assert.strictEqual(data.services.totalServices, 2, 'Should process 2 services');
-  assert.strictEqual(data.services.serviceTypes.ClusterIP, 1, 'Should count ClusterIP services');
-  assert.strictEqual(data.services.serviceTypes.LoadBalancer, 1, 'Should count LoadBalancer services');
-  assert.deepStrictEqual(data.services.portsPerService, [1, 2], 'Should capture port counts');
+  expect(data.services.totalServices).toBe(2);
+    expect(data.services.serviceTypes.ClusterIP).toBe(1);
+    expect(data.services.serviceTypes.LoadBalancer).toBe(1);
+    expect(data.services.portsPerService).toEqual([1, 2]);
 });
 
-test('ResourceConfigurationPatternsCollector - processCollection() stores data locally for free tier', async () => {
+it('ResourceConfigurationPatternsCollector - processCollection() stores data locally for free tier', async () => {
   let storedPayload: any = null;
 
   const mockKubernetesClient = {
@@ -1184,13 +1184,13 @@ test('ResourceConfigurationPatternsCollector - processCollection() stores data l
   await collector.processCollection(data);
 
   // Verify data was stored
-  assert.ok(storedPayload, 'Payload should be stored');
-  assert.strictEqual(storedPayload.version, 'v1.0.0', 'Payload version should be v1.0.0');
-  assert.strictEqual(storedPayload.type, 'resource-configuration-patterns', 'Payload type should be correct');
-  assert.deepStrictEqual(storedPayload.sanitization.rulesApplied, ['no-resource-names', 'aggregated-configuration-data'], 'Sanitization rules should be correct');
+  expect(storedPayload, 'Payload should be stored');
+  expect(storedPayload.version).toBe('v1.0.0');
+  expect(storedPayload.type).toBe('resource-configuration-patterns');
+    expect(storedPayload.sanitization.rulesApplied).toEqual(['no-resource-names', 'aggregated-configuration-data']);
 });
 
-test('ResourceConfigurationPatternsCollector - processCollection() transmits data for pro tier', async () => {
+it('ResourceConfigurationPatternsCollector - processCollection() transmits data for pro tier', async () => {
   let transmittedPayload: any = null;
 
   const mockKubernetesClient = {
@@ -1230,11 +1230,11 @@ test('ResourceConfigurationPatternsCollector - processCollection() transmits dat
   await collector.processCollection(data);
 
   // Verify data was transmitted
-  assert.ok(transmittedPayload, 'Payload should be transmitted');
-  assert.strictEqual(transmittedPayload.type, 'resource-configuration-patterns', 'Payload type should be correct');
+  expect(transmittedPayload, 'Payload should be transmitted');
+  expect(transmittedPayload.type).toBe('resource-configuration-patterns');
 });
 
-test('ResourceConfigurationPatternsCollector - processCollection() handles errors gracefully', async () => {
+it('ResourceConfigurationPatternsCollector - processCollection() handles errors gracefully', async () => {
   const mockKubernetesClient = {
     coreApi: {
       listPodForAllNamespaces: async () => ({ body: { items: [] } }),
@@ -1265,9 +1265,6 @@ test('ResourceConfigurationPatternsCollector - processCollection() handles error
   const data = await collector.collect();
 
   // Should not throw - graceful degradation
-  await assert.doesNotReject(
-    async () => await collector.processCollection(data),
-    'processCollection should handle errors gracefully'
-  );
+  await expect(collector.processCollection(data)).resolves.not.toThrow();
 });
 

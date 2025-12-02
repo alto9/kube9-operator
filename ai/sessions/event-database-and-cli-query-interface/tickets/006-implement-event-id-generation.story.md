@@ -3,7 +3,7 @@ story_id: 006-implement-event-id-generation
 session_id: event-database-and-cli-query-interface
 feature_id: [event-database-storage, event-recording]
 spec_id: [event-database-schema-spec]
-status: pending
+status: completed
 ---
 
 # Story: Implement Event ID Generation

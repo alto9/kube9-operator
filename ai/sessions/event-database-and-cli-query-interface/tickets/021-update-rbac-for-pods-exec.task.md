@@ -3,7 +3,7 @@ task_id: 021-update-rbac-for-pods-exec
 session_id: event-database-and-cli-query-interface
 feature_id: [cli-query-interface]
 spec_id: [cli-architecture-spec]
-status: pending
+status: completed
 ---
 
 # Task: Update RBAC Documentation for pods/exec Permission

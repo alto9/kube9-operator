@@ -3,7 +3,7 @@ story_id: 015-setup-kubernetes-event-watching
 session_id: event-database-and-cli-query-interface
 feature_id: [event-recording]
 spec_id: []
-status: pending
+status: completed
 ---
 
 # Story: Setup Kubernetes Event Watching

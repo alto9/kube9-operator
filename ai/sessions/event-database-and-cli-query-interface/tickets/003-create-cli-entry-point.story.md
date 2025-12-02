@@ -3,7 +3,7 @@ story_id: 003-create-cli-entry-point
 session_id: event-database-and-cli-query-interface
 feature_id: [cli-query-interface]
 spec_id: [cli-architecture-spec]
-status: pending
+status: completed
 ---
 
 # Story: Create CLI Entry Point with Command Routing

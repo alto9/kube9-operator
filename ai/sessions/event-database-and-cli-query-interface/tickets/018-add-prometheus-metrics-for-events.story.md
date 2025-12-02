@@ -3,7 +3,7 @@ story_id: 018-add-prometheus-metrics-for-events
 session_id: event-database-and-cli-query-interface
 feature_id: [event-recording, event-database-storage]
 spec_id: []
-status: pending
+status: completed
 ---
 
 # Story: Add Prometheus Metrics for Event System

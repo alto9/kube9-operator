@@ -3,7 +3,7 @@ story_id: 011-implement-output-formatters
 session_id: event-database-and-cli-query-interface
 feature_id: [cli-query-interface]
 spec_id: [cli-architecture-spec]
-status: pending
+status: completed
 ---
 
 # Story: Implement Output Formatters (JSON, YAML, Table)

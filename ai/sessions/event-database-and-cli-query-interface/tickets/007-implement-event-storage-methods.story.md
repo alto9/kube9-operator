@@ -3,7 +3,7 @@ story_id: 007-implement-event-storage-methods
 session_id: event-database-and-cli-query-interface
 feature_id: [event-database-storage]
 spec_id: [event-database-schema-spec]
-status: pending
+status: completed
 ---
 
 # Story: Implement Event Storage Methods

@@ -3,7 +3,7 @@ story_id: 014-implement-background-worker
 session_id: event-database-and-cli-query-interface
 feature_id: [event-recording]
 spec_id: []
-status: pending
+status: completed
 ---
 
 # Story: Implement Background Worker for Event Queue Processing

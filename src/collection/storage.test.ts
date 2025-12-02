@@ -1,5 +1,4 @@
-import { test } from 'node:test';
-import * as assert from 'node:assert';
+import { describe, it, expect } from 'vitest';
 import { LocalStorage } from './storage.js';
 import type { 
   CollectionPayload, 
@@ -204,294 +203,270 @@ function createResourceConfigurationPatternsPayload(collectionId: string): Colle
   };
 }
 
-test('LocalStorage - constructor initializes with default max collections', () => {
-  const storage = new LocalStorage();
-  assert.strictEqual(storage.getSize(), 0, 'Should start with 0 collections');
+describe('LocalStorage', () => {
+  describe('constructor', () => {
+    it('initializes with default max collections', () => {
+      const storage = new LocalStorage();
+      expect(storage.getSize()).toBe(0);
+    });
+
+    it('initializes with custom max collections', () => {
+      const storage = new LocalStorage(50);
+      expect(storage.getSize()).toBe(0);
+    });
+
+    it('throws error for invalid max collections', () => {
+      expect(() => new LocalStorage(0)).toThrow(/maxCollections must be at least 1/);
+      expect(() => new LocalStorage(-5)).toThrow(/maxCollections must be at least 1/);
+    });
+  });
+
+  describe('store()', () => {
+    it('stores cluster metadata collection', async () => {
+      const storage = new LocalStorage();
+      const payload = createClusterMetadataPayload('coll_cluster001');
+
+      await storage.store(payload);
+
+      expect(storage.getSize()).toBe(1);
+    });
+
+    it('stores resource inventory collection', async () => {
+      const storage = new LocalStorage();
+      const payload = createResourceInventoryPayload('coll_inventory001');
+
+      await storage.store(payload);
+
+      expect(storage.getSize()).toBe(1);
+    });
+
+    it('stores resource configuration patterns collection', async () => {
+      const storage = new LocalStorage();
+      const payload = createResourceConfigurationPatternsPayload('coll_patterns001');
+
+      await storage.store(payload);
+
+      expect(storage.getSize()).toBe(1);
+    });
+
+    it('handles multiple collection types', async () => {
+      const storage = new LocalStorage();
+      
+      await storage.store(createClusterMetadataPayload('coll_cluster001'));
+      await storage.store(createResourceInventoryPayload('coll_inventory001'));
+      await storage.store(createResourceConfigurationPatternsPayload('coll_patterns001'));
+
+      expect(storage.getSize()).toBe(3);
+    });
+
+    it('enforces size limit by removing oldest', async () => {
+      const storage = new LocalStorage(3);
+      
+      await storage.store(createClusterMetadataPayload('coll_001'));
+      await storage.store(createResourceInventoryPayload('coll_002'));
+      await storage.store(createResourceConfigurationPatternsPayload('coll_003'));
+      
+      expect(storage.getSize()).toBe(3);
+
+      await storage.store(createClusterMetadataPayload('coll_004'));
+      
+      expect(storage.getSize()).toBe(3);
+
+      const oldest = await storage.retrieve('coll_001');
+      expect(oldest).toBe(null);
+
+      const newest = await storage.retrieve('coll_004');
+      expect(newest).toBeTruthy();
+    });
+
+    it('updates existing collection and moves to front', async () => {
+      const storage = new LocalStorage();
+      
+      await storage.store(createClusterMetadataPayload('coll_001'));
+      await storage.store(createResourceInventoryPayload('coll_002'));
+      await storage.store(createResourceConfigurationPatternsPayload('coll_003'));
+
+      await storage.store(createClusterMetadataPayload('coll_001'));
+
+      const recent = await storage.listRecent(3);
+      
+      expect(recent.length).toBe(3);
+      expect((recent[0].data as ClusterMetadata).collectionId).toBe('coll_001');
+    });
+  });
+
+  describe('retrieve()', () => {
+    it('returns stored collection', async () => {
+      const storage = new LocalStorage();
+      const payload = createResourceConfigurationPatternsPayload('coll_patterns001');
+
+      await storage.store(payload);
+      const retrieved = await storage.retrieve('coll_patterns001');
+
+      expect(retrieved).toBeTruthy();
+      expect(retrieved?.type).toBe('resource-configuration-patterns');
+      expect((retrieved?.data as ResourceConfigurationPatternsData).collectionId).toBe('coll_patterns001');
+    });
+
+    it('returns null for non-existent collection', async () => {
+      const storage = new LocalStorage();
+      const retrieved = await storage.retrieve('coll_nonexistent');
+
+      expect(retrieved).toBe(null);
+    });
+
+    it('returns correct collection by ID', async () => {
+      const storage = new LocalStorage();
+      
+      await storage.store(createClusterMetadataPayload('coll_cluster001'));
+      await storage.store(createResourceInventoryPayload('coll_inventory001'));
+      await storage.store(createResourceConfigurationPatternsPayload('coll_patterns001'));
+
+      const retrieved = await storage.retrieve('coll_inventory001');
+
+      expect(retrieved).toBeTruthy();
+      expect(retrieved?.type).toBe('resource-inventory');
+      expect((retrieved?.data as ResourceInventory).collectionId).toBe('coll_inventory001');
+    });
+  });
+
+  describe('listRecent()', () => {
+    it('returns collections in most recent first order', async () => {
+      const storage = new LocalStorage();
+      
+      await storage.store(createClusterMetadataPayload('coll_cluster001'));
+      await storage.store(createResourceInventoryPayload('coll_inventory001'));
+      await storage.store(createResourceConfigurationPatternsPayload('coll_patterns001'));
+
+      const recent = await storage.listRecent(3);
+
+      expect(recent.length).toBe(3);
+      expect(recent[0].type).toBe('resource-configuration-patterns');
+      expect(recent[1].type).toBe('resource-inventory');
+      expect(recent[2].type).toBe('cluster-metadata');
+    });
+
+    it('respects limit parameter', async () => {
+      const storage = new LocalStorage();
+      
+      await storage.store(createClusterMetadataPayload('coll_cluster001'));
+      await storage.store(createResourceInventoryPayload('coll_inventory001'));
+      await storage.store(createResourceConfigurationPatternsPayload('coll_patterns001'));
+
+      const recent = await storage.listRecent(2);
+
+      expect(recent.length).toBe(2);
+      expect(recent[0].type).toBe('resource-configuration-patterns');
+      expect(recent[1].type).toBe('resource-inventory');
+    });
+
+    it('returns empty array when no collections', async () => {
+      const storage = new LocalStorage();
+      const recent = await storage.listRecent(10);
+
+      expect(recent.length).toBe(0);
+    });
+
+    it('throws error for negative limit', async () => {
+      const storage = new LocalStorage();
+      
+      await expect(async () => storage.listRecent(-1)).rejects.toThrow(/limit must be non-negative/);
+    });
+  });
+
+  describe('clear()', () => {
+    it('removes all collections', async () => {
+      const storage = new LocalStorage();
+      
+      await storage.store(createClusterMetadataPayload('coll_cluster001'));
+      await storage.store(createResourceInventoryPayload('coll_inventory001'));
+      await storage.store(createResourceConfigurationPatternsPayload('coll_patterns001'));
+
+      expect(storage.getSize()).toBe(3);
+
+      await storage.clear();
+
+      expect(storage.getSize()).toBe(0);
+    });
+
+    it('allows new collections after clearing', async () => {
+      const storage = new LocalStorage();
+      
+      await storage.store(createClusterMetadataPayload('coll_001'));
+      await storage.clear();
+      await storage.store(createResourceConfigurationPatternsPayload('coll_002'));
+
+      expect(storage.getSize()).toBe(1);
+      
+      const retrieved = await storage.retrieve('coll_002');
+      expect(retrieved).toBeTruthy();
+    });
+  });
+
+  describe('getSize()', () => {
+    it('returns correct count', async () => {
+      const storage = new LocalStorage();
+      
+      expect(storage.getSize()).toBe(0);
+      
+      await storage.store(createClusterMetadataPayload('coll_001'));
+      expect(storage.getSize()).toBe(1);
+      
+      await storage.store(createResourceInventoryPayload('coll_002'));
+      expect(storage.getSize()).toBe(2);
+      
+      await storage.store(createResourceConfigurationPatternsPayload('coll_003'));
+      expect(storage.getSize()).toBe(3);
+    });
+  });
+
+  describe('resource configuration patterns', () => {
+    it('handles data structure correctly', async () => {
+      const storage = new LocalStorage();
+      const payload = createResourceConfigurationPatternsPayload('coll_patterns001');
+
+      await storage.store(payload);
+      const retrieved = await storage.retrieve('coll_patterns001');
+
+      expect(retrieved).toBeTruthy();
+      expect(retrieved?.type).toBe('resource-configuration-patterns');
+      
+      const data = retrieved?.data as ResourceConfigurationPatternsData;
+      
+      expect(data.timestamp).toBeTruthy();
+      expect(data.collectionId).toBe('coll_patterns001');
+      expect(data.clusterId).toBe('cls_test123');
+      expect(data.resourceLimitsRequests).toBeTruthy();
+      expect(data.replicaCounts).toBeTruthy();
+      expect(data.imagePullPolicies).toBeTruthy();
+      expect(data.securityContexts).toBeTruthy();
+      expect(data.labelsAnnotations).toBeTruthy();
+      expect(data.volumes).toBeTruthy();
+      expect(data.services).toBeTruthy();
+      expect(data.probes).toBeTruthy();
+    });
+
+    it('preserves complex nested structures', async () => {
+      const storage = new LocalStorage();
+      const payload = createResourceConfigurationPatternsPayload('coll_patterns001');
+
+      await storage.store(payload);
+      const retrieved = await storage.retrieve('coll_patterns001');
+
+      expect(retrieved).toBeTruthy();
+      
+      const originalData = payload.data as ResourceConfigurationPatternsData;
+      const retrievedData = retrieved?.data as ResourceConfigurationPatternsData;
+      
+      expect(retrievedData.securityContexts.containerLevel.capabilities).toEqual(
+        originalData.securityContexts.containerLevel.capabilities
+      );
+      
+      expect(retrievedData.volumes.volumeTypes).toEqual(originalData.volumes.volumeTypes);
+      
+      expect(retrievedData.probes.livenessProbes.probeTypes).toEqual(
+        originalData.probes.livenessProbes.probeTypes
+      );
+    });
+  });
 });
-
-test('LocalStorage - constructor initializes with custom max collections', () => {
-  const storage = new LocalStorage(50);
-  assert.strictEqual(storage.getSize(), 0, 'Should start with 0 collections');
-});
-
-test('LocalStorage - constructor throws error for invalid max collections', () => {
-  assert.throws(
-    () => new LocalStorage(0),
-    /maxCollections must be at least 1/,
-    'Should throw error for 0 max collections'
-  );
-
-  assert.throws(
-    () => new LocalStorage(-5),
-    /maxCollections must be at least 1/,
-    'Should throw error for negative max collections'
-  );
-});
-
-test('LocalStorage - store() stores cluster metadata collection', async () => {
-  const storage = new LocalStorage();
-  const payload = createClusterMetadataPayload('coll_cluster001');
-
-  await storage.store(payload);
-
-  assert.strictEqual(storage.getSize(), 1, 'Should have 1 collection');
-});
-
-test('LocalStorage - store() stores resource inventory collection', async () => {
-  const storage = new LocalStorage();
-  const payload = createResourceInventoryPayload('coll_inventory001');
-
-  await storage.store(payload);
-
-  assert.strictEqual(storage.getSize(), 1, 'Should have 1 collection');
-});
-
-test('LocalStorage - store() stores resource configuration patterns collection', async () => {
-  const storage = new LocalStorage();
-  const payload = createResourceConfigurationPatternsPayload('coll_patterns001');
-
-  await storage.store(payload);
-
-  assert.strictEqual(storage.getSize(), 1, 'Should have 1 collection');
-});
-
-test('LocalStorage - store() handles multiple collection types', async () => {
-  const storage = new LocalStorage();
-  
-  await storage.store(createClusterMetadataPayload('coll_cluster001'));
-  await storage.store(createResourceInventoryPayload('coll_inventory001'));
-  await storage.store(createResourceConfigurationPatternsPayload('coll_patterns001'));
-
-  assert.strictEqual(storage.getSize(), 3, 'Should have 3 collections');
-});
-
-test('LocalStorage - retrieve() returns stored collection', async () => {
-  const storage = new LocalStorage();
-  const payload = createResourceConfigurationPatternsPayload('coll_patterns001');
-
-  await storage.store(payload);
-  const retrieved = await storage.retrieve('coll_patterns001');
-
-  assert.ok(retrieved, 'Should retrieve collection');
-  assert.strictEqual(retrieved?.type, 'resource-configuration-patterns', 'Should match collection type');
-  assert.strictEqual(
-    (retrieved?.data as ResourceConfigurationPatternsData).collectionId,
-    'coll_patterns001',
-    'Should match collection ID'
-  );
-});
-
-test('LocalStorage - retrieve() returns null for non-existent collection', async () => {
-  const storage = new LocalStorage();
-  const retrieved = await storage.retrieve('coll_nonexistent');
-
-  assert.strictEqual(retrieved, null, 'Should return null for non-existent collection');
-});
-
-test('LocalStorage - retrieve() returns correct collection by ID', async () => {
-  const storage = new LocalStorage();
-  
-  await storage.store(createClusterMetadataPayload('coll_cluster001'));
-  await storage.store(createResourceInventoryPayload('coll_inventory001'));
-  await storage.store(createResourceConfigurationPatternsPayload('coll_patterns001'));
-
-  const retrieved = await storage.retrieve('coll_inventory001');
-
-  assert.ok(retrieved, 'Should retrieve collection');
-  assert.strictEqual(retrieved?.type, 'resource-inventory', 'Should retrieve correct type');
-  assert.strictEqual(
-    (retrieved?.data as ResourceInventory).collectionId,
-    'coll_inventory001',
-    'Should retrieve correct collection'
-  );
-});
-
-test('LocalStorage - listRecent() returns collections in most recent first order', async () => {
-  const storage = new LocalStorage();
-  
-  await storage.store(createClusterMetadataPayload('coll_cluster001'));
-  await storage.store(createResourceInventoryPayload('coll_inventory001'));
-  await storage.store(createResourceConfigurationPatternsPayload('coll_patterns001'));
-
-  const recent = await storage.listRecent(3);
-
-  assert.strictEqual(recent.length, 3, 'Should return 3 collections');
-  assert.strictEqual(recent[0].type, 'resource-configuration-patterns', 'Most recent should be patterns');
-  assert.strictEqual(recent[1].type, 'resource-inventory', 'Second should be inventory');
-  assert.strictEqual(recent[2].type, 'cluster-metadata', 'Third should be cluster metadata');
-});
-
-test('LocalStorage - listRecent() respects limit parameter', async () => {
-  const storage = new LocalStorage();
-  
-  await storage.store(createClusterMetadataPayload('coll_cluster001'));
-  await storage.store(createResourceInventoryPayload('coll_inventory001'));
-  await storage.store(createResourceConfigurationPatternsPayload('coll_patterns001'));
-
-  const recent = await storage.listRecent(2);
-
-  assert.strictEqual(recent.length, 2, 'Should return 2 collections');
-  assert.strictEqual(recent[0].type, 'resource-configuration-patterns', 'Most recent should be patterns');
-  assert.strictEqual(recent[1].type, 'resource-inventory', 'Second should be inventory');
-});
-
-test('LocalStorage - listRecent() returns empty array when no collections', async () => {
-  const storage = new LocalStorage();
-  const recent = await storage.listRecent(10);
-
-  assert.strictEqual(recent.length, 0, 'Should return empty array');
-});
-
-test('LocalStorage - listRecent() throws error for negative limit', async () => {
-  const storage = new LocalStorage();
-  
-  await assert.rejects(
-    async () => storage.listRecent(-1),
-    /limit must be non-negative/,
-    'Should throw error for negative limit'
-  );
-});
-
-test('LocalStorage - store() enforces size limit by removing oldest', async () => {
-  const storage = new LocalStorage(3);
-  
-  await storage.store(createClusterMetadataPayload('coll_001'));
-  await storage.store(createResourceInventoryPayload('coll_002'));
-  await storage.store(createResourceConfigurationPatternsPayload('coll_003'));
-  
-  assert.strictEqual(storage.getSize(), 3, 'Should have 3 collections at limit');
-
-  // Add one more to trigger removal of oldest
-  await storage.store(createClusterMetadataPayload('coll_004'));
-  
-  assert.strictEqual(storage.getSize(), 3, 'Should still have 3 collections');
-
-  // Verify oldest was removed
-  const oldest = await storage.retrieve('coll_001');
-  assert.strictEqual(oldest, null, 'Oldest collection should be removed');
-
-  // Verify newest is present
-  const newest = await storage.retrieve('coll_004');
-  assert.ok(newest, 'Newest collection should be present');
-});
-
-test('LocalStorage - store() updates existing collection and moves to front', async () => {
-  const storage = new LocalStorage();
-  
-  await storage.store(createClusterMetadataPayload('coll_001'));
-  await storage.store(createResourceInventoryPayload('coll_002'));
-  await storage.store(createResourceConfigurationPatternsPayload('coll_003'));
-
-  // Update the first collection
-  await storage.store(createClusterMetadataPayload('coll_001'));
-
-  const recent = await storage.listRecent(3);
-  
-  assert.strictEqual(recent.length, 3, 'Should have 3 collections');
-  assert.strictEqual(
-    (recent[0].data as ClusterMetadata).collectionId,
-    'coll_001',
-    'Updated collection should be most recent'
-  );
-});
-
-test('LocalStorage - clear() removes all collections', async () => {
-  const storage = new LocalStorage();
-  
-  await storage.store(createClusterMetadataPayload('coll_cluster001'));
-  await storage.store(createResourceInventoryPayload('coll_inventory001'));
-  await storage.store(createResourceConfigurationPatternsPayload('coll_patterns001'));
-
-  assert.strictEqual(storage.getSize(), 3, 'Should have 3 collections');
-
-  await storage.clear();
-
-  assert.strictEqual(storage.getSize(), 0, 'Should have 0 collections after clear');
-});
-
-test('LocalStorage - clear() allows new collections after clearing', async () => {
-  const storage = new LocalStorage();
-  
-  await storage.store(createClusterMetadataPayload('coll_001'));
-  await storage.clear();
-  await storage.store(createResourceConfigurationPatternsPayload('coll_002'));
-
-  assert.strictEqual(storage.getSize(), 1, 'Should have 1 collection');
-  
-  const retrieved = await storage.retrieve('coll_002');
-  assert.ok(retrieved, 'Should retrieve new collection after clear');
-});
-
-test('LocalStorage - getSize() returns correct count', async () => {
-  const storage = new LocalStorage();
-  
-  assert.strictEqual(storage.getSize(), 0, 'Should start with 0');
-  
-  await storage.store(createClusterMetadataPayload('coll_001'));
-  assert.strictEqual(storage.getSize(), 1, 'Should have 1 after first store');
-  
-  await storage.store(createResourceInventoryPayload('coll_002'));
-  assert.strictEqual(storage.getSize(), 2, 'Should have 2 after second store');
-  
-  await storage.store(createResourceConfigurationPatternsPayload('coll_003'));
-  assert.strictEqual(storage.getSize(), 3, 'Should have 3 after third store');
-});
-
-test('LocalStorage - handles resource configuration patterns data structure correctly', async () => {
-  const storage = new LocalStorage();
-  const payload = createResourceConfigurationPatternsPayload('coll_patterns001');
-
-  await storage.store(payload);
-  const retrieved = await storage.retrieve('coll_patterns001');
-
-  assert.ok(retrieved, 'Should retrieve collection');
-  assert.strictEqual(retrieved?.type, 'resource-configuration-patterns', 'Should be resource-configuration-patterns type');
-  
-  const data = retrieved?.data as ResourceConfigurationPatternsData;
-  
-  // Verify all required fields are present
-  assert.ok(data.timestamp, 'Should have timestamp');
-  assert.strictEqual(data.collectionId, 'coll_patterns001', 'Should have correct collectionId');
-  assert.strictEqual(data.clusterId, 'cls_test123', 'Should have clusterId');
-  assert.ok(data.resourceLimitsRequests, 'Should have resourceLimitsRequests');
-  assert.ok(data.replicaCounts, 'Should have replicaCounts');
-  assert.ok(data.imagePullPolicies, 'Should have imagePullPolicies');
-  assert.ok(data.securityContexts, 'Should have securityContexts');
-  assert.ok(data.labelsAnnotations, 'Should have labelsAnnotations');
-  assert.ok(data.volumes, 'Should have volumes');
-  assert.ok(data.services, 'Should have services');
-  assert.ok(data.probes, 'Should have probes');
-});
-
-test('LocalStorage - preserves complex nested structures in resource configuration patterns', async () => {
-  const storage = new LocalStorage();
-  const payload = createResourceConfigurationPatternsPayload('coll_patterns001');
-
-  await storage.store(payload);
-  const retrieved = await storage.retrieve('coll_patterns001');
-
-  assert.ok(retrieved, 'Should retrieve collection');
-  
-  const originalData = payload.data as ResourceConfigurationPatternsData;
-  const retrievedData = retrieved?.data as ResourceConfigurationPatternsData;
-  
-  // Verify deep nested structures are preserved
-  assert.deepStrictEqual(
-    retrievedData.securityContexts.containerLevel.capabilities,
-    originalData.securityContexts.containerLevel.capabilities,
-    'Should preserve capabilities structure'
-  );
-  
-  assert.deepStrictEqual(
-    retrievedData.volumes.volumeTypes,
-    originalData.volumes.volumeTypes,
-    'Should preserve volume types'
-  );
-  
-  assert.deepStrictEqual(
-    retrievedData.probes.livenessProbes.probeTypes,
-    originalData.probes.livenessProbes.probeTypes,
-    'Should preserve probe types'
-  );
-});
-

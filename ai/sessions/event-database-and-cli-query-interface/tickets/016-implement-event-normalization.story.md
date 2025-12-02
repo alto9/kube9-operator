@@ -3,7 +3,7 @@ story_id: 016-implement-event-normalization
 session_id: event-database-and-cli-query-interface
 feature_id: [event-recording]
 spec_id: []
-status: pending
+status: completed
 ---
 
 # Story: Implement Event Normalization and Metadata Sanitization

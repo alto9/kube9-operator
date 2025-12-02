@@ -3,7 +3,7 @@ story_id: 001-install-event-system-dependencies
 session_id: event-database-and-cli-query-interface
 feature_id: [event-database-storage, cli-query-interface, event-recording]
 spec_id: [event-database-schema-spec, cli-architecture-spec]
-status: pending
+status: completed
 ---
 
 # Story: Install Event System Dependencies

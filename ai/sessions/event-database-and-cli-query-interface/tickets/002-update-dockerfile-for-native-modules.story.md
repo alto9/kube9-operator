@@ -3,7 +3,7 @@ story_id: 002-update-dockerfile-for-native-modules
 session_id: event-database-and-cli-query-interface
 feature_id: [event-database-storage]
 spec_id: [event-database-schema-spec]
-status: pending
+status: completed
 ---
 
 # Story: Update Dockerfile for Native Module Compilation

@@ -3,7 +3,7 @@ task_id: 020-update-helm-chart-for-persistent-volume
 session_id: event-database-and-cli-query-interface
 feature_id: [event-database-storage]
 spec_id: [event-database-schema-spec]
-status: pending
+status: completed
 ---
 
 # Task: Update Helm Chart for PersistentVolume
