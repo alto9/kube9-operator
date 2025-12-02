@@ -13,6 +13,10 @@ rules:
 - apiGroups: [""]
   resources: ["nodes", "namespaces", "pods"]
   verbs: ["get", "list", "watch"]
+# Read Kubernetes events (for event monitoring and recording)
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list", "watch"]
 # Read deployments and services (for resource inventory collection)
 - apiGroups: ["apps"]
   resources: ["deployments", "replicasets", "statefulsets"]

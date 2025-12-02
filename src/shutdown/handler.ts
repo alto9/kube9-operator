@@ -2,6 +2,8 @@ import type { StatusWriter } from '../status/writer.js';
 import type { RegistrationManager } from '../registration/manager.js';
 import type { CollectionScheduler } from '../collection/scheduler.js';
 import type { ArgoCDDetectionManager } from '../argocd/detection-manager.js';
+import type { KubernetesEventWatcher } from '../events/kubernetes-event-watcher.js';
+import type { EventQueueWorker } from '../events/queue-worker.js';
 import { stopHealthServer } from '../health/server.js';
 import { getConfig } from '../config/loader.js';
 import type { OperatorStatus } from '../status/types.js';
@@ -29,7 +31,7 @@ let isShuttingDown = false;
  * Gracefully shuts down the operator
  * 
  * Handles SIGTERM and SIGINT signals by:
- * 1. Stopping all background services (collection scheduler, ArgoCD detection manager, status writer, registration manager, health server)
+ * 1. Stopping all background services (event system, collection scheduler, ArgoCD detection manager, status writer, registration manager, health server)
  * 2. Writing a final status update indicating shutdown
  * 3. Exiting cleanly with code 0
  * 
@@ -39,12 +41,16 @@ let isShuttingDown = false;
  * @param registrationManager - Optional registration manager instance to stop
  * @param collectionScheduler - Optional collection scheduler instance to stop
  * @param argoCDDetectionManager - Optional ArgoCD detection manager instance to stop
+ * @param eventWatcher - Optional event watcher instance to stop
+ * @param eventQueueWorker - Optional event queue worker instance to stop
  */
 export async function gracefulShutdown(
   statusWriter: StatusWriter,
   registrationManager: RegistrationManager | null,
   collectionScheduler: CollectionScheduler | null,
-  argoCDDetectionManager: ArgoCDDetectionManager | null
+  argoCDDetectionManager: ArgoCDDetectionManager | null,
+  eventWatcher: KubernetesEventWatcher | null,
+  eventQueueWorker: EventQueueWorker | null
 ): Promise<void> {
   // Prevent multiple shutdown attempts
   if (isShuttingDown) {
@@ -62,6 +68,16 @@ export async function gracefulShutdown(
   }, SHUTDOWN_TIMEOUT_MS);
 
   try {
+    // Stop event watcher first (stops new events from being recorded)
+    if (eventWatcher) {
+      eventWatcher.stop();
+    }
+
+    // Stop event queue worker (flushes remaining events to database)
+    if (eventQueueWorker) {
+      await eventQueueWorker.stop();
+    }
+
     // Stop collection scheduler if present (clears all collection timers)
     if (collectionScheduler) {
       collectionScheduler.stop();

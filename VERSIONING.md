@@ -58,3 +58,4 @@ git commit -m "feat: complete rewrite in TypeScript #major"
 git commit -m "docs: update installation guide [skip ci]"
 ```
 
+
