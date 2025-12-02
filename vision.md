@@ -472,7 +472,7 @@ The CLI-based approach provides:
 4. **Versioned API contract** - CLI commands are the API, can be versioned and evolved
 5. **Testable in isolation** - CLI can be tested without Kubernetes
 6. **Clean JSON output** - No parsing issues, proper structured data
-7. **Single artifact** - Same binary for operator and CLI (Go makes this trivial)
+7. **Single artifact** - Same Node.js binary for operator and CLI (command routing via commander package)
 8. **Debuggable** - Ops team can exec into pod and run queries manually
 
 ### Architecture Overview
@@ -576,6 +576,15 @@ kubectl exec -n kube9-system deploy/kube9-operator -- \
   kube9-operator query argocd apps --format=json
 ```
 
+**Event History (Future):**
+```bash
+kubectl exec -n kube9-system deploy/kube9-operator -- \
+  kube9-operator query events list \
+    --type=cluster,operator,insight \
+    --since=7d \
+    --format=json
+```
+
 ### SQLite Database Schema
 
 The operator maintains a SQLite database at `/data/kube9.db`:
@@ -668,6 +677,20 @@ CREATE TABLE collections (
   collected_at TEXT NOT NULL
 );
 
+-- Event history (future)
+CREATE TABLE events (
+  id TEXT PRIMARY KEY,
+  event_type TEXT NOT NULL,     -- 'cluster' | 'operator' | 'insight' | 'assessment' | 'health' | 'system'
+  severity TEXT NOT NULL,       -- 'info' | 'warning' | 'error' | 'critical'
+  title TEXT NOT NULL,
+  description TEXT,
+  object_kind TEXT,
+  object_namespace TEXT,
+  object_name TEXT,
+  metadata TEXT,                -- JSON blob for additional context
+  created_at TEXT NOT NULL
+);
+
 -- Indexes for common queries
 CREATE INDEX idx_insights_severity ON insights(severity);
 CREATE INDEX idx_insights_namespace ON insights(object_namespace);
@@ -676,6 +699,9 @@ CREATE INDEX idx_insights_created ON insights(created_at);
 CREATE INDEX idx_assessments_pillar ON assessments(pillar);
 CREATE INDEX idx_assessments_status ON assessments(status);
 CREATE INDEX idx_assessment_history_date ON assessment_history(assessed_at);
+CREATE INDEX idx_events_type ON events(event_type);
+CREATE INDEX idx_events_severity ON events(severity);
+CREATE INDEX idx_events_created ON events(created_at);
 ```
 
 ### Data Persistence
@@ -798,6 +824,7 @@ This allows gradual migration without breaking existing extension versions.
 - **Enhanced ArgoCD Integration**: Deep integration with ArgoCD for drift intelligence and AI-powered GitOps insights
 - Edge cluster and air-gapped environment support
 - Custom metrics and health check plugins
+- **Event Database & Query System**: Maintain a comprehensive event history in SQLite database, queryable through CLI tool for extension and UI integration. Events would include cluster state changes, operator activities, assessment results, insight generation, and system health events. Enables historical analysis, troubleshooting, and audit trails.
 
 ### UI Access Points
 - **VS Code Extension**: Primary interface for VS Code users (kube9-vscode)

@@ -265,34 +265,45 @@ interface OperatorStatus {
 }
 ```
 
-## Go Struct
+## TypeScript Interface
 
-```go
-// OperatorStatus represents the current state and health of the kube9 operator
-type OperatorStatus struct {
-    // Operating mode of the operator
-    Mode string `json:"mode"`
-    
-    // User-facing tier name
-    Tier string `json:"tier"`
-    
-    // Operator version (semantic versioning)
-    Version string `json:"version"`
-    
-    // Current health status
-    Health string `json:"health"`
-    
-    // ISO 8601 timestamp of last status update
-    LastUpdate string `json:"lastUpdate"`
-    
-    // Whether operator is registered with kube9-server
-    Registered bool `json:"registered"`
-    
-    // Error message if health is degraded or unhealthy
-    Error *string `json:"error"`
-    
-    // Server-assigned cluster ID (optional, pro tier only)
-    ClusterID *string `json:"clusterId,omitempty"`
+```typescript
+/**
+ * OperatorStatus represents the current state and health of the kube9 operator
+ */
+interface OperatorStatus {
+  /** Operating mode of the operator */
+  mode: "operated" | "enabled";
+  
+  /** User-facing tier name */
+  tier: "free" | "pro";
+  
+  /** Operator version (semantic versioning) */
+  version: string;
+  
+  /** Current health status */
+  health: "healthy" | "degraded" | "unhealthy";
+  
+  /** ISO 8601 timestamp of last status update */
+  lastUpdate: string;
+  
+  /** Whether operator is registered with kube9-server */
+  registered: boolean;
+  
+  /** Whether an API key is configured */
+  apiKeyConfigured: boolean;
+  
+  /** Error message if health is degraded or unhealthy */
+  error: string | null;
+  
+  /** Server-assigned cluster ID (optional, pro tier only) */
+  clusterId?: string;
+  
+  /** Collection statistics */
+  collectionStats: CollectionStats;
+  
+  /** ArgoCD awareness information */
+  argocd: ArgoCDStatus;
 }
 ```
 
