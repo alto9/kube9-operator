@@ -1,4 +1,4 @@
-<!-- forge-hash: fbca6f7c97b5aaf316aac62323db4fd8258d00255479695874402fb847b9b7ef -->
+<!-- forge-hash: 9e5fd453d113fac05367c5653d6d71fe4f2e58a77712a69ee003906a376a6211 -->
 
 # Forge Sync
 
@@ -13,8 +13,7 @@ None. This command can be run at any time, with or without an active design sess
 
 ## What This Command Does
 
-1. **Calls MCP Tools**: Uses `get_forge_about` to understand the Forge workflow and documentation structure
-2. **Deep codebase analysis**: Systematically analyzes your entire codebase to understand:
+1. **Deep codebase analysis**: Systematically analyzes your entire codebase to understand:
    - Project structure and architecture
    - Component hierarchy and relationships
    - API endpoints and contracts
@@ -22,24 +21,23 @@ None. This command can be run at any time, with or without an active design sess
    - Business logic and workflows
    - Dependencies and integrations
    - Existing documentation (README, comments, etc.)
-3. **Reads existing AI documentation**: Reviews all existing AI files:
+2. **Reads existing AI documentation**: Reviews all existing AI files:
    - Features (*.feature.md)
    - Diagrams (*.diagram.md)
    - Specs (*.spec.md)
    - Models (*.model.md)
    - Actors (*.actor.md)
-   - Contexts (*.context.md)
-4. **Identifies gaps and inconsistencies**:
+3. **Identifies gaps and inconsistencies**:
    - Missing documentation for existing code
    - Outdated documentation that doesn't match current implementation
    - Undocumented features, APIs, or data structures
    - Inconsistent or conflicting information
-5. **Creates or updates AI files**: Systematically updates documentation to reflect reality:
+4. **Creates or updates AI files**: Systematically updates documentation to reflect reality:
    - Create missing features, diagrams, specs, models
    - Update outdated information
    - Ensure all linkages are correct (feature_id, spec_id, diagram_id, etc.)
    - Maintain proper file structure and naming conventions
-6. **Generates a sync report**: Provides summary of changes made
+5. **Generates a sync report**: Provides summary of changes made
 
 ## Sync Strategy
 
@@ -105,11 +103,10 @@ After sync, provide a summary report:
 ## Usage
 
 1. Run this command from the project root
-2. The AI will call `get_forge_about` MCP tool
-3. The AI will systematically analyze your codebase
-4. The AI will read and compare existing AI documentation
-5. The AI will create or update AI files to match reality
-6. Review the sync report and any recommendations
+2. The AI will systematically analyze your codebase
+3. The AI will read and compare existing AI documentation
+4. The AI will create or update AI files to match reality
+5. Review the sync report and any recommendations
 7. Consider starting a design session to address any major architectural changes
 
 This command ensures your Forge documentation stays in sync with your actual implementation.
