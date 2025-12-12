@@ -10,8 +10,14 @@ const env = {
   region: process.env.CDK_DEFAULT_REGION || process.env.AWS_DEFAULT_REGION || 'us-east-1',
 };
 
+const certificateArn = process.env.CHARTS_CERTIFICATE_ARN;
+if (!certificateArn) {
+  throw new Error('CHARTS_CERTIFICATE_ARN environment variable is required');
+}
+
 new ChartsStack(app, 'ChartsStack', {
   env,
   description: 'Infrastructure for hosting Helm charts at charts.kube9.io',
+  certificateArn,
 });
 

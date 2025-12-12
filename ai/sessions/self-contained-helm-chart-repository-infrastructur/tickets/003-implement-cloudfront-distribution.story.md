@@ -5,7 +5,7 @@ feature_id:
   - chart-repository-hosting
 spec_id:
   - chart-repository-infrastructure
-status: pending
+status: completed
 ---
 
 # Implement CloudFront Distribution with OAC
@@ -39,14 +39,14 @@ CloudFront provides global CDN distribution for charts.kube9.io. It uses OAC (no
 
 ## Acceptance Criteria
 
-- [ ] OAC created and configured for S3
-- [ ] CloudFront distribution created with custom domain
-- [ ] ACM certificate referenced correctly
-- [ ] HTTPS redirect configured
-- [ ] Cache policy optimized for static content
-- [ ] Security headers policy applied
-- [ ] S3 bucket policy allows CloudFront access via OAC
-- [ ] Stack outputs include DistributionId and DistributionDomain
+- [x] OAC created and configured for S3
+- [x] CloudFront distribution created with custom domain
+- [x] ACM certificate referenced correctly
+- [x] HTTPS redirect configured
+- [x] Cache policy optimized for static content
+- [x] Security headers policy applied
+- [x] S3 bucket policy allows CloudFront access via OAC
+- [x] Stack outputs include DistributionId and DistributionDomain
 
 ## Estimated Time
 
