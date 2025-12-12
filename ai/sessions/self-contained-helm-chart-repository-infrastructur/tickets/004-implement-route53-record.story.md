@@ -5,7 +5,7 @@ feature_id:
   - chart-repository-hosting
 spec_id:
   - chart-repository-infrastructure
-status: pending
+status: completed
 ---
 
 # Implement Route53 A Record for charts.kube9.io
@@ -34,11 +34,11 @@ The Route53 record enables DNS resolution for charts.kube9.io. It must be an ali
 
 ## Acceptance Criteria
 
-- [ ] Route53 A record created in correct hosted zone
-- [ ] Record name is charts.kube9.io
-- [ ] Record type is A (alias to CloudFront)
-- [ ] Target is CloudFront distribution domain
-- [ ] `cdk synth` generates valid Route53 resource
+- [x] Route53 A record created in correct hosted zone
+- [x] Record name is charts.kube9.io
+- [x] Record type is A (alias to CloudFront)
+- [x] Target is CloudFront distribution domain
+- [x] `cdk synth` generates valid Route53 resource
 
 ## Estimated Time
 

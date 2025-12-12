@@ -3,6 +3,8 @@ import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
 
 export interface ChartsStackProps extends cdk.StackProps {
@@ -11,6 +13,11 @@ export interface ChartsStackProps extends cdk.StackProps {
    * Must be in us-east-1 region for CloudFront
    */
   certificateArn: string;
+  
+  /**
+   * Route53 hosted zone ID for kube9.io domain
+   */
+  hostedZoneId: string;
   
   /**
    * Domain name for the chart repository
@@ -112,6 +119,19 @@ export class ChartsStack extends cdk.Stack {
         },
       })
     );
+
+    // Create Route53 A record pointing to CloudFront distribution
+    // Extract zone name from domain (e.g., charts.kube9.io -> kube9.io)
+    const zoneName = domainName.split('.').slice(-2).join('.');
+    const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
+      hostedZoneId: props.hostedZoneId,
+      zoneName: zoneName,
+    });
+    new route53.ARecord(this, 'ChartsDnsRecord', {
+      zone: hostedZone,
+      recordName: domainName,
+      target: route53.RecordTarget.fromAlias(new targets.CloudFrontTarget(distribution)),
+    });
 
     // Export stack outputs
     new cdk.CfnOutput(this, 'BucketName', {

@@ -15,9 +15,15 @@ if (!certificateArn) {
   throw new Error('CHARTS_CERTIFICATE_ARN environment variable is required');
 }
 
+const hostedZoneId = process.env.CHARTS_HOSTED_ZONE_ID;
+if (!hostedZoneId) {
+  throw new Error('CHARTS_HOSTED_ZONE_ID environment variable is required');
+}
+
 new ChartsStack(app, 'ChartsStack', {
   env,
   description: 'Infrastructure for hosting Helm charts at charts.kube9.io',
   certificateArn,
+  hostedZoneId,
 });
 
