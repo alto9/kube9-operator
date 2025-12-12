@@ -6,7 +6,7 @@ feature_id:
   - container-image-publishing
 spec_id:
   - chart-publishing-automation
-status: pending
+status: completed
 ---
 
 # Document GitHub Secrets Configuration
@@ -38,11 +38,11 @@ The workflows require several GitHub secrets to be configured. This task documen
 
 ## Acceptance Criteria
 
-- [ ] All required secrets documented
-- [ ] Instructions for obtaining each value provided
-- [ ] GitHub UI navigation steps included
-- [ ] IAM permissions documented
-- [ ] Troubleshooting section included
+- [x] All required secrets documented
+- [x] Instructions for obtaining each value provided
+- [x] GitHub UI navigation steps included
+- [x] IAM permissions documented
+- [x] Troubleshooting section included
 
 ## Estimated Time
 
