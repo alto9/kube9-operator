@@ -5,7 +5,7 @@ feature_id:
   - chart-repository-hosting
 spec_id:
   - helm-chart-spec
-status: pending
+status: completed
 ---
 
 # Update Chart.yaml Repository URL to charts.kube9.io
@@ -29,9 +29,9 @@ The Chart.yaml currently references charts.kube9.dev, but the new infrastructure
 
 ## Acceptance Criteria
 
-- [ ] Chart.yaml sources field updated to charts.kube9.io
-- [ ] URL uses HTTPS protocol
-- [ ] Chart still validates with helm lint
+- [x] Chart.yaml sources field updated to charts.kube9.io
+- [x] URL uses HTTPS protocol
+- [x] Chart still validates with helm lint
 
 ## Estimated Time
 

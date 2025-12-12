@@ -8,5 +8,7 @@ keywords:
   - vscode
   - operator
 home: https://kube9.dev
+sources:
+  - https://charts.kube9.io
 kubeVersion: ">= 1.24.0"
 
