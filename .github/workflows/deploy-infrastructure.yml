@@ -1,0 +1,89 @@
+name: Deploy Chart Repository Infrastructure
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'infrastructure/**'
+      - '.github/workflows/deploy-infrastructure.yml'
+
+env:
+  NODE_VERSION: '22.x'
+  AWS_REGION: 'us-east-1'
+
+jobs:
+  deploy-infrastructure:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: 'infrastructure/package-lock.json'
+      
+      - name: Install infrastructure dependencies
+        working-directory: ./infrastructure
+        run: npm ci
+      
+      - name: Build infrastructure
+        working-directory: ./infrastructure
+        run: npm run build
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Bootstrap CDK
+        working-directory: ./infrastructure
+        run: |
+          npx cdk bootstrap aws://${{ secrets.AWS_ACCOUNT_ID }}/${{ env.AWS_REGION }} || true
+        continue-on-error: true
+      
+      - name: Synthesize CDK stack
+        working-directory: ./infrastructure
+        run: npx cdk synth
+        env:
+          CHARTS_CERTIFICATE_ARN: ${{ secrets.CHARTS_CERTIFICATE_ARN }}
+          CHARTS_HOSTED_ZONE_ID: ${{ secrets.CHARTS_HOSTED_ZONE_ID }}
+      
+      - name: Deploy CDK stack
+        working-directory: ./infrastructure
+        run: npx cdk deploy --require-approval never
+        env:
+          CHARTS_CERTIFICATE_ARN: ${{ secrets.CHARTS_CERTIFICATE_ARN }}
+          CHARTS_HOSTED_ZONE_ID: ${{ secrets.CHARTS_HOSTED_ZONE_ID }}
+      
+      - name: Get stack outputs
+        working-directory: ./infrastructure
+        run: |
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name ChartsStack \
+            --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
+            --output text)
+          DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
+            --stack-name ChartsStack \
+            --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' \
+            --output text)
+          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+          echo "DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
+      
+      - name: Output deployment info
+        run: |
+          echo "✅ Infrastructure deployed successfully"
+          echo "Bucket: ${{ env.BUCKET_NAME }}"
+          echo "Distribution: ${{ env.DISTRIBUTION_ID }}"
+          echo "Repository URL: https://charts.kube9.io"
+
