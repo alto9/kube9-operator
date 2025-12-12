@@ -164,37 +164,340 @@ Follow these steps to add secrets to your GitHub repository:
 
 ## IAM Permissions
 
-The AWS IAM user credentials must have specific permissions for infrastructure deployment and chart publishing. This section provides a summary; see the [complete IAM policies](../ai/specs/infrastructure/chart-publishing-automation.spec.md#iam-permissions) for detailed JSON policies.
+The AWS IAM user credentials must have specific permissions for infrastructure deployment and chart publishing. This section provides complete IAM policies with detailed explanations.
 
-### Infrastructure Deployment Permissions
+### Infrastructure Deployment IAM Policy
 
-Required for the `deploy-infrastructure.yml` workflow:
+Required for the `deploy-infrastructure.yml` workflow. This policy includes permissions for:
+- **CDK Bootstrap**: Initial CDK environment setup (one-time operation)
+- **S3**: Chart repository bucket creation and configuration
+- **CloudFront**: Distribution creation and management
+- **Route53**: DNS record creation
+- **CloudFormation**: Stack deployment and management
+- **IAM**: Role creation for CloudFront origin access
+- **ACM**: Certificate validation
 
-- **S3**: Create bucket, configure bucket policies, encryption, public access blocks
-- **CloudFront**: Create/update distributions, create origin access controls
-- **Route53**: Create/update DNS records, read hosted zone information
-- **CloudFormation**: Create/update stacks, describe stacks
-- **ACM**: Describe certificate details
-- **IAM**: Create roles and policies (for CloudFront origin access)
+**Complete IAM Policy:**
 
-### Chart Publishing Permissions
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "CDKBootstrapPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:GetBucketLocation",
+        "s3:PutBucketVersioning",
+        "s3:PutBucketEncryption",
+        "s3:PutBucketPolicy",
+        "iam:CreateRole",
+        "iam:PutRolePolicy",
+        "iam:AttachRolePolicy",
+        "iam:GetRole",
+        "iam:PassRole",
+        "ssm:PutParameter",
+        "ssm:GetParameter",
+        "ssm:DeleteParameter",
+        "sts:AssumeRole"
+      ],
+      "Resource": [
+        "arn:aws:s3:::cdk-*",
+        "arn:aws:s3:::cdk-*/*",
+        "arn:aws:iam::*:role/cdk-*",
+        "arn:aws:ssm:*:*:parameter/cdk-bootstrap/*"
+      ]
+    },
+    {
+      "Sid": "InfrastructureDeploymentPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:PutBucketPolicy",
+        "s3:PutBucketPublicAccessBlock",
+        "s3:PutEncryptionConfiguration",
+        "s3:GetBucketLocation",
+        "s3:ListBucket",
+        "cloudformation:CreateStack",
+        "cloudformation:UpdateStack",
+        "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:GetTemplate",
+        "cloudformation:ValidateTemplate",
+        "cloudfront:CreateDistribution",
+        "cloudfront:UpdateDistribution",
+        "cloudfront:GetDistribution",
+        "cloudfront:CreateOriginAccessControl",
+        "cloudfront:GetOriginAccessControl",
+        "cloudfront:UpdateOriginAccessControl",
+        "route53:ChangeResourceRecordSets",
+        "route53:GetHostedZone",
+        "route53:ListHostedZones",
+        "acm:DescribeCertificate",
+        "acm:ListCertificates",
+        "iam:CreateRole",
+        "iam:PutRolePolicy",
+        "iam:AttachRolePolicy",
+        "iam:GetRole",
+        "iam:PassRole"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+```
 
-Required for the `release-chart.yml` workflow:
+**Policy Explanation:**
 
-- **S3**: Put/get objects, list bucket contents
-- **CloudFront**: Create cache invalidations
-- **CloudFormation**: Read stack outputs (to get bucket name and distribution ID)
+- **CDK Bootstrap Permissions**: The first statement handles CDK bootstrap requirements. CDK bootstrap creates an S3 bucket (`cdk-{account}-{region}`) and IAM roles for CDK execution. These permissions are scoped to CDK-specific resources using wildcards.
+- **Infrastructure Deployment Permissions**: The second statement covers all resources needed for deploying the chart repository infrastructure. Some permissions require `Resource: "*"` because:
+  - CloudFormation needs to create resources dynamically
+  - Route53 hosted zones are account-level resources
+  - ACM certificates are referenced by ARN but need describe permissions
+
+### Chart Publishing IAM Policy
+
+Required for the `release-chart.yml` workflow. This policy is more restrictive and scoped to specific resources.
+
+**Complete IAM Policy:**
+
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ChartPublishingPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "cloudfront:CreateInvalidation",
+        "cloudfront:GetInvalidation",
+        "cloudformation:DescribeStacks"
+      ],
+      "Resource": [
+        "arn:aws:s3:::kube9-charts-*",
+        "arn:aws:s3:::kube9-charts-*/*",
+        "arn:aws:cloudfront::*:distribution/*",
+        "arn:aws:cloudformation:us-east-1:*:stack/ChartsStack/*"
+      ]
+    }
+  ]
+}
+```
+
+**Policy Explanation:**
+
+- **S3 Permissions**: Limited to buckets matching `kube9-charts-*` pattern and objects within those buckets
+- **CloudFront Permissions**: Allows creating cache invalidations for any distribution (needed to refresh cached chart index)
+- **CloudFormation Permissions**: Read-only access to stack outputs to retrieve bucket name and distribution ID
 
 ### Least-Privilege Principle
 
-For production environments, follow the least-privilege principle:
+Following the least-privilege principle minimizes security risk by granting only the minimum permissions necessary.
 
-1. **Separate IAM users**: Use different IAM users for infrastructure deployment vs. chart publishing
-2. **Resource restrictions**: Limit permissions to specific resources (buckets, distributions) when possible
-3. **Read-only access**: Use read-only permissions where write access isn't needed
-4. **Regular audits**: Review and rotate credentials regularly
+#### Separate IAM Users
 
-See [`ai/specs/infrastructure/chart-publishing-automation.spec.md`](../ai/specs/infrastructure/chart-publishing-automation.spec.md) for complete IAM policy JSON examples.
+**Recommended Approach:**
+- Create two IAM users:
+  - `github-actions-infrastructure` - For infrastructure deployment (broader permissions)
+  - `github-actions-publishing` - For chart publishing (restricted permissions)
+
+**Benefits:**
+- Limits blast radius if credentials are compromised
+- Easier to audit and rotate credentials independently
+- Publishing credentials can't accidentally modify infrastructure
+
+#### Resource Scoping Examples
+
+**Example 1: Scoped S3 Bucket Permissions**
+
+Instead of allowing all S3 buckets, scope to specific bucket:
+
+```json
+{
+  "Effect": "Allow",
+  "Action": [
+    "s3:PutObject",
+    "s3:GetObject"
+  ],
+  "Resource": [
+    "arn:aws:s3:::kube9-charts-123456789012/*"
+  ],
+  "Condition": {
+    "StringEquals": {
+      "s3:x-amz-server-side-encryption": "AES256"
+    }
+  }
+}
+```
+
+**Example 2: Scoped CloudFront Distribution**
+
+If you know the distribution ID, scope permissions:
+
+```json
+{
+  "Effect": "Allow",
+  "Action": [
+    "cloudfront:CreateInvalidation"
+  ],
+  "Resource": [
+    "arn:aws:cloudfront::123456789012:distribution/E1234567890ABC"
+  ]
+}
+```
+
+**When `Resource: "*"` is Necessary:**
+
+Some AWS services require `Resource: "*"` because:
+- **CloudFormation**: Creates resources dynamically; you can't predict ARNs beforehand
+- **Route53**: Hosted zones are account-level; record creation needs account-wide permissions
+- **IAM Role Creation**: Roles are created with dynamic names during stack deployment
+
+For these cases, use additional conditions or separate the permissions into different statements.
+
+#### Read-Only Access Where Possible
+
+The chart publishing policy uses read-only CloudFormation access (`DescribeStacks`) since it only needs to read stack outputs, not modify the stack.
+
+### Security Best Practices
+
+#### Credential Management
+
+1. **Use Dedicated IAM Users**
+   - Never use personal AWS account credentials
+   - Create separate users for each workflow or environment
+   - Use descriptive names: `github-actions-charts-prod`, `github-actions-charts-dev`
+
+2. **Enable MFA (Multi-Factor Authentication)**
+   - Require MFA for IAM users with write permissions
+   - Use hardware MFA devices or authenticator apps
+   - MFA adds an extra layer of protection even if credentials are compromised
+
+3. **Regular Credential Rotation**
+   - Rotate access keys every 90 days (or per your security policy)
+   - Use AWS IAM Access Key Last Used to identify unused keys
+   - Rotate one key at a time to avoid service disruption
+
+4. **Use IAM Roles Instead of Users (When Possible)**
+   - For EC2 instances or Lambda functions, use IAM roles
+   - Roles eliminate the need to manage access keys
+   - GitHub Actions can use OIDC to assume roles (more secure than access keys)
+
+#### Access Control
+
+1. **Condition-Based Policies**
+   - Add IP restrictions: `"Condition": { "IpAddress": { "aws:SourceIp": "192.0.2.0/24" } }`
+   - Require MFA: `"Condition": { "BoolIfExists": { "aws:MultiFactorAuthPresent": "true" } }`
+   - Time-based access: `"Condition": { "DateGreaterThan": { "aws:CurrentTime": "2024-01-01T00:00:00Z" } }`
+
+2. **Resource Tagging**
+   - Tag resources created by CDK/CloudFormation
+   - Use tags to enforce policies: `"Condition": { "StringEquals": { "aws:RequestTag/Environment": "production" } }`
+
+#### Monitoring and Auditing
+
+1. **Enable CloudTrail**
+   - Log all API calls made by IAM users
+   - Monitor for unauthorized access attempts
+   - Set up CloudWatch alarms for suspicious activity
+
+2. **Use AWS Config**
+   - Track configuration changes to infrastructure
+   - Detect policy violations
+   - Maintain compliance with security standards
+
+3. **Regular Access Reviews**
+   - Review IAM policies quarterly
+   - Remove unused permissions
+   - Verify that permissions match actual usage
+
+4. **Set Up Alerts**
+   - CloudWatch alarms for failed authentication attempts
+   - SNS notifications for IAM policy changes
+   - Email alerts for access key creation/deletion
+
+#### Additional Security Measures
+
+1. **Encryption**
+   - Enable S3 bucket encryption (already configured in CDK stack)
+   - Use AWS KMS for additional encryption control
+   - Encrypt secrets in GitHub Secrets (automatic)
+
+2. **Network Security**
+   - Use VPC endpoints for AWS service access (if using VPC)
+   - Restrict outbound traffic from GitHub Actions runners
+   - Use private GitHub Actions runners for sensitive deployments
+
+3. **Compliance**
+   - Document all IAM policies and their purposes
+   - Maintain audit logs of permission changes
+   - Follow your organization's security policies
+
+### Policy Application Guide
+
+**Step 1: Create IAM Policy**
+
+1. Navigate to AWS Console → IAM → Policies
+2. Click "Create policy"
+3. Choose "JSON" tab
+4. Paste the appropriate policy (Infrastructure Deployment or Chart Publishing)
+5. Review the policy
+6. Name the policy (e.g., `GitHubActionsChartsInfrastructure`)
+7. Click "Create policy"
+
+**Step 2: Attach Policy to IAM User**
+
+1. Navigate to IAM → Users
+2. Select your IAM user
+3. Go to "Permissions" tab
+4. Click "Add permissions" → "Attach policies directly"
+5. Search for and select your policy
+6. Click "Next" → "Add permissions"
+
+**Step 3: Test Permissions**
+
+Before using in production, test the permissions:
+
+```bash
+# Test infrastructure deployment permissions
+aws cloudformation describe-stacks --stack-name ChartsStack --region us-east-1
+
+# Test chart publishing permissions
+aws s3 ls s3://kube9-charts-123456789012/
+```
+
+### Troubleshooting IAM Permission Errors
+
+**Common Errors and Solutions:**
+
+1. **`AccessDenied: User is not authorized to perform: s3:CreateBucket`**
+   - Verify the IAM policy includes `s3:CreateBucket`
+   - Check that the policy is attached to the IAM user
+   - Ensure the policy allows the specific bucket name pattern
+
+2. **`AccessDenied: User is not authorized to perform: iam:CreateRole`**
+   - CDK bootstrap requires IAM permissions
+   - Verify the CDK bootstrap permissions are included
+   - Check that the policy allows role creation with the `cdk-*` prefix
+
+3. **`AccessDenied: User is not authorized to perform: cloudformation:CreateStack`**
+   - Infrastructure deployment requires CloudFormation permissions
+   - Verify the policy includes all CloudFormation actions listed
+   - Check that the IAM user has permission to create stacks
+
+4. **`AccessDenied: User is not authorized to perform: sts:AssumeRole`**
+   - CDK execution roles require assume role permissions
+   - Verify `sts:AssumeRole` is included in the policy
+   - Check that the resource ARN pattern matches CDK role names
+
+For additional troubleshooting, see the [Troubleshooting](#troubleshooting) section below.
 
 ## Troubleshooting
 

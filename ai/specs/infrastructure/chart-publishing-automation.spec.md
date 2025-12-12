@@ -289,35 +289,81 @@ The AWS credentials must have these permissions:
 
 ### Infrastructure Deployment
 
+This policy includes permissions for CDK bootstrap (one-time setup) and infrastructure deployment.
+
 ```json
 {
   "Version": "2012-10-17",
   "Statement": [
     {
+      "Sid": "CDKBootstrapPermissions",
+      "Effect": "Allow",
+      "Action": [
+        "s3:CreateBucket",
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:ListBucket",
+        "s3:GetBucketLocation",
+        "s3:PutBucketVersioning",
+        "s3:PutBucketEncryption",
+        "s3:PutBucketPolicy",
+        "iam:CreateRole",
+        "iam:PutRolePolicy",
+        "iam:AttachRolePolicy",
+        "iam:GetRole",
+        "iam:PassRole",
+        "ssm:PutParameter",
+        "ssm:GetParameter",
+        "ssm:DeleteParameter",
+        "sts:AssumeRole"
+      ],
+      "Resource": [
+        "arn:aws:s3:::cdk-*",
+        "arn:aws:s3:::cdk-*/*",
+        "arn:aws:iam::*:role/cdk-*",
+        "arn:aws:ssm:*:*:parameter/cdk-bootstrap/*"
+      ]
+    },
+    {
+      "Sid": "InfrastructureDeploymentPermissions",
       "Effect": "Allow",
       "Action": [
         "s3:CreateBucket",
         "s3:PutBucketPolicy",
         "s3:PutBucketPublicAccessBlock",
         "s3:PutEncryptionConfiguration",
+        "s3:GetBucketLocation",
+        "s3:ListBucket",
         "cloudformation:CreateStack",
         "cloudformation:UpdateStack",
         "cloudformation:DescribeStacks",
+        "cloudformation:DescribeStackEvents",
+        "cloudformation:GetTemplate",
+        "cloudformation:ValidateTemplate",
         "cloudfront:CreateDistribution",
         "cloudfront:UpdateDistribution",
+        "cloudfront:GetDistribution",
         "cloudfront:CreateOriginAccessControl",
+        "cloudfront:GetOriginAccessControl",
+        "cloudfront:UpdateOriginAccessControl",
         "route53:ChangeResourceRecordSets",
         "route53:GetHostedZone",
+        "route53:ListHostedZones",
         "acm:DescribeCertificate",
+        "acm:ListCertificates",
         "iam:CreateRole",
         "iam:PutRolePolicy",
-        "iam:AttachRolePolicy"
+        "iam:AttachRolePolicy",
+        "iam:GetRole",
+        "iam:PassRole"
       ],
       "Resource": "*"
     }
   ]
 }
 ```
+
+**Note:** The CDK bootstrap permissions are scoped to CDK-specific resources (`cdk-*` buckets, roles, and SSM parameters). Infrastructure deployment permissions require `Resource: "*"` because CloudFormation creates resources dynamically and Route53 hosted zones are account-level resources.
 
 ### Chart Publishing
 

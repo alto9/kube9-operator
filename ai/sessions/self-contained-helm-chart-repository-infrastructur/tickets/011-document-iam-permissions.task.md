@@ -5,7 +5,7 @@ feature_id:
   - chart-repository-hosting
 spec_id:
   - chart-publishing-automation
-status: pending
+status: completed
 ---
 
 # Document IAM Permissions Requirements
@@ -40,11 +40,11 @@ The AWS credentials used by GitHub Actions need specific IAM permissions. This t
 
 ## Acceptance Criteria
 
-- [ ] Infrastructure deployment permissions documented
-- [ ] Chart publishing permissions documented
-- [ ] Example IAM policies provided
-- [ ] Least-privilege principle explained
-- [ ] Security best practices included
+- [x] Infrastructure deployment permissions documented
+- [x] Chart publishing permissions documented
+- [x] Example IAM policies provided
+- [x] Least-privilege principle explained
+- [x] Security best practices included
 
 ## Estimated Time
 
