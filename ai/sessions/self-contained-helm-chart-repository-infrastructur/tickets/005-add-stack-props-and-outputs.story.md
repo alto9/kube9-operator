@@ -5,7 +5,7 @@ feature_id:
   - chart-repository-hosting
 spec_id:
   - chart-repository-infrastructure
-status: pending
+status: completed
 ---
 
 # Add Stack Props Interface and Complete Outputs
@@ -41,12 +41,12 @@ The CDK stack requires external configuration (ACM certificate ARN and Route53 h
 
 ## Acceptance Criteria
 
-- [ ] ChartsStackProps interface defined with required fields
-- [ ] Stack constructor accepts and uses props
-- [ ] bin/app.ts reads environment variables and passes to stack
-- [ ] All required outputs exported
-- [ ] RepositoryUrl output set to https://charts.kube9.io
-- [ ] `cdk synth` works with environment variables set
+- [x] ChartsStackProps interface defined with required fields
+- [x] Stack constructor accepts and uses props
+- [x] bin/app.ts reads environment variables and passes to stack
+- [x] All required outputs exported
+- [x] RepositoryUrl output set to https://charts.kube9.io
+- [x] `cdk synth` works with environment variables set
 
 ## Estimated Time
 

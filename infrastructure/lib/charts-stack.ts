@@ -24,6 +24,11 @@ export interface ChartsStackProps extends cdk.StackProps {
    * Default: charts.kube9.io
    */
   domainName?: string;
+  
+  /**
+   * S3 bucket name (optional, will generate if not provided)
+   */
+  bucketName?: string;
 }
 
 export class ChartsStack extends cdk.Stack {
@@ -33,7 +38,7 @@ export class ChartsStack extends cdk.Stack {
     // Create S3 bucket for Helm chart storage
     const accountId = cdk.Stack.of(this).account;
     const bucket = new s3.Bucket(this, 'ChartsBucket', {
-      bucketName: `kube9-charts-${accountId}`,
+      bucketName: props.bucketName || `kube9-charts-${accountId}`,
       encryption: s3.BucketEncryption.S3_MANAGED,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       versioned: false,
@@ -152,6 +157,11 @@ export class ChartsStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'DistributionDomain', {
       value: distribution.distributionDomainName,
       description: 'CloudFront distribution domain name',
+    });
+
+    new cdk.CfnOutput(this, 'RepositoryUrl', {
+      value: `https://${domainName}`,
+      description: 'Helm chart repository URL',
     });
   }
 }
