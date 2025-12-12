@@ -5,7 +5,7 @@ feature_id:
   - chart-repository-hosting
 spec_id:
   - chart-publishing-automation
-status: pending
+status: completed
 ---
 
 # Create Chart Publishing GitHub Actions Workflow
