@@ -5,7 +5,7 @@ feature_id:
   - chart-repository-hosting
 spec_id:
   - chart-repository-infrastructure
-status: pending
+status: completed
 ---
 
 # Implement S3 Bucket for Chart Storage
@@ -35,12 +35,12 @@ The S3 bucket stores Helm chart packages (.tgz files) and index.yaml. It must be
 
 ## Acceptance Criteria
 
-- [ ] S3 bucket created with correct name pattern
-- [ ] Encryption configured (SSE-S3)
-- [ ] Public access blocked
-- [ ] Versioning disabled
-- [ ] Stack outputs include BucketName and BucketArn
-- [ ] `cdk synth` generates valid CloudFormation template
+- [x] S3 bucket created with correct name pattern
+- [x] Encryption configured (SSE-S3)
+- [x] Public access blocked
+- [x] Versioning disabled
+- [x] Stack outputs include BucketName and BucketArn
+- [x] `cdk synth` generates valid CloudFormation template
 
 ## Estimated Time
 
