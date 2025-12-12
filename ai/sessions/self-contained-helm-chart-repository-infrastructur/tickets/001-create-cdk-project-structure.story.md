@@ -5,7 +5,7 @@ feature_id:
   - chart-repository-hosting
 spec_id:
   - chart-repository-infrastructure
-status: pending
+status: completed
 ---
 
 # Create CDK Project Structure
@@ -42,13 +42,13 @@ The infrastructure will be managed as a self-contained CDK project within the ku
 
 ## Acceptance Criteria
 
-- [ ] `infrastructure/package.json` exists with correct dependencies
-- [ ] `cdk.json` configured with app entry point
-- [ ] `tsconfig.json` configured for Node 22
-- [ ] `bin/app.ts` creates ChartsStack instance
-- [ ] `lib/charts-stack.ts` exports ChartsStack class
-- [ ] `npm install` succeeds in infrastructure directory
-- [ ] `npx cdk synth` runs without errors (empty stack)
+- [x] `infrastructure/package.json` exists with correct dependencies
+- [x] `cdk.json` configured with app entry point
+- [x] `tsconfig.json` configured for Node 22
+- [x] `bin/app.ts` creates ChartsStack instance
+- [x] `lib/charts-stack.ts` exports ChartsStack class
+- [x] `npm install` succeeds in infrastructure directory
+- [x] `npx cdk synth` runs without errors (empty stack)
 
 ## Estimated Time
 
