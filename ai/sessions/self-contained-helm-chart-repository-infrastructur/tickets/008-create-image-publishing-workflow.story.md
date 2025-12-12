@@ -5,7 +5,7 @@ feature_id:
   - container-image-publishing
 spec_id:
   - container-image-automation
-status: pending
+status: completed
 ---
 
 # Create Docker Image Publishing GitHub Actions Workflow
