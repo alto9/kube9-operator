@@ -1,6 +1,6 @@
 {
   "name": "kube9-operator",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "type": "module",
   "description": "Kubernetes Operator for the kube9 VS Code Extension",
   "main": "dist/index.js",
