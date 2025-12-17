@@ -1,3 +1,10 @@
+## [1.0.1](https://github.com/alto9/kube9-operator/compare/v1.0.0...v1.0.1) (2025-12-17)
+
+
+### Bug Fixes
+
+* trigger deployment ([1e6cf4c](https://github.com/alto9/kube9-operator/commit/1e6cf4cd12b1518149fee5e5d043ec5e125cbb62))
+
 # 1.0.0 (2025-12-17)
 
 
