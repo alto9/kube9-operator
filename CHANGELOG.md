@@ -1,3 +1,10 @@
+## [1.0.3](https://github.com/alto9/kube9-operator/compare/v1.0.2...v1.0.3) (2025-12-17)
+
+
+### Bug Fixes
+
+* correct index.yaml fallback creation in chart publishing workflow ([220eeef](https://github.com/alto9/kube9-operator/commit/220eeeff1407702912a7a956b2a6b508844650ec))
+
 ## [1.0.2](https://github.com/alto9/kube9-operator/compare/v1.0.1...v1.0.2) (2025-12-17)
 
 
