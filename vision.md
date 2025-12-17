@@ -18,7 +18,7 @@ kube9-operator will become the **standard way for clusters to participate in the
 2. **Zero-Trust Security**: No ingress required, all communication is outbound
 3. **Tier Detection**: Enables VS Code extension and UI components to adapt features based on cluster capabilities
 4. **Health Monitoring**: Continuous cluster health assessment and status reporting
-5. **Pro Tier Gateway**: Secure bridge to kube9-server for AI-powered features via scheduled data reporting
+5. **Desktop Pro Gateway**: Secure bridge to kube9-server for Desktop Pro features via historical data storage and operator registration
 6. **Minimal Footprint**: Lightweight operator that doesn't impact cluster performance
 
 ### Strategic Goals
@@ -27,7 +27,7 @@ kube9-operator will become the **standard way for clusters to participate in the
 - Establish operator as the standard for kube9 cluster integration
 - Achieve 1,000+ operator installations across diverse cluster types
 - Build trust through transparent security model and minimal resource usage
-- Enable seamless Pro tier activation through operator registration
+- Enable seamless Desktop Pro activation through operator registration and API key configuration
 
 **Medium-Term (1-2 years)**
 - Complete remaining data collectors (performance metrics, config patterns, security posture)
@@ -59,7 +59,7 @@ kube9-operator will become the **standard way for clusters to participate in the
 ### 3. Tier-Aware Architecture
 - Supports multiple tiers (basic, operated, enabled, degraded)
 - Clear status exposure for VS Code extension
-- Graceful fallback when Pro tier unavailable
+- Graceful fallback when Desktop Pro unavailable (free tier continues to work)
 - Transparent tier detection and reporting
 
 ### 4. Operational Excellence
@@ -96,7 +96,7 @@ kube9-operator will become the **standard way for clusters to participate in the
 
 ### Free Tier Framework Validation
 
-**Role**: The kube9-operator is the foundation for implementing the Kubernetes Well-Architected Framework, providing validation for all 6 framework pillars. Free tier checks run without an API key, while Pro tier analysis requires scheduled data reporting.
+**Role**: The kube9-operator is the foundation for implementing the Kubernetes Well-Architected Framework, providing validation for all 6 framework pillars. Free tier checks run without an API key, while Desktop Pro features require operator registration with API key for historical data storage.
 
 **Framework Documentation**: Complete framework documentation with all criteria: https://alto9.github.io/kube9/well-architected-framework.html
 
@@ -139,9 +139,9 @@ The operator performs validation checks that require real resource names and clu
 
 **Dual-Tier Architecture:**
 
-The operator works in conjunction with kube9-server Pro tier analysis:
+The operator works in conjunction with kube9-server for Desktop Pro features:
 - **Free Tier**: Validates configurations requiring real names (CVE scanning, compliance checks). Available without API key.
-- **Pro Tier**: Analyzes patterns and trends using obfuscated data (exposure detection, trend analysis). Requires API key for scheduled data reporting.
+- **Desktop Pro**: Stores historical data for Desktop Pro AI agent access. Requires API key for operator registration and historical data storage.
 
 This dual-tier approach provides comprehensive framework coverage while maintaining data privacy.
 
@@ -173,7 +173,7 @@ This dual-tier approach provides comprehensive framework coverage while maintain
 - View sync status, drift alerts, and deployment history
 - Access basic drift detection summaries
 
-**Intelligence Phase (Pro Tier - Future)**:
+**Intelligence Phase (Desktop Pro)**:
 - AI analysis of drift patterns and root causes
 - Predictive deployment failure detection
 - Configuration optimization recommendations
@@ -184,7 +184,7 @@ This dual-tier approach provides comprehensive framework coverage while maintain
 **For Developers**:
 - View ArgoCD Applications directly in VS Code kube9 tree view
 - See drift alerts and sync status without leaving IDE
-- Get AI-powered recommendations for deployment issues (Pro tier)
+- Desktop Pro users can use AI agent with historical context for deployment analysis
 - Unified interface for both cluster resources and GitOps deployments
 
 **For Platform Teams**:
@@ -199,16 +199,16 @@ This dual-tier approach provides comprehensive framework coverage while maintain
 - **Easy Integration**: Simple Helm install to enable kube9 features
 - **Security Confidence**: Transparent security model with minimal permissions
 - **Performance Assurance**: Lightweight operator that doesn't impact cluster performance
-- **Tier Flexibility**: Choose free tier or Pro tier based on needs
+- **Tier Flexibility**: Choose free tier or Desktop Pro based on needs
 
 ### For Developers
 - **Seamless Experience**: Operator enables VS Code extension features automatically
-- **Pro Tier Activation**: Simple API key configuration unlocks advanced features
+- **Desktop Pro Activation**: Simple API key configuration enables operator registration and historical data storage for Desktop Pro AI agent
 - **Health Visibility**: Clear status reporting for cluster health
 - **Multi-Cluster Support**: Manage multiple clusters with consistent operator behavior
 
 ### For Alto9
-- **Ecosystem Foundation**: Operator enables Pro tier features and monetization
+- **Ecosystem Foundation**: Operator enables Desktop Pro features and monetization through historical data storage
 - **Data Collection**: Foundation built for secure, sanitized metrics collection for AI training
 - **Market Differentiation**: Unique zero-ingress architecture sets kube9 apart
 - **Scalability**: Operator scales to thousands of clusters efficiently
@@ -217,7 +217,7 @@ This dual-tier approach provides comprehensive framework coverage while maintain
 
 ### Adoption
 - 1,000+ operator installations in first year
-- 50%+ of Pro tier users have operator installed
+- 50%+ of Desktop Pro users have operator installed
 - < 5 minute average installation time
 - 4.5+ star rating in Helm charts
 
@@ -236,7 +236,7 @@ This dual-tier approach provides comprehensive framework coverage while maintain
 ### Reliability
 - < 1% operator failure rate
 - < 60 second status update latency
-- 99.9%+ successful Pro tier registrations
+- 99.9%+ successful Desktop Pro operator registrations
 - Graceful degradation under all failure scenarios
 
 ## Data Collection Status
@@ -285,7 +285,7 @@ The kube9-operator manages data through four distinct phases:
 - Enables reversible sanitization
 - **Status**: Not yet implemented
 
-### Phase 3: Outgoing Sanitization (Future - Pro Tier Only)
+### Phase 3: Outgoing Sanitization (Future - Desktop Pro Only)
 - Applies obfuscation library to raw collected data
 - Replaces real names with mock equivalents before transmission
 - Ensures no PII or sensitive data leaves the cluster
@@ -293,14 +293,13 @@ The kube9-operator manages data through four distinct phases:
 - Transmits to kube9-server via HTTPS POST with API key
 - **Status**: Not yet implemented
 
-### Phase 4: Response Processing (Future - Pro Tier Only)
-- Server processes sanitized data and generates AI insights
-- Server response includes updated insights, recommendations, and framework assessment results
-- AI insights contain mock names (e.g., `deployment-a7f3b9`)
-- Operator reverses obfuscation using local library
-- Reconstructs insights with actual resource names
-- Stores AI insights and updated data in SQLite database for CLI-based querying
-- VS Code extension and UI components query via `kubectl exec` to CLI tool
+### Phase 4: Historical Data Storage (Desktop Pro)
+- Server stores sanitized historical data for Desktop Pro AI agent access
+- Desktop Pro AI agent retrieves historical data to enhance prompts
+- Historical data contains obfuscated names (e.g., `deployment-a7f3b9`)
+- Desktop Pro AI agent uses historical data to build context-rich prompts
+- Prompts sent to customer's AI provider (OpenAI, Anthropic, etc.)
+- No AI processing happens on server - all AI runs client-side via customer's provider
 - **Status**: Not yet implemented
 
 ### Design Principles
@@ -311,15 +310,15 @@ The kube9-operator manages data through four distinct phases:
 
 **Reversible Obfuscation**: Mock names can be mapped back to real names, enabling AI insights to reference actual cluster resources.
 
-**Free Tier Benefits**: Collection and local storage work without Pro tier, providing value without external connectivity.
+**Free Tier Benefits**: Collection and local storage work without Desktop Pro, providing value without external connectivity.
 
-**Pro Tier Enhancement**: Sanitization and server integration unlock AI-powered insights while maintaining security.
+**Desktop Pro Enhancement**: Sanitization and server integration enable historical data storage for Desktop Pro AI agent access.
 
-## AI Insights Architecture (Pro Tier)
+## Historical Data Architecture (Desktop Pro)
 
 ### Overview
 
-The operator participates in a sophisticated AI insights system that provides proactive cluster intelligence while maintaining zero-trust security principles.
+The operator participates in historical data collection and storage for Desktop Pro. Desktop Pro includes a client-side AI agent that retrieves historical data to enhance prompts sent to the customer's AI provider. The operator does NOT generate proactive insights - it stores historical data for Desktop Pro AI agent access.
 
 ### Insights Flow (Egress Only)
 
@@ -330,61 +329,33 @@ The operator participates in a sophisticated AI insights system that provides pr
 - Server response includes updated insights and recommendations
 - Operator receives and stores updated data from response
 
-**2. Insights Retrieval**
-- Updated insights and recommendations included in metrics upload response
-- Server processes AI analysis and includes results in response payload
-- Insights contain obfuscated object names
-- Operator de-obfuscates and stores locally
+**2. Historical Data Storage**
+- Server stores historical data for Desktop Pro AI agent access
+- Historical data contains obfuscated object names
+- Operator maintains obfuscation mappings locally
 
-**3. Local De-obfuscation**
-- Operator reverses mock names to real names
-- Example: `deployment-a7f3b9` → `my-app-deployment`
-- Uses local obfuscation library for mapping
-- Reconstructed insights reference actual cluster objects
+**3. Desktop Pro AI Agent Access**
+- Desktop Pro AI agent queries server for historical data
+- Server returns historical data with obfuscated names
+- Desktop Pro AI agent uses historical data to enhance prompts
+- Prompts sent to customer's AI provider (OpenAI, Anthropic, etc.)
+- Customer's AI provider returns analysis with historical context
 
-**4. Storage in SQLite Database**
-- Stores de-obfuscated insights in local SQLite database (`/data/kube9.db`)
-- VS Code extension queries via `kubectl exec` to CLI tool
-- No server call required - all data local to cluster
-- Queryable with filters (severity, namespace, date range, etc.)
-- See "Data Storage & Query Architecture" section for full schema and CLI commands
+### Historical Data Model
 
-**5. Acknowledgement Sync**
-- User acknowledges insight in VS Code or UI component
-- Extension/UI patches OperatorStatus CRD locally
-- Operator detects change and syncs to server
-- POST to `/api/insights/{id}/acknowledge`
-- Server marks insight as acknowledged
-- Updated acknowledgement status included in next metrics upload response
+Historical data stored for Desktop Pro AI agent access includes:
 
-### Insight Data Model
+**Cluster Metrics:**
+- Resource usage patterns over time
+- Event history and trends
+- Configuration changes
+- Performance metrics
 
-Each insight contains:
-
-**Identity & Target:**
-- `id` - Unique insight identifier
-- `cluster_id` - Which cluster (obfuscated at server)
-- `object_kind` - Deployment, Pod, Service, Node, Namespace, Cluster
-- `object_namespace` - Namespace (null for cluster-level)
-- `object_name` - Object name (de-obfuscated by operator)
-- `object_id` - Composite identifier
-
-**Content:**
-- `insight_type` - issue, optimization, security, cost, health, trend
-- `severity` - critical, high, medium, low, info
-- `title` - Short headline
-- `insight_text` - Full AI-generated explanation
-- `recommendation` - Actionable next steps
-
-**State:**
-- `status` - active, acknowledged, resolved, dismissed
-- `acknowledged_at` - Timestamp
-- `created_at` - When insight was generated
-- `expires_at` - Optional expiration
-
-**Metadata:**
-- `confidence` - AI confidence score (0.0-1.0)
-- `generation_method` - scheduled, event-triggered, user-requested
+**Data Format:**
+- All data obfuscated before storage
+- Time-series data for trend analysis
+- Structured format for Desktop Pro AI agent queries
+- Efficient storage for quick retrieval
 
 ### Security & Privacy
 

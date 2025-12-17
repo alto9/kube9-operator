@@ -201,7 +201,7 @@ export class ResourceInventoryCollector {
     const namespaceList = await this.kubernetesClient.coreApi.listNamespace();
     const items = namespaceList.items || [];
 
-    const hashedNamespaces = items.map(ns => {
+    const hashedNamespaces = items.map((ns: k8s.V1Namespace) => {
       const name = ns.metadata?.name || '';
       return this.hashNamespace(name);
     });
@@ -223,7 +223,7 @@ export class ResourceInventoryCollector {
 
     const byNamespace: Record<string, number> = {};
 
-    items.forEach(pod => {
+    items.forEach((pod: k8s.V1Pod) => {
       const namespace = pod.metadata?.namespace || '';
       const namespaceId = this.hashNamespace(namespace);
       byNamespace[namespaceId] = (byNamespace[namespaceId] || 0) + 1;
@@ -301,7 +301,7 @@ export class ResourceInventoryCollector {
       ExternalName?: number;
     } = {};
 
-    items.forEach(service => {
+    items.forEach((service: k8s.V1Service) => {
       const type = (service.spec?.type || 'ClusterIP') as keyof typeof byType;
       if (type === 'ClusterIP' || type === 'NodePort' || type === 'LoadBalancer' || type === 'ExternalName') {
         byType[type] = (byType[type] || 0) + 1;
