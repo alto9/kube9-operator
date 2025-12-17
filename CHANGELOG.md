@@ -1,3 +1,10 @@
+## [1.0.6](https://github.com/alto9/kube9-operator/compare/v1.0.5...v1.0.6) (2025-12-17)
+
+
+### Bug Fixes
+
+* clean up old chart packages before packaging in workflow ([9ad5313](https://github.com/alto9/kube9-operator/commit/9ad53138294155eae495a6b9b078ecdc14eaee70))
+
 ## [1.0.5](https://github.com/alto9/kube9-operator/compare/v1.0.4...v1.0.5) (2025-12-17)
 
 
