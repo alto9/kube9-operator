@@ -1,3 +1,10 @@
+## [1.0.2](https://github.com/alto9/kube9-operator/compare/v1.0.1...v1.0.2) (2025-12-17)
+
+
+### Bug Fixes
+
+* update chart repository URL to charts.kube9.io and use PAT for releases ([c498745](https://github.com/alto9/kube9-operator/commit/c49874529eff11af47bbe4fcc4c40b3aced199ef))
+
 ## [1.0.1](https://github.com/alto9/kube9-operator/compare/v1.0.0...v1.0.1) (2025-12-17)
 
 
