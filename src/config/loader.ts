@@ -50,12 +50,10 @@ export async function loadConfig(): Promise<Config> {
   let apiKey: string | null = null;
   
   try {
-    const secretResponse = await kubernetesClient.coreApi.readNamespacedSecret(
-      SECRET_NAME,
-      SECRET_NAMESPACE
-    );
-
-    const secret = secretResponse.body;
+    const secret = await kubernetesClient.coreApi.readNamespacedSecret({
+      name: SECRET_NAME,
+      namespace: SECRET_NAMESPACE
+    });
     
     // Extract and decode API key from Secret
     if (secret.data && secret.data[SECRET_KEY]) {

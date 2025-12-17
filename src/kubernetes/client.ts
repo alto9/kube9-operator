@@ -80,11 +80,11 @@ export class KubernetesClient {
     try {
       // Get Kubernetes version
       const versionInfo = await this.versionApi.getCode();
-      const version = versionInfo.body.gitVersion || 'unknown';
+      const version = versionInfo.gitVersion || 'unknown';
 
       // Get node count
       const nodeList = await this.coreApi.listNode();
-      const nodeCount = nodeList.body.items?.length || 0;
+      const nodeCount = nodeList.items?.length || 0;
 
       return {
         version,

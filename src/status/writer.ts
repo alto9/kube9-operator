@@ -58,16 +58,16 @@ async function createOrUpdateConfigMap(
 
   try {
     // Try to read existing ConfigMap
-    await coreApi.readNamespacedConfigMap(name, namespace);
+    await coreApi.readNamespacedConfigMap({ name, namespace });
     
     // ConfigMap exists, update it
-    await coreApi.replaceNamespacedConfigMap(name, namespace, configMap);
+    await coreApi.replaceNamespacedConfigMap({ name, namespace, body: configMap });
   } catch (error: unknown) {
     // Check if error is 404 (not found)
     const errorObj = error as { response?: { statusCode?: number } };
     if (errorObj.response?.statusCode === 404) {
       // ConfigMap doesn't exist, create it
-      await coreApi.createNamespacedConfigMap(namespace, configMap);
+      await coreApi.createNamespacedConfigMap({ namespace, body: configMap });
     } else {
       // Re-throw other errors
       throw error;

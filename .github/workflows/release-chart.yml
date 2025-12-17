@@ -1,0 +1,103 @@
+name: Release Helm Chart
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*'
+
+env:
+  AWS_REGION: 'us-east-1'
+  HELM_VERSION: '3.12.0'
+
+jobs:
+  publish-chart:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: ${{ env.HELM_VERSION }}
+      
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Get bucket name from stack
+        run: |
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name ChartsStack \
+            --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
+            --output text)
+          echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
+      
+      - name: Package Helm chart
+        run: |
+          helm package charts/kube9-operator
+          CHART_FILE=$(ls kube9-operator-*.tgz)
+          echo "CHART_FILE=${CHART_FILE}" >> $GITHUB_ENV
+          CHART_VERSION=$(echo ${CHART_FILE} | sed 's/kube9-operator-\(.*\)\.tgz/\1/')
+          echo "CHART_VERSION=${CHART_VERSION}" >> $GITHUB_ENV
+      
+      - name: Download existing index.yaml
+        run: |
+          aws s3 cp s3://${{ env.BUCKET_NAME }}/index.yaml index.yaml \
+            || echo "apiVersion: v1\nentries: {}" > index.yaml
+        continue-on-error: true
+      
+      - name: Update index.yaml
+        run: |
+          helm repo index . \
+            --url https://charts.kube9.io \
+            --merge index.yaml
+      
+      - name: Upload chart package to S3
+        run: |
+          aws s3 cp ${{ env.CHART_FILE }} s3://${{ env.BUCKET_NAME }}/ \
+            --content-type application/gzip \
+            --cache-control "public, max-age=31536000, immutable" \
+            --metadata-directive REPLACE
+      
+      - name: Upload index.yaml to S3
+        run: |
+          aws s3 cp index.yaml s3://${{ env.BUCKET_NAME }}/ \
+            --content-type text/yaml \
+            --cache-control "public, max-age=300" \
+            --metadata-directive REPLACE
+      
+      - name: Get CloudFront distribution ID
+        run: |
+          DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
+            --stack-name ChartsStack \
+            --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' \
+            --output text)
+          echo "DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
+      
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.DISTRIBUTION_ID }} \
+            --paths "/*"
+      
+      - name: Output publish info
+        run: |
+          echo "✅ Chart published successfully"
+          echo "Chart: ${{ env.CHART_FILE }}"
+          echo "Version: ${{ env.CHART_VERSION }}"
+          echo "Repository: https://charts.kube9.io"
+          echo ""
+          echo "Users can now install with:"
+          echo "  helm repo add kube9 https://charts.kube9.io"
+          echo "  helm install kube9-operator kube9/kube9-operator --version ${{ env.CHART_VERSION }}"
+

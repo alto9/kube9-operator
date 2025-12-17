@@ -55,9 +55,9 @@ export interface ArgoCDDetectionConfig {
  */
 async function checkForApplicationCRD(k8sClient: KubernetesClient): Promise<boolean> {
   try {
-    const crd = await k8sClient.apiextensionsApi.readCustomResourceDefinition(
-      "applications.argoproj.io"
-    );
+    const crd = await k8sClient.apiextensionsApi.readCustomResourceDefinition({
+      name: "applications.argoproj.io"
+    });
     return crd !== null;
   } catch (error: unknown) {
     const errorObj = error as { response?: { statusCode?: number } };
@@ -134,7 +134,7 @@ async function detectInNamespace(
 ): Promise<ArgoCDStatus> {
   try {
     // Check if namespace exists
-    const ns = await k8sClient.coreApi.readNamespace(namespace);
+    const ns = await k8sClient.coreApi.readNamespace({ name: namespace });
     if (!ns) {
       return {
         detected: false,
@@ -145,16 +145,12 @@ async function detectInNamespace(
     }
     
     // Check for ArgoCD server deployment
-    const deployments = await k8sClient.appsApi.listNamespacedDeployment(
+    const deployments = await k8sClient.appsApi.listNamespacedDeployment({
       namespace,
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      selector
-    );
+      labelSelector: selector
+    });
     
-    if (deployments.body.items.length === 0) {
+    if (deployments.items.length === 0) {
       return {
         detected: false,
         namespace: null,
@@ -164,7 +160,7 @@ async function detectInNamespace(
     }
     
     // Extract version from deployment
-    const deployment = deployments.body.items[0];
+    const deployment = deployments.items[0];
     const version = extractVersion(deployment);
     
     return {

@@ -52,20 +52,26 @@ async function testConfigMapWrite(coreApi: k8s.CoreV1Api): Promise<boolean> {
 
     try {
       // Try to read existing ConfigMap
-      await coreApi.readNamespacedConfigMap(HEALTH_CHECK_CONFIGMAP_NAME, HEALTH_CHECK_NAMESPACE);
+      await coreApi.readNamespacedConfigMap({
+        name: HEALTH_CHECK_CONFIGMAP_NAME,
+        namespace: HEALTH_CHECK_NAMESPACE
+      });
       
       // ConfigMap exists, update it
-      await coreApi.replaceNamespacedConfigMap(
-        HEALTH_CHECK_CONFIGMAP_NAME,
-        HEALTH_CHECK_NAMESPACE,
-        testConfigMap
-      );
+      await coreApi.replaceNamespacedConfigMap({
+        name: HEALTH_CHECK_CONFIGMAP_NAME,
+        namespace: HEALTH_CHECK_NAMESPACE,
+        body: testConfigMap
+      });
     } catch (error: unknown) {
       // Check if error is 404 (not found)
       const errorObj = error as { response?: { statusCode?: number } };
       if (errorObj.response?.statusCode === 404) {
         // ConfigMap doesn't exist, create it
-        await coreApi.createNamespacedConfigMap(HEALTH_CHECK_NAMESPACE, testConfigMap);
+        await coreApi.createNamespacedConfigMap({
+          namespace: HEALTH_CHECK_NAMESPACE,
+          body: testConfigMap
+        });
       } else {
         // Re-throw other errors
         throw error;

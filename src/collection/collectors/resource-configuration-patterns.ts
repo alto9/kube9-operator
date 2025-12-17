@@ -583,7 +583,7 @@ export class ResourceConfigurationPatternsCollector {
 
       // Collect from pods
       const podList = await this.kubernetesClient.coreApi.listPodForAllNamespaces();
-      for (const pod of podList.body.items || []) {
+      for (const pod of podList.items || []) {
         // Process pod-level data
         processPodSecurityContext(data, pod.spec?.securityContext);
         processPodLabelsAnnotations(data, pod.metadata);
@@ -601,7 +601,7 @@ export class ResourceConfigurationPatternsCollector {
 
       // Collect from deployments
       const deploymentList = await this.kubernetesClient.appsApi.listDeploymentForAllNamespaces();
-      for (const deployment of deploymentList.body.items || []) {
+      for (const deployment of deploymentList.items || []) {
         if (deployment.spec?.replicas !== undefined) {
           data.replicaCounts.deployments.push(deployment.spec.replicas);
         }
@@ -610,7 +610,7 @@ export class ResourceConfigurationPatternsCollector {
 
       // Collect from statefulSets
       const statefulSetList = await this.kubernetesClient.appsApi.listStatefulSetForAllNamespaces();
-      for (const statefulSet of statefulSetList.body.items || []) {
+      for (const statefulSet of statefulSetList.items || []) {
         if (statefulSet.spec?.replicas !== undefined) {
           data.replicaCounts.statefulSets.push(statefulSet.spec.replicas);
         }
@@ -618,11 +618,11 @@ export class ResourceConfigurationPatternsCollector {
 
       // Collect from daemonSets
       const daemonSetList = await this.kubernetesClient.appsApi.listDaemonSetForAllNamespaces();
-      data.replicaCounts.daemonSetCount = daemonSetList.body.items?.length || 0;
+      data.replicaCounts.daemonSetCount = daemonSetList.items?.length || 0;
 
       // Collect from services
       const serviceList = await this.kubernetesClient.coreApi.listServiceForAllNamespaces();
-      for (const service of serviceList.body.items || []) {
+      for (const service of serviceList.items || []) {
         processServiceType(data, service.spec?.type, service.spec?.ports);
         processLabelsAnnotations(data, 'services', service.metadata);
       }
