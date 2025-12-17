@@ -21,6 +21,7 @@ describe('generateClusterIdentifier', () => {
       name: 'test-cluster',
       server: 'https://test.example.com:6443',
       caData: 'LS0tLS1CRUdJTi...', // Mock base64 CA data
+      skipTLSVerify: false,
     };
     const mockUser: k8s.User = {
       name: 'test-user',
@@ -49,6 +50,7 @@ describe('generateClusterIdentifier', () => {
       name: 'test-cluster',
       server: 'https://test.example.com:6443',
       caData: 'LS0tLS1CRUdJTi...',
+      skipTLSVerify: false,
     };
     const mockUser: k8s.User = {
       name: 'test-user',
@@ -84,6 +86,7 @@ describe('generateClusterIdentifier', () => {
       name: 'test-cluster',
       server: 'https://test.example.com:6443',
       caData: caData,
+      skipTLSVerify: false,
     };
     const mockUser: k8s.User = {
       name: 'test-user',
@@ -116,6 +119,7 @@ describe('generateClusterIdentifier', () => {
     const mockCluster: k8s.Cluster = {
       name: 'test-cluster',
       server: serverUrl,
+      skipTLSVerify: false,
     };
     const mockUser: k8s.User = {
       name: 'test-user',
@@ -149,6 +153,7 @@ describe('generateClusterIdentifier', () => {
       name: 'test-cluster',
       server: 'https://test.example.com:6443',
       caData: caData,
+      skipTLSVerify: false,
     };
     const mockUser: k8s.User = {
       name: 'test-user',

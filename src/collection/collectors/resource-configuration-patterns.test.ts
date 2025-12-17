@@ -1035,13 +1035,13 @@ it('ResourceConfigurationPatternsCollector - collect() processes pods', async ()
 
   const mockKubernetesClient = {
     coreApi: {
-      listPodForAllNamespaces: async () => ({ body: { items: mockPods } }),
-      listServiceForAllNamespaces: async () => ({ body: { items: [] } }),
+      listPodForAllNamespaces: async () => ({ items: mockPods }),
+      listServiceForAllNamespaces: async () => ({ items: [] }),
     },
     appsApi: {
-      listDeploymentForAllNamespaces: async () => ({ body: { items: [] } }),
-      listStatefulSetForAllNamespaces: async () => ({ body: { items: [] } }),
-      listDaemonSetForAllNamespaces: async () => ({ body: { items: [] } }),
+      listDeploymentForAllNamespaces: async () => ({ items: [] }),
+      listStatefulSetForAllNamespaces: async () => ({ items: [] }),
+      listDaemonSetForAllNamespaces: async () => ({ items: [] }),
     },
   };
 
@@ -1079,13 +1079,13 @@ it('ResourceConfigurationPatternsCollector - collect() processes deployments', a
 
   const mockKubernetesClient = {
     coreApi: {
-      listPodForAllNamespaces: async () => ({ body: { items: [] } }),
-      listServiceForAllNamespaces: async () => ({ body: { items: [] } }),
+      listPodForAllNamespaces: async () => ({ items: [] }),
+      listServiceForAllNamespaces: async () => ({ items: [] }),
     },
     appsApi: {
-      listDeploymentForAllNamespaces: async () => ({ body: { items: mockDeployments } }),
-      listStatefulSetForAllNamespaces: async () => ({ body: { items: [] } }),
-      listDaemonSetForAllNamespaces: async () => ({ body: { items: [] } }),
+      listDeploymentForAllNamespaces: async () => ({ items: mockDeployments }),
+      listStatefulSetForAllNamespaces: async () => ({ items: [] }),
+      listDaemonSetForAllNamespaces: async () => ({ items: [] }),
     },
   };
 
@@ -1121,13 +1121,13 @@ it('ResourceConfigurationPatternsCollector - collect() processes services', asyn
 
   const mockKubernetesClient = {
     coreApi: {
-      listPodForAllNamespaces: async () => ({ body: { items: [] } }),
-      listServiceForAllNamespaces: async () => ({ body: { items: mockServices } }),
+      listPodForAllNamespaces: async () => ({ items: [] }),
+      listServiceForAllNamespaces: async () => ({ items: mockServices }),
     },
     appsApi: {
-      listDeploymentForAllNamespaces: async () => ({ body: { items: [] } }),
-      listStatefulSetForAllNamespaces: async () => ({ body: { items: [] } }),
-      listDaemonSetForAllNamespaces: async () => ({ body: { items: [] } }),
+      listDeploymentForAllNamespaces: async () => ({ items: [] }),
+      listStatefulSetForAllNamespaces: async () => ({ items: [] }),
+      listDaemonSetForAllNamespaces: async () => ({ items: [] }),
     },
   };
 

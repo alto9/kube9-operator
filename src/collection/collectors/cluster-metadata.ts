@@ -58,7 +58,7 @@ export class ClusterMetadataCollector {
     try {
       // Get Kubernetes version
       const versionInfo = await this.kubernetesClient.versionApi.getCode();
-      const gitVersion = versionInfo.body.gitVersion || 'unknown';
+      const gitVersion = versionInfo.gitVersion || 'unknown';
       // Strip 'v' prefix if present
       const kubernetesVersion = gitVersion.startsWith('v') ? gitVersion.substring(1) : gitVersion;
 
@@ -67,13 +67,13 @@ export class ClusterMetadataCollector {
 
       // Get node list for counting and metadata extraction
       const nodeList = await this.kubernetesClient.coreApi.listNode();
-      const nodeCount = nodeList.body.items?.length || 0;
+      const nodeCount = nodeList.items?.length || 0;
 
       // Detect provider from node labels
-      const provider = this.detectProvider(nodeList.body);
+      const provider = this.detectProvider(nodeList);
 
       // Extract region and zone from node labels
-      const { region, zone } = this.extractRegionAndZone(nodeList.body);
+      const { region, zone } = this.extractRegionAndZone(nodeList);
 
       // Generate collection ID
       const collectionId = this.generateCollectionId();

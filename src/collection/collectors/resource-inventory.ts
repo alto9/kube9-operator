@@ -199,7 +199,7 @@ export class ResourceInventoryCollector {
    */
   private async collectNamespaces(): Promise<{ count: number; list: string[] }> {
     const namespaceList = await this.kubernetesClient.coreApi.listNamespace();
-    const items = namespaceList.body.items || [];
+    const items = namespaceList.items || [];
 
     const hashedNamespaces = items.map(ns => {
       const name = ns.metadata?.name || '';
@@ -219,7 +219,7 @@ export class ResourceInventoryCollector {
    */
   private async collectPodCounts(): Promise<{ total: number; byNamespace: Record<string, number> }> {
     const podList = await this.kubernetesClient.coreApi.listPodForAllNamespaces();
-    const items = podList.body.items || [];
+    const items = podList.items || [];
 
     const byNamespace: Record<string, number> = {};
 
@@ -242,7 +242,7 @@ export class ResourceInventoryCollector {
    */
   private async collectDeploymentCounts(): Promise<{ total: number }> {
     const deploymentList = await this.kubernetesClient.appsApi.listDeploymentForAllNamespaces();
-    const items = deploymentList.body.items || [];
+    const items = deploymentList.items || [];
 
     return {
       total: items.length,
@@ -256,7 +256,7 @@ export class ResourceInventoryCollector {
    */
   private async collectStatefulSetCounts(): Promise<{ total: number }> {
     const statefulSetList = await this.kubernetesClient.appsApi.listStatefulSetForAllNamespaces();
-    const items = statefulSetList.body.items || [];
+    const items = statefulSetList.items || [];
 
     return {
       total: items.length,
@@ -270,7 +270,7 @@ export class ResourceInventoryCollector {
    */
   private async collectReplicaSetCounts(): Promise<{ total: number }> {
     const replicaSetList = await this.kubernetesClient.appsApi.listReplicaSetForAllNamespaces();
-    const items = replicaSetList.body.items || [];
+    const items = replicaSetList.items || [];
 
     return {
       total: items.length,
@@ -292,7 +292,7 @@ export class ResourceInventoryCollector {
     };
   }> {
     const serviceList = await this.kubernetesClient.coreApi.listServiceForAllNamespaces();
-    const items = serviceList.body.items || [];
+    const items = serviceList.items || [];
 
     const byType: {
       ClusterIP?: number;
