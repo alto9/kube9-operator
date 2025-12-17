@@ -1,7 +1,7 @@
 apiVersion: v2
 name: kube9-operator
-version: 1.0.0
-appVersion: "1.0.0"
+version: 1.0.4
+appVersion: "1.0.4"
 description: Kubernetes Operator for kube9 VS Code Extension
 keywords:
   - kubernetes
