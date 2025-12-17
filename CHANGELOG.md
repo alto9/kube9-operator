@@ -1,3 +1,10 @@
+## [1.0.4](https://github.com/alto9/kube9-operator/compare/v1.0.3...v1.0.4) (2025-12-17)
+
+
+### Bug Fixes
+
+* simplify Docker build to linux/amd64 only and update CodeQL action ([57aee0c](https://github.com/alto9/kube9-operator/commit/57aee0c2897dc107ead1696239d4c210ba110755))
+
 ## [1.0.3](https://github.com/alto9/kube9-operator/compare/v1.0.2...v1.0.3) (2025-12-17)
 
 
