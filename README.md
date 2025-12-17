@@ -4,7 +4,7 @@
 
 The kube9-operator is the core component of the kube9 open source toolkit. It runs in your Kubernetes cluster to perform Well-Architected Framework validation, provide cluster insights, and enable enhanced features in the [kube9 VS Code extension](https://github.com/alto9/kube9-vscode) and optional Helm-based UI components.
 
-![Node.js](https://img.shields.io/badge/Node.js-22+-green) ![Kubernetes](https://img.shields.io/badge/Kubernetes-1.24+-blue) ![License](https://img.shields.io/badge/License-MIT-blue)
+![Node.js](https://img.shields.io/badge/Node.js-22+-green) ![Kubernetes](https://img.shields.io/badge/Kubernetes-1.24+-blue) ![License](https://img.shields.io/badge/License-MIT-blue) 
 
 ## Overview
 
