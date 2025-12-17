@@ -44,11 +44,17 @@ jobs:
       
       - name: Package Helm chart
         run: |
+          # Clean up any old chart packages
+          rm -f kube9-operator-*.tgz
+          # Package the chart
           helm package charts/kube9-operator
-          CHART_FILE=$(ls kube9-operator-*.tgz)
+          # Get the chart file (should only be one now)
+          CHART_FILE=$(ls kube9-operator-*.tgz | head -1)
           echo "CHART_FILE=${CHART_FILE}" >> $GITHUB_ENV
+          # Extract version from filename
           CHART_VERSION=$(echo ${CHART_FILE} | sed 's/kube9-operator-\(.*\)\.tgz/\1/')
           echo "CHART_VERSION=${CHART_VERSION}" >> $GITHUB_ENV
+          echo "Packaged chart: ${CHART_FILE} (version: ${CHART_VERSION})"
       
       - name: Download existing index.yaml
         run: |
