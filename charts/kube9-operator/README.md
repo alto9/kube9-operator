@@ -32,7 +32,7 @@ The operator is installed via Helm and requires no ingress - all communication i
 ### Add the Helm Repository
 
 ```bash
-helm repo add kube9 https://charts.kube9.dev
+helm repo add kube9 https://charts.kube9.io
 helm repo update
 ```
 

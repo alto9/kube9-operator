@@ -94,7 +94,7 @@ The operator automatically detects if ArgoCD is installed in your cluster and ex
 
 ```bash
 # Add Helm repository
-helm repo add kube9 https://charts.kube9.dev
+helm repo add kube9 https://charts.kube9.io
 helm repo update
 
 # Install operator (no API key = free tier)
