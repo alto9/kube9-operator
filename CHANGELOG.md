@@ -1,3 +1,10 @@
+## [1.0.5](https://github.com/alto9/kube9-operator/compare/v1.0.4...v1.0.5) (2025-12-17)
+
+
+### Bug Fixes
+
+* sync Chart.yaml version with package.json during releases ([4b6863a](https://github.com/alto9/kube9-operator/commit/4b6863a32a648c46073ddd4546058a89dc0dd51a))
+
 ## [1.0.4](https://github.com/alto9/kube9-operator/compare/v1.0.3...v1.0.4) (2025-12-17)
 
 
