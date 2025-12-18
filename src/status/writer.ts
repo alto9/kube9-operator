@@ -23,8 +23,10 @@ const STATUS_CONFIGMAP_NAME = 'kube9-operator-status';
 
 /**
  * Namespace for operator status ConfigMap
+ * Uses POD_NAMESPACE environment variable (set by Helm via downward API)
+ * Falls back to 'kube9-system' for backwards compatibility
  */
-const STATUS_NAMESPACE = 'kube9-system';
+const STATUS_NAMESPACE = process.env.POD_NAMESPACE || 'kube9-system';
 
 /**
  * Creates or updates a ConfigMap in the specified namespace

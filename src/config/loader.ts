@@ -3,7 +3,12 @@ import type { Config } from './types.js';
 import { logger } from '../logging/logger.js';
 
 const SECRET_NAME = 'kube9-operator-config';
-const SECRET_NAMESPACE = 'kube9-system';
+/**
+ * Namespace for operator Secret
+ * Uses POD_NAMESPACE environment variable (set by Helm via downward API)
+ * Falls back to 'kube9-system' for backwards compatibility
+ */
+const SECRET_NAMESPACE = process.env.POD_NAMESPACE || 'kube9-system';
 const SECRET_KEY = 'apiKey';
 
 /**

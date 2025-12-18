@@ -12,8 +12,10 @@ export interface HealthCheckResult {
 
 /**
  * Namespace for health check ConfigMap
+ * Uses POD_NAMESPACE environment variable (set by Helm via downward API)
+ * Falls back to 'kube9-system' for backwards compatibility
  */
-const HEALTH_CHECK_NAMESPACE = 'kube9-system';
+const HEALTH_CHECK_NAMESPACE = process.env.POD_NAMESPACE || 'kube9-system';
 
 /**
  * Name of the test ConfigMap used for readiness checks
