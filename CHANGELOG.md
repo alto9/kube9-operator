@@ -1,3 +1,10 @@
+## [1.0.8](https://github.com/alto9/kube9-operator/compare/v1.0.7...v1.0.8) (2025-12-18)
+
+
+### Bug Fixes
+
+* sync image tag with release version and update URLs to kube9.io ([30c1ed0](https://github.com/alto9/kube9-operator/commit/30c1ed0e114fedd0ab0ed2873ca0fc88f11f5690))
+
 ## [1.0.7](https://github.com/alto9/kube9-operator/compare/v1.0.6...v1.0.7) (2025-12-18)
 
 
