@@ -1,3 +1,10 @@
+## [1.0.9](https://github.com/alto9/kube9-operator/compare/v1.0.8...v1.0.9) (2025-12-18)
+
+
+### Bug Fixes
+
+* use pod namespace instead of hardcoded kube9-system ([0f3c0ad](https://github.com/alto9/kube9-operator/commit/0f3c0ad07deb53496f2416ef9b327144ddcb4ae5))
+
 ## [1.0.8](https://github.com/alto9/kube9-operator/compare/v1.0.7...v1.0.8) (2025-12-18)
 
 
