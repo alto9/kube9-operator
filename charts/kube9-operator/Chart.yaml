@@ -7,8 +7,8 @@ keywords:
   - kubernetes
   - vscode
   - operator
-home: https://kube9.dev
+home: https://kube9.io
 sources:
   - https://charts.kube9.io
-kubeVersion: ">= 1.24.0"
+kubeVersion: ">= 1.24.0-0"
 
