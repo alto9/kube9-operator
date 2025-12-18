@@ -1,11 +1,11 @@
 # API Key for Pro tier (optional)
-# Get your key from https://portal.kube9.dev
+# Get your key from https://portal.kube9.io
 apiKey: ""
 
 # Operator image configuration
 image:
   repository: ghcr.io/alto9/kube9-operator
-  tag: "1.0.0"
+  tag: "1.0.7"
   pullPolicy: IfNotPresent
 
 # Operator resource requests and limits
@@ -36,7 +36,7 @@ statusUpdateIntervalSeconds: 60
 reregistrationIntervalHours: 24
 
 # kube9-server URL (for pro tier)
-serverUrl: "https://api.kube9.dev"
+serverUrl: "https://api.kube9.io"
 
 # ArgoCD integration configuration
 argocd:

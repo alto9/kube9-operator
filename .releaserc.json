@@ -18,7 +18,7 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "sed -i 's/^version: .*/version: ${nextRelease.version}/' charts/kube9-operator/Chart.yaml && sed -i 's/^appVersion: .*/appVersion: \"${nextRelease.version}\"/' charts/kube9-operator/Chart.yaml"
+        "prepareCmd": "sed -i 's/^version: .*/version: ${nextRelease.version}/' charts/kube9-operator/Chart.yaml && sed -i 's/^appVersion: .*/appVersion: \"${nextRelease.version}\"/' charts/kube9-operator/Chart.yaml && sed -i 's/^  tag: .*/  tag: \"${nextRelease.version}\"/' charts/kube9-operator/values.yaml"
       }
     ],
     [
@@ -27,7 +27,8 @@
         "assets": [
           "CHANGELOG.md",
           "package.json",
-          "charts/kube9-operator/Chart.yaml"
+          "charts/kube9-operator/Chart.yaml",
+          "charts/kube9-operator/values.yaml"
         ],
         "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
       }
