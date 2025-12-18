@@ -1,3 +1,10 @@
+## [1.0.7](https://github.com/alto9/kube9-operator/compare/v1.0.6...v1.0.7) (2025-12-18)
+
+
+### Bug Fixes
+
+* update kubeVersion constraint and home URL ([e7f340b](https://github.com/alto9/kube9-operator/commit/e7f340b47029014709b866f26243922538b6e26f))
+
 ## [1.0.6](https://github.com/alto9/kube9-operator/compare/v1.0.5...v1.0.6) (2025-12-17)
 
 
