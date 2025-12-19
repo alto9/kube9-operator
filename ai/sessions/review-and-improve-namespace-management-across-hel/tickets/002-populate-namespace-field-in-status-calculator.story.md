@@ -5,7 +5,7 @@ feature_id:
   - status-exposure
 spec_id:
   - status-api-spec
-status: pending
+status: completed
 estimated_minutes: 15
 ---
 
@@ -23,11 +23,11 @@ The operator already uses `process.env.POD_NAMESPACE || 'kube9-system'` in the S
 
 ## Acceptance Criteria
 
-- [ ] calculateStatus() function includes namespace field in returned OperatorStatus
-- [ ] Namespace value uses POD_NAMESPACE environment variable
-- [ ] Falls back to "kube9-system" if POD_NAMESPACE is not set
-- [ ] All existing tests still pass
-- [ ] TypeScript compilation succeeds with no errors
+- [x] calculateStatus() function includes namespace field in returned OperatorStatus
+- [x] Namespace value uses POD_NAMESPACE environment variable
+- [x] Falls back to "kube9-system" if POD_NAMESPACE is not set
+- [x] All existing tests still pass
+- [x] TypeScript compilation succeeds with no errors
 
 ## Files to Modify
 

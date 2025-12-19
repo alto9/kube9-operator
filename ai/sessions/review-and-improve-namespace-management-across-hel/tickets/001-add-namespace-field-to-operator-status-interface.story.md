@@ -5,7 +5,7 @@ feature_id:
   - status-exposure
 spec_id:
   - status-api-spec
-status: pending
+status: completed
 estimated_minutes: 10
 ---
 
