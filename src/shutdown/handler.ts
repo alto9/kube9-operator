@@ -119,6 +119,7 @@ export async function gracefulShutdown(
       registered: registrationState.isRegistered,
       apiKeyConfigured: !!config.apiKey,
       error: "Shutting down",
+      namespace: process.env.POD_NAMESPACE || 'kube9-system',
       collectionStats: {
         totalSuccessCount: collectionStats.totalSuccessCount,
         totalFailureCount: collectionStats.totalFailureCount,

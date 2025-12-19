@@ -109,6 +109,7 @@ export function calculateStatus(
     registered: isRegistered,
     apiKeyConfigured: !!config.apiKey,
     error,
+    namespace: process.env.POD_NAMESPACE || 'kube9-system',
     collectionStats: {
       totalSuccessCount: collectionStats.totalSuccessCount,
       totalFailureCount: collectionStats.totalFailureCount,
