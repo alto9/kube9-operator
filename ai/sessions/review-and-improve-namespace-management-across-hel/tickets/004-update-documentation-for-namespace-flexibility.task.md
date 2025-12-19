@@ -5,7 +5,7 @@ feature_id:
   - status-exposure
 spec_id:
   - helm-chart-spec
-status: pending
+status: completed
 estimated_minutes: 25
 ---
 
@@ -83,12 +83,12 @@ kubectl get configmap -n test-operator kube9-operator-status -o json | \
 
 ## Acceptance Criteria
 
-- [ ] README.md installation section mentions namespace flexibility
-- [ ] README.md includes custom namespace installation example
-- [ ] TESTING.md includes custom namespace test case
-- [ ] Documentation clarifies `kube9-system` is conventional default, not requirement
-- [ ] All namespace references updated consistently
-- [ ] No broken markdown formatting
+- [x] README.md installation section mentions namespace flexibility
+- [x] README.md includes custom namespace installation example
+- [x] TESTING.md includes custom namespace test case
+- [x] Documentation clarifies `kube9-system` is conventional default, not requirement
+- [x] All namespace references updated consistently
+- [x] No broken markdown formatting
 
 ## Files to Modify
 
