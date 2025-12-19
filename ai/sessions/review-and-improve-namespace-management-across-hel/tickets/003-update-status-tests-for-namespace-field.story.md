@@ -5,7 +5,7 @@ feature_id:
   - status-exposure
 spec_id:
   - status-api-spec
-status: pending
+status: completed
 estimated_minutes: 20
 ---
 
@@ -21,12 +21,12 @@ The OperatorStatus interface now includes a required `namespace` field. All test
 
 ## Acceptance Criteria
 
-- [ ] All test files importing or using OperatorStatus are updated
-- [ ] Test assertions validate namespace field is present
-- [ ] Test cases verify namespace uses POD_NAMESPACE environment variable
-- [ ] Test cases verify fallback to "kube9-system" when POD_NAMESPACE not set
-- [ ] All tests pass successfully
-- [ ] No TypeScript compilation errors
+- [x] All test files importing or using OperatorStatus are updated
+- [x] Test assertions validate namespace field is present
+- [x] Test cases verify namespace uses POD_NAMESPACE environment variable
+- [x] Test cases verify fallback to "kube9-system" when POD_NAMESPACE not set
+- [x] All tests pass successfully
+- [x] No TypeScript compilation errors
 
 ## Files to Modify
 
