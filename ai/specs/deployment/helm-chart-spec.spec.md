@@ -180,7 +180,7 @@ spec:
         securityContext:
           {{- toYaml .Values.containerSecurityContext | nindent 10 }}
         env:
-        - name: OPERATOR_NAMESPACE
+        - name: POD_NAMESPACE
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
@@ -347,9 +347,32 @@ stringData:
 {{- end }}
 ```
 
+## Namespace Flexibility
+
+The kube9-operator can be installed in any Kubernetes namespace. While `kube9-system` is the **conventional default** used in documentation for consistency and ease of reference, users are free to choose any namespace that fits their cluster organization.
+
+### Namespace Detection
+
+The operator automatically detects its namespace at runtime using the `POD_NAMESPACE` environment variable (set via Kubernetes downward API in the Helm chart). This detected namespace is:
+- Used for all operator operations (ConfigMap creation, status updates)
+- Advertised in the status ConfigMap so external consumers (like the VS Code extension) can discover where the operator is running
+- Falls back to `kube9-system` if the environment variable is not set
+
+### Choosing a Namespace
+
+**Use the default `kube9-system` when:**
+- You want consistency with documentation examples
+- You're following standard installation guides
+- You prefer convention over customization
+
+**Use a custom namespace when:**
+- Your organization has namespace policies or naming conventions
+- You want to isolate the operator in a specific namespace
+- You're running multiple installations (testing, staging, production)
+
 ## Installation Commands
 
-### Free Tier
+### Free Tier (Default Namespace)
 
 ```bash
 helm repo add kube9 https://charts.kube9.dev
@@ -359,12 +382,29 @@ helm install kube9-operator kube9/kube9-operator \
   --create-namespace
 ```
 
-### Pro Tier
+### Free Tier (Custom Namespace)
+
+```bash
+helm install kube9-operator kube9/kube9-operator \
+  --namespace my-custom-namespace \
+  --create-namespace
+```
+
+### Pro Tier (Default Namespace)
 
 ```bash
 helm install kube9-operator kube9/kube9-operator \
   --set apiKey=kdy_prod_abc123def456 \
   --namespace kube9-system \
+  --create-namespace
+```
+
+### Pro Tier (Custom Namespace)
+
+```bash
+helm install kube9-operator kube9/kube9-operator \
+  --set apiKey=kdy_prod_abc123def456 \
+  --namespace my-custom-namespace \
   --create-namespace
 ```
 
