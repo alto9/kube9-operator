@@ -1,3 +1,10 @@
+## [1.0.10](https://github.com/alto9/kube9-operator/compare/v1.0.9...v1.0.10) (2025-12-19)
+
+
+### Bug Fixes
+
+* remove kubernetes version check ([ccd2e88](https://github.com/alto9/kube9-operator/commit/ccd2e88c9b73c86cf5635cafcea1435dbdacc878))
+
 ## [1.0.9](https://github.com/alto9/kube9-operator/compare/v1.0.8...v1.0.9) (2025-12-18)
 
 

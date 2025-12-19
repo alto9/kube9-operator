@@ -5,7 +5,7 @@ apiKey: ""
 # Operator image configuration
 image:
   repository: ghcr.io/alto9/kube9-operator
-  tag: "1.0.9"
+  tag: "1.0.10"
   pullPolicy: IfNotPresent
 
 # Operator resource requests and limits

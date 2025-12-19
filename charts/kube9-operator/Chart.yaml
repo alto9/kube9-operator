@@ -1,7 +1,7 @@
 apiVersion: v2
 name: kube9-operator
-version: 1.0.9
-appVersion: "1.0.9"
+version: 1.0.10
+appVersion: "1.0.10"
 description: Kubernetes Operator for Kube9 Cluster Management
 keywords:
   - kubernetes
