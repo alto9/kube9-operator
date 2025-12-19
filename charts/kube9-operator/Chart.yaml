@@ -2,13 +2,12 @@ apiVersion: v2
 name: kube9-operator
 version: 1.0.9
 appVersion: "1.0.9"
-description: Kubernetes Operator for kube9 VS Code Extension
+description: Kubernetes Operator for Kube9 Cluster Management
 keywords:
   - kubernetes
   - vscode
   - operator
-home: https://kube9.io
+home: https://www.kube9.io
 sources:
   - https://charts.kube9.io
-kubeVersion: ">= 1.24.0-0"
 
