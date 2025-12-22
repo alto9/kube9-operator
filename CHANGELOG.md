@@ -1,3 +1,10 @@
+## [1.1.2](https://github.com/alto9/kube9-operator/compare/v1.1.1...v1.1.2) (2025-12-22)
+
+
+### Bug Fixes
+
+* **status:** correct 404 error detection in StatusWriter ConfigMap creation ([20905da](https://github.com/alto9/kube9-operator/commit/20905da56af18438cb6ab3fad79cbb1c67a89832))
+
 ## [1.1.1](https://github.com/alto9/kube9-operator/compare/v1.1.0...v1.1.1) (2025-12-22)
 
 
