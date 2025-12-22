@@ -66,8 +66,9 @@ async function createOrUpdateConfigMap(
     await coreApi.replaceNamespacedConfigMap({ name, namespace, body: configMap });
   } catch (error: unknown) {
     // Check if error is 404 (not found)
-    const errorObj = error as { response?: { statusCode?: number } };
-    if (errorObj.response?.statusCode === 404) {
+    // kubernetes-client-node throws HttpError with statusCode for HTTP errors
+    const httpError = error as { statusCode?: number; body?: unknown };
+    if (httpError.statusCode === 404) {
       // ConfigMap doesn't exist, create it
       await coreApi.createNamespacedConfigMap({ namespace, body: configMap });
     } else {
