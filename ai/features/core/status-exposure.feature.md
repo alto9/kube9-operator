@@ -74,6 +74,42 @@ Scenario: Extension caches operator status
   Then the extension should use cached status for 5 minutes
   And the extension should only re-query after cache expires
   And the extension should allow manual refresh to bypass cache
+
+Scenario: Operator advertises its namespace in status
+  Given the operator is running in any namespace
+  When the operator updates its status ConfigMap
+  Then the status data should include a "namespace" field
+  And the namespace field should contain the actual namespace where the operator is deployed
+  And the namespace field should use the POD_NAMESPACE environment variable
+  And the namespace field should fallback to "kube9-system" if POD_NAMESPACE is not set
+
+Scenario: Extension discovers operator namespace dynamically
+  Given the operator is installed in a custom namespace "my-kube9-namespace"
+  And the operator status ConfigMap is created in that namespace
+  When the VS Code extension queries for the operator status
+  Then the extension should first check the default "kube9-system" namespace
+  And if found, the extension should read the "namespace" field from the status
+  And the extension should use that namespace for all subsequent operator interactions
+  And the extension should discover operator pods in the correct namespace
+  And the extension should execute commands in the correct namespace
+
+Scenario: Operator works in custom namespace
+  Given a user installs the operator using Helm
+  And the user specifies a custom namespace "custom-operator-ns"
+  When the operator starts
+  Then it should detect its namespace from the POD_NAMESPACE environment variable
+  And it should create the status ConfigMap in "custom-operator-ns"
+  And the status data should indicate namespace: "custom-operator-ns"
+  And the VS Code extension should discover and connect to it successfully
+
+Scenario: Namespace defaults to kube9-system
+  Given the operator is installed using standard documentation
+  And no custom namespace is specified
+  When the operator is deployed
+  Then it should run in the "kube9-system" namespace
+  And the status ConfigMap should be created in "kube9-system"
+  And the status data should indicate namespace: "kube9-system"
+  And this should be the conventional default for ease of use
 ```
 
 ## Integration Points

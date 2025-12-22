@@ -112,6 +112,13 @@ export interface OperatorStatus {
   error: string | null;
   
   /**
+   * Namespace where the operator is running
+   * Used by external consumers to discover operator location
+   * @example "kube9-system"
+   */
+  namespace: string;
+  
+  /**
    * Server-assigned cluster ID
    * Only present when tier="pro" and registered=true
    * @example "cls_abc123def456"

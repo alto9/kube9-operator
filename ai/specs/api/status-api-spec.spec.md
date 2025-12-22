@@ -49,6 +49,9 @@ interface OperatorStatus {
   // Error message if unhealthy or degraded
   error: string | null;
   
+  // Namespace where the operator is running
+  namespace: string;
+  
   // Optional: Server-provided cluster ID (pro tier only)
   clusterId?: string;
 }
@@ -64,7 +67,8 @@ interface OperatorStatus {
   "health": "healthy",
   "lastUpdate": "2025-11-10T15:30:00Z",
   "registered": false,
-  "error": null
+  "error": null,
+  "namespace": "kube9-system"
 }
 ```
 
@@ -79,6 +83,7 @@ interface OperatorStatus {
   "lastUpdate": "2025-11-10T15:30:00Z",
   "registered": true,
   "error": null,
+  "namespace": "kube9-system",
   "clusterId": "cls_abc123def456"
 }
 ```
@@ -94,6 +99,7 @@ interface OperatorStatus {
   "lastUpdate": "2025-11-10T15:29:30Z",
   "registered": false,
   "error": "Failed to connect to kube9-server: connection timeout after 30s",
+  "namespace": "kube9-system",
   "clusterId": null
 }
 ```
@@ -122,11 +128,12 @@ async function updateStatus() {
     lastUpdate: new Date().toISOString(),
     registered: registrationState.isRegistered,
     error: lastError || null,
+    namespace: process.env.POD_NAMESPACE || "kube9-system",
     clusterId: registrationState.clusterId || undefined
   };
   
   await k8sClient.createOrUpdateConfigMap(
-    "kube9-system",
+    process.env.POD_NAMESPACE || "kube9-system",
     "kube9-operator-status",
     { status: JSON.stringify(status) }
   );
@@ -272,7 +279,8 @@ rules:
   "health": "unhealthy",
   "lastUpdate": "2025-11-10T15:20:00Z",
   "registered": false,
-  "error": "Failed to write status ConfigMap: forbidden"
+  "error": "Failed to write status ConfigMap: forbidden",
+  "namespace": "kube9-system"
 }
 ```
 
@@ -296,7 +304,8 @@ rules:
   "health": "degraded",
   "lastUpdate": "2025-11-10T15:30:00Z",
   "registered": false,
-  "error": "API key validation failed: 401 Unauthorized"
+  "error": "API key validation failed: 401 Unauthorized",
+  "namespace": "kube9-system"
 }
 ```
 

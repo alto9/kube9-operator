@@ -78,6 +78,40 @@ Run the automated test script:
    # Should show free tier message with upgrade instructions
    ```
 
+### Testing Custom Namespace Installation
+
+You can test the operator in any namespace. The operator automatically detects its namespace and advertises it in the status ConfigMap:
+
+1. **Install in custom namespace:**
+   ```bash
+   helm install kube9-operator charts/kube9-operator \
+     --namespace test-operator \
+     --create-namespace
+   ```
+
+2. **Verify namespace detection:**
+   ```bash
+   # Wait for operator to create ConfigMap
+   sleep 10
+   
+   # Verify namespace field in status
+   kubectl get configmap kube9-operator-status -n test-operator -o json | \
+     jq -r '.data.status' | jq '.namespace'
+   # Should output: "test-operator"
+   
+   # Verify operator is working correctly
+   kubectl get configmap kube9-operator-status -n test-operator \
+     -o jsonpath='{.data.status}' | jq -r '.mode'
+   # Expected: "operated" (for free tier)
+   ```
+
+3. **Clean up custom namespace installation:**
+   ```bash
+   helm uninstall kube9-operator --namespace test-operator
+   ```
+
+**Note:** All test phases (Free Tier, Pro Tier, Helm Commands, etc.) can be run in custom namespaces by replacing `kube9-system` with your chosen namespace in the commands. The operator will automatically detect and use the namespace where it's deployed.
+
 ### Phase 2: Pro Tier Testing
 
 1. **Upgrade with test API key:**

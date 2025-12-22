@@ -8,6 +8,13 @@ import type { OperatorStatus, RegistrationState, CollectionStats, ArgoCDStatus }
 const OPERATOR_VERSION = '1.0.0';
 
 /**
+ * Namespace for operator status
+ * Uses POD_NAMESPACE environment variable (set by Helm via downward API)
+ * Falls back to 'kube9-system' for backwards compatibility
+ */
+const STATUS_NAMESPACE = process.env.POD_NAMESPACE || 'kube9-system';
+
+/**
  * Maximum length for error messages in status
  */
 const MAX_ERROR_LENGTH = 500;
@@ -109,6 +116,7 @@ export function calculateStatus(
     registered: isRegistered,
     apiKeyConfigured: !!config.apiKey,
     error,
+    namespace: STATUS_NAMESPACE,
     collectionStats: {
       totalSuccessCount: collectionStats.totalSuccessCount,
       totalFailureCount: collectionStats.totalFailureCount,

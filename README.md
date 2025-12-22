@@ -90,7 +90,13 @@ The operator automatically detects if ArgoCD is installed in your cluster and ex
 - `kubectl` configured with cluster access
 - `helm` 3.x installed
 
-### Install Free Tier
+### Installation
+
+#### Standard Installation (Default Namespace)
+
+The operator is conventionally installed in the `kube9-system` namespace:
+
+**Install Free Tier:**
 
 ```bash
 # Add Helm repository
@@ -103,7 +109,7 @@ helm install kube9-operator kube9/kube9-operator \
   --create-namespace
 ```
 
-### Install Pro Tier
+**Install Pro Tier:**
 
 1. **Get your API key** from [portal.kube9.dev](https://portal.kube9.dev)
 
@@ -115,10 +121,31 @@ helm install kube9-operator kube9/kube9-operator \
   --create-namespace
 ```
 
+#### Custom Namespace Installation
+
+The operator can be installed in any namespace. It will automatically detect its location:
+
+```bash
+# Install in custom namespace (free tier example)
+helm install kube9-operator kube9/kube9-operator \
+  --namespace my-custom-namespace \
+  --create-namespace
+
+# Install in custom namespace (pro tier example)
+helm install kube9-operator kube9/kube9-operator \
+  --set apiKey=kdy_prod_YOUR_KEY_HERE \
+  --namespace my-custom-namespace \
+  --create-namespace
+```
+
+The operator uses the Kubernetes downward API to detect its namespace automatically via the `POD_NAMESPACE` environment variable. The detected namespace is advertised in the status ConfigMap, allowing external consumers (like the VS Code extension) to discover where the operator is running.
+
+**Note:** While `kube9-system` is the conventional default used in documentation, you can use any namespace that fits your cluster organization.
+
 ### Verify Installation
 
 ```bash
-# Check operator pod
+# Check operator pod (replace kube9-system with your namespace if using custom namespace)
 kubectl get pods -n kube9-system
 
 # View operator logs
@@ -126,6 +153,9 @@ kubectl logs -n kube9-system deployment/kube9-operator
 
 # Check status ConfigMap
 kubectl get configmap kube9-operator-status -n kube9-system -o yaml
+
+# Verify namespace detection (the status includes the namespace field)
+kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.status}' | jq -r '.namespace'
 ```
 
 ## Configuration
