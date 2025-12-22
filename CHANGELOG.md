@@ -1,3 +1,10 @@
+## [1.1.4](https://github.com/alto9/kube9-operator/compare/v1.1.3...v1.1.4) (2025-12-22)
+
+
+### Bug Fixes
+
+* **status:** use correct error property 'code' for 404 detection ([3184b91](https://github.com/alto9/kube9-operator/commit/3184b91313ee558ce3fb309b2633a8978b0c1627))
+
 ## [1.1.3](https://github.com/alto9/kube9-operator/compare/v1.1.2...v1.1.3) (2025-12-22)
 
 
