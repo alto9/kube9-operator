@@ -1,3 +1,10 @@
+## [1.1.1](https://github.com/alto9/kube9-operator/compare/v1.1.0...v1.1.1) (2025-12-22)
+
+
+### Bug Fixes
+
+* **health:** correct 404 error detection in ConfigMap write test ([350e306](https://github.com/alto9/kube9-operator/commit/350e30668ebe0cbf5ae8826b5d2814ba1f2f69db))
+
 # [1.1.0](https://github.com/alto9/kube9-operator/compare/v1.0.10...v1.1.0) (2025-12-22)
 
 
