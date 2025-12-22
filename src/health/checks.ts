@@ -68,9 +68,9 @@ async function testConfigMapWrite(coreApi: k8s.CoreV1Api): Promise<boolean> {
       });
     } catch (error: unknown) {
       // Check if error is 404 (not found)
-      // kubernetes-client-node throws HttpError with statusCode for HTTP errors
-      const httpError = error as { statusCode?: number; body?: unknown };
-      if (httpError.statusCode === 404) {
+      // kubernetes-client-node throws errors with a 'code' property for HTTP status codes
+      const httpError = error as { code?: number; statusCode?: number };
+      if (httpError.code === 404 || httpError.statusCode === 404) {
         // ConfigMap doesn't exist, create it
         await coreApi.createNamespacedConfigMap({
           namespace: HEALTH_CHECK_NAMESPACE,

@@ -66,23 +66,10 @@ async function createOrUpdateConfigMap(
     await coreApi.replaceNamespacedConfigMap({ name, namespace, body: configMap });
   } catch (error: unknown) {
     // Check if error is 404 (not found)
-    // Log error structure for debugging
-    console.error('[DEBUG] ConfigMap read error:', {
-      error,
-      type: typeof error,
-      constructor: error?.constructor?.name,
-      keys: error ? Object.keys(error) : [],
-      statusCode: (error as any)?.statusCode,
-      responseStatusCode: (error as any)?.response?.statusCode,
-      code: (error as any)?.code,
-      bodyCode: (error as any)?.body?.code
-    });
+    // kubernetes-client-node throws errors with a 'code' property for HTTP status codes
+    const httpError = error as { code?: number; statusCode?: number };
     
-    // kubernetes-client-node can return errors in different formats
-    const httpError = error as { statusCode?: number; response?: { statusCode?: number }; body?: { code?: number } };
-    const statusCode = httpError.statusCode || httpError.response?.statusCode || httpError.body?.code;
-    
-    if (statusCode === 404) {
+    if (httpError.code === 404 || httpError.statusCode === 404) {
       // ConfigMap doesn't exist, create it
       await coreApi.createNamespacedConfigMap({ namespace, body: configMap });
     } else {
