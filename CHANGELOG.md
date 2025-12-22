@@ -1,3 +1,10 @@
+## [1.1.3](https://github.com/alto9/kube9-operator/compare/v1.1.2...v1.1.3) (2025-12-22)
+
+
+### Bug Fixes
+
+* **status:** improve 404 error detection for ConfigMap creation ([88dbca5](https://github.com/alto9/kube9-operator/commit/88dbca52a58bfd8d23499c2193511b0d9afaf1fc))
+
 ## [1.1.2](https://github.com/alto9/kube9-operator/compare/v1.1.1...v1.1.2) (2025-12-22)
 
 
