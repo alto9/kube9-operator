@@ -1,3 +1,12 @@
+# [1.1.0](https://github.com/alto9/kube9-operator/compare/v1.0.10...v1.1.0) (2025-12-22)
+
+
+### Features
+
+* extract namespace constant in status calculator ([d77a7a6](https://github.com/alto9/kube9-operator/commit/d77a7a6834fb02fc2e6ab61c4609fd69282bd384))
+* **status:** add namespace field to OperatorStatus interface ([57fa401](https://github.com/alto9/kube9-operator/commit/57fa40134973a88623c93ce555eec5f5cdce9c97))
+* update resource requests and limits for operator pod ([34b8bce](https://github.com/alto9/kube9-operator/commit/34b8bce9ba652191f95d336983451b7738bd769b))
+
 ## [1.0.10](https://github.com/alto9/kube9-operator/compare/v1.0.9...v1.0.10) (2025-12-19)
 
 
