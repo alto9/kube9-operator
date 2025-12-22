@@ -63,13 +63,15 @@ image:
 imagePullSecrets: []
 
 # Operator resource requests and limits
+# Using Guaranteed QoS (requests = limits) for stable performance
+# 1Gi needed to handle CLI exec spawning separate Node.js processes
 resources:
   requests:
-    memory: "128Mi"
-    cpu: "100m"
+    memory: "1Gi"
+    cpu: "500m"
   limits:
-    memory: "256Mi"
-    cpu: "200m"
+    memory: "1Gi"
+    cpu: "500m"
 
 # Node selector for operator pod
 nodeSelector: {}

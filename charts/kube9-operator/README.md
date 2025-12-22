@@ -97,10 +97,10 @@ The following table lists the configurable parameters and their default values:
 | `image.repository` | Container image repository | `ghcr.io/alto9/kube9-operator` |
 | `image.tag` | Container image tag | `"1.0.0"` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
-| `resources.requests.memory` | Memory request for operator pod | `"128Mi"` |
-| `resources.requests.cpu` | CPU request for operator pod | `"100m"` |
-| `resources.limits.memory` | Memory limit for operator pod | `"256Mi"` |
-| `resources.limits.cpu` | CPU limit for operator pod | `"200m"` |
+| `resources.requests.memory` | Memory request for operator pod | `"1Gi"` |
+| `resources.requests.cpu` | CPU request for operator pod | `"500m"` |
+| `resources.limits.memory` | Memory limit for operator pod | `"1Gi"` |
+| `resources.limits.cpu` | CPU limit for operator pod | `"500m"` |
 | `serviceAccount.create` | Create a service account for the operator | `true` |
 | `serviceAccount.name` | Name of the service account to create or use | `"kube9-operator"` |
 | `rbac.create` | Create RBAC resources (ClusterRole and ClusterRoleBinding) | `true` |
@@ -127,10 +127,11 @@ The following table lists the configurable parameters and their default values:
 
 #### Resource Limits (`resources.*`)
 
-The operator is designed to be lightweight:
-- **Default requests**: 100m CPU, 128Mi memory
-- **Default limits**: 200m CPU, 256Mi memory
-- Adjust based on your cluster's resource constraints
+The operator uses Guaranteed QoS for stable performance:
+- **Default requests**: 500m CPU, 1Gi memory
+- **Default limits**: 500m CPU, 1Gi memory (same as requests for Guaranteed QoS)
+- 1Gi memory needed to handle CLI exec spawning separate Node.js processes
+- Adjust based on your cluster's resource constraints and workload
 
 #### Service Account (`serviceAccount.*`)
 
@@ -384,10 +385,10 @@ Complete reference of all configurable values:
 | `image.repository` | Container image repository | `ghcr.io/alto9/kube9-operator` |
 | `image.tag` | Container image tag | `"1.0.0"` |
 | `image.pullPolicy` | Image pull policy (`IfNotPresent`, `Always`, `Never`) | `IfNotPresent` |
-| `resources.requests.memory` | Memory request for operator pod | `"128Mi"` |
-| `resources.requests.cpu` | CPU request for operator pod | `"100m"` |
-| `resources.limits.memory` | Memory limit for operator pod | `"256Mi"` |
-| `resources.limits.cpu` | CPU limit for operator pod | `"200m"` |
+| `resources.requests.memory` | Memory request for operator pod | `"1Gi"` |
+| `resources.requests.cpu` | CPU request for operator pod | `"500m"` |
+| `resources.limits.memory` | Memory limit for operator pod | `"1Gi"` |
+| `resources.limits.cpu` | CPU limit for operator pod | `"500m"` |
 | `serviceAccount.create` | Create a service account for the operator | `true` |
 | `serviceAccount.name` | Name of the service account to create or use | `"kube9-operator"` |
 | `rbac.create` | Create RBAC resources (ClusterRole and ClusterRoleBinding) | `true` |
