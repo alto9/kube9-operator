@@ -1,6 +1,7 @@
 import * as k8s from '@kubernetes/client-node';
 import { kubernetesClient } from '../kubernetes/client.js';
 import { getInitialized } from './state.js';
+import { logger } from '../logging/logger.js';
 
 /**
  * Health check result
@@ -67,8 +68,9 @@ async function testConfigMapWrite(coreApi: k8s.CoreV1Api): Promise<boolean> {
       });
     } catch (error: unknown) {
       // Check if error is 404 (not found)
-      const errorObj = error as { response?: { statusCode?: number } };
-      if (errorObj.response?.statusCode === 404) {
+      // kubernetes-client-node throws HttpError with statusCode for HTTP errors
+      const httpError = error as { statusCode?: number; body?: unknown };
+      if (httpError.statusCode === 404) {
         // ConfigMap doesn't exist, create it
         await coreApi.createNamespacedConfigMap({
           namespace: HEALTH_CHECK_NAMESPACE,
@@ -82,7 +84,13 @@ async function testConfigMapWrite(coreApi: k8s.CoreV1Api): Promise<boolean> {
 
     return true;
   } catch (error) {
-    // ConfigMap write failed
+    // ConfigMap write failed - log the error for debugging
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.error('Health check ConfigMap write failed', { 
+      error: errorMessage,
+      namespace: HEALTH_CHECK_NAMESPACE,
+      configMapName: HEALTH_CHECK_CONFIGMAP_NAME 
+    });
     return false;
   }
 }
