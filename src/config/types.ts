@@ -44,5 +44,17 @@ export interface Config {
    * Default: 43200 (12 hours), Minimum: 3600 (1 hour)
    */
   resourceConfigurationPatternsIntervalSeconds: number;
+
+  /**
+   * Event retention for info/warning severity (days)
+   * Default: 7 days
+   */
+  eventRetentionInfoWarningDays: number;
+
+  /**
+   * Event retention for error/critical severity (days)
+   * Default: 30 days
+   */
+  eventRetentionErrorCriticalDays: number;
 }
 

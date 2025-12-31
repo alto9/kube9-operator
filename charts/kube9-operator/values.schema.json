@@ -59,6 +59,60 @@
         }
       },
       "additionalProperties": false
+    },
+    "events": {
+      "type": "object",
+      "description": "Event storage configuration",
+      "properties": {
+        "persistence": {
+          "type": "object",
+          "description": "PersistentVolume configuration for event database",
+          "properties": {
+            "enabled": {
+              "type": "boolean",
+              "description": "Enable persistent storage for events",
+              "default": true
+            },
+            "size": {
+              "type": "string",
+              "description": "Size of the PersistentVolumeClaim",
+              "pattern": "^[0-9]+(\\.[0-9]+)?(Ei?|Pi?|Ti?|Gi?|Mi?|Ki?)$",
+              "default": "5Gi"
+            },
+            "storageClassName": {
+              "type": "string",
+              "description": "StorageClass to use for the PVC. Empty string uses cluster default."
+            },
+            "accessMode": {
+              "type": "string",
+              "description": "Access mode for the PVC",
+              "enum": ["ReadWriteOnce", "ReadOnlyMany", "ReadWriteMany"],
+              "default": "ReadWriteOnce"
+            }
+          },
+          "additionalProperties": false
+        },
+        "retention": {
+          "type": "object",
+          "description": "Event retention policies in days",
+          "properties": {
+            "infoWarning": {
+              "type": "integer",
+              "description": "Days to retain info and warning events",
+              "minimum": 1,
+              "default": 7
+            },
+            "errorCritical": {
+              "type": "integer",
+              "description": "Days to retain error and critical events",
+              "minimum": 1,
+              "default": 30
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

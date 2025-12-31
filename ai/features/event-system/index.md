@@ -10,10 +10,12 @@ feature_group: event-system
 Background:
   Given the kube9 operator runs in Node.js 22
   And the operator needs to track historical activities
-  And the operator has a PersistentVolume mounted at /data
+  And the operator has a PersistentVolume mounted at /data (enabled by default via Helm)
   And the operator stores events in SQLite database at /data/kube9.db
   And the operator exposes a CLI for querying events
   And the VS Code extension can query events via kubectl exec
+  And the operator publishes Prometheus metrics for event observability
+  And the operator health checks validate event listener capability
 ```
 
 ## Rules
@@ -78,6 +80,48 @@ Rule: Extensions must use RBAC to query events
     Then the user must have pods/exec permissions in kube9-system namespace
     And the query should run inside the operator pod
     And the results should be returned as JSON
+
+Rule: PVC must be enabled by default for event persistence
+  Example: Default Helm installation creates PVC
+    Given a user installs kube9-operator with default Helm values
+    When the installation completes
+    Then a PersistentVolumeClaim should be created for event storage
+    And the PVC should use the cluster's default StorageClass
+    And the PVC size should default to 5Gi
+    And the operator should store events in the PVC-backed database
+
+Rule: Event retention policies must be configurable
+  Example: Configure retention periods via Helm values
+    Given a user wants custom retention policies
+    When they set events.retention.infoWarning=3 in Helm values
+    And they set events.retention.errorCritical=60 in Helm values
+    Then info and warning events should be retained for 3 days
+    And error and critical events should be retained for 60 days
+
+Rule: Health checks must validate event listener capability
+  Example: Readiness probe fails if event listener cannot start
+    Given the operator is starting up
+    When the Kubernetes event watcher fails to start
+    Then the readiness probe should return unhealthy
+    And the pod should not receive traffic
+    
+  Example: Liveness probe fails if event listener stalls
+    Given the operator is running
+    When the event listener stops processing events for 5 minutes
+    Then the liveness probe should return unhealthy
+    And Kubernetes should restart the pod
+
+Rule: Event metrics must be exposed for observability
+  Example: Prometheus can scrape event metrics
+    Given the operator is running and processing events
+    When Prometheus scrapes the /metrics endpoint
+    Then it should include kube9_operator_events_received_total counter
+    And it should include kube9_operator_events_stored_total counter
+    And it should include kube9_operator_events_errors_total counter
+    And it should include kube9_operator_events_queue_size gauge
+    And it should include kube9_operator_events_dropped_total counter
+    And it should include kube9_operator_events_storage_size_bytes gauge
+    And it should include kube9_operator_event_listener_healthy gauge
 ```
 
 ## Event Sources and Types

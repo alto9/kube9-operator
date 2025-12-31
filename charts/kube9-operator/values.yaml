@@ -71,3 +71,17 @@ metrics:
     # Minimum: 3600 seconds (1 hour)
     resourceConfigurationPatterns: 43200
 
+# Event storage configuration
+events:
+  # PersistentVolume configuration for event database
+  persistence:
+    enabled: true  # Default: enabled
+    size: 5Gi
+    storageClassName: ""  # Uses cluster default if not specified
+    accessMode: ReadWriteOnce
+    
+  # Event retention policies (in days)
+  retention:
+    infoWarning: 7  # Info and warning events retained for 7 days
+    errorCritical: 30  # Error and critical events retained for 30 days
+
