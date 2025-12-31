@@ -73,6 +73,11 @@ spec:
         {{- end }}
         - name: ARGOCD_DETECTION_INTERVAL
           value: {{ .Values.argocd.detectionInterval | default 6 | quote }}
+        # Event retention configuration
+        - name: EVENT_RETENTION_INFO_WARNING_DAYS
+          value: {{ .Values.events.retention.infoWarning | default 7 | quote }}
+        - name: EVENT_RETENTION_ERROR_CRITICAL_DAYS
+          value: {{ .Values.events.retention.errorCritical | default 30 | quote }}
         {{- if .Values.apiKey }}
         - name: API_KEY
           valueFrom:
@@ -103,5 +108,10 @@ spec:
           mountPath: /data
       volumes:
       - name: data
+        {{- if .Values.events.persistence.enabled }}
+        persistentVolumeClaim:
+          claimName: {{ include "kube9-operator.fullname" . }}-events-data
+        {{- else }}
         emptyDir: {}
+        {{- end }}
 

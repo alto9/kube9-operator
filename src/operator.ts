@@ -27,6 +27,7 @@ import { ArgoCDDetectionManager } from './argocd/detection-manager.js';
 import { SchemaManager } from './database/schema.js';
 import { KubernetesEventWatcher } from './events/kubernetes-event-watcher.js';
 import { EventQueueWorker } from './events/queue-worker.js';
+import { registerEventWatcher } from './events/health.js';
 
 // Module-level references for shutdown handler
 let statusWriterInstance: StatusWriter | null = null;
@@ -144,6 +145,10 @@ export async function startOperator() {
     const eventWatcher = new KubernetesEventWatcher();
     await eventWatcher.start();
     eventWatcherInstance = eventWatcher;
+    
+    // Register event watcher for health checks
+    registerEventWatcher(eventWatcher);
+    
     logger.info('Event system started');
     
     // Test Kubernetes client

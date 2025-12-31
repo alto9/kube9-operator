@@ -45,6 +45,14 @@ export async function loadConfig(): Promise<Config> {
     process.env.RESOURCE_CONFIGURATION_PATTERNS_INTERVAL_SECONDS || '43200',
     10
   );
+  const eventRetentionInfoWarningDays = parseInt(
+    process.env.EVENT_RETENTION_INFO_WARNING_DAYS || '7',
+    10
+  );
+  const eventRetentionErrorCriticalDays = parseInt(
+    process.env.EVENT_RETENTION_ERROR_CRITICAL_DAYS || '30',
+    10
+  );
 
   // Validate required environment variables
   if (!serverUrl) {
@@ -108,6 +116,8 @@ export async function loadConfig(): Promise<Config> {
     clusterMetadataIntervalSeconds,
     resourceInventoryIntervalSeconds,
     resourceConfigurationPatternsIntervalSeconds,
+    eventRetentionInfoWarningDays,
+    eventRetentionErrorCriticalDays,
   };
 
   // Log configured intervals (and any overrides)

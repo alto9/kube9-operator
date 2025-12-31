@@ -10,8 +10,9 @@ import { logger } from '../logging/logger.js';
 
 /**
  * Prometheus metrics registry
+ * Exported for use by other metric modules (e.g., events)
  */
-const register = new Registry();
+export const register = new Registry();
 
 /**
  * Counter for collection attempts by type and status

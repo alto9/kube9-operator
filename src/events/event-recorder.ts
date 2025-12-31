@@ -3,6 +3,7 @@
  */
 
 import { Event } from '../types/event.js';
+import { eventsQueueSize, eventsDroppedTotal } from './metrics.js';
 import { logger } from '../logging/logger.js';
 
 export class EventRecorder {
@@ -31,10 +32,12 @@ export class EventRecorder {
       // Queue is full - drop oldest event
       this.queue.shift();
       this.droppedEventsCount++;
+      eventsDroppedTotal.inc();
       logger.warn('Event queue full, dropped oldest event');
     }
     
     this.queue.push(event);
+    eventsQueueSize.set(this.queue.length);
   }
 
   /**
@@ -42,7 +45,9 @@ export class EventRecorder {
    * Returns null if queue is empty.
    */
   public dequeueEvent(): Event | null {
-    return this.queue.shift() || null;
+    const event = this.queue.shift() || null;
+    eventsQueueSize.set(this.queue.length);
+    return event;
   }
 
   /**

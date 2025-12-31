@@ -104,6 +104,20 @@ serviceAccount:
 rbac:
   create: true
 
+# Event storage configuration
+events:
+  # PersistentVolume configuration for event database
+  persistence:
+    enabled: true  # Default: enabled
+    size: 5Gi
+    storageClassName: ""  # Uses cluster default if not specified
+    accessMode: ReadWriteOnce
+    
+  # Event retention policies (in days)
+  retention:
+    infoWarning: 7  # Info and warning events retained for 7 days
+    errorCritical: 30  # Error and critical events retained for 30 days
+
 # Pod security context
 securityContext:
   runAsNonRoot: true
@@ -346,6 +360,30 @@ metadata:
 type: Opaque
 stringData:
   apiKey: {{ .Values.apiKey | quote }}
+{{- end }}
+```
+
+### templates/persistentvolumeclaim.yaml
+
+```yaml
+{{- if .Values.events.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "kube9-operator.fullname" . }}-events-data
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kube9-operator.labels" . | nindent 4 }}
+    app.kubernetes.io/component: events-storage
+spec:
+  accessModes:
+    - {{ .Values.events.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.events.persistence.size }}
+  {{- if .Values.events.persistence.storageClassName }}
+  storageClassName: {{ .Values.events.persistence.storageClassName }}
+  {{- end }}
 {{- end }}
 ```
 

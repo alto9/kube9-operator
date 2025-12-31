@@ -5,6 +5,7 @@
 import * as k8s from '@kubernetes/client-node';
 import { EventRecorder } from './event-recorder.js';
 import { normalizeKubernetesEvent } from './event-normalizer.js';
+import { eventsReceivedTotal, eventListenerHealthy } from './metrics.js';
 import { logger } from '../logging/logger.js';
 
 export class KubernetesEventWatcher {
@@ -13,6 +14,7 @@ export class KubernetesEventWatcher {
   private recorder: EventRecorder;
   private isWatching = false;
   private abortController: AbortController | null = null;
+  private lastEventTime: number | null = null;
 
   constructor() {
     this.kc = new k8s.KubeConfig();
@@ -61,10 +63,14 @@ export class KubernetesEventWatcher {
         }
       );
       
+      // Update health metric
+      eventListenerHealthy.set(1);
+      
       logger.info('Kubernetes event watcher started');
     } catch (error: any) {
       logger.error('Failed to start K8s event watcher', { error: error.message });
       this.isWatching = false;
+      eventListenerHealthy.set(0);
     }
   }
 
@@ -79,6 +85,9 @@ export class KubernetesEventWatcher {
       this.abortController = null;
     }
     
+    // Update health metric
+    eventListenerHealthy.set(0);
+    
     logger.info('Kubernetes event watcher stopped');
   }
 
@@ -89,6 +98,13 @@ export class KubernetesEventWatcher {
     if (type !== 'ADDED' && type !== 'MODIFIED') {
       return;
     }
+    
+    // Update last event time for health tracking
+    this.lastEventTime = Date.now();
+    
+    // Increment received events counter
+    const eventType = k8sEvent.type || 'Normal';
+    eventsReceivedTotal.inc({ type: eventType });
     
     // Filter significant events
     if (this.isSignificantEvent(k8sEvent)) {
@@ -125,6 +141,24 @@ export class KubernetesEventWatcher {
     ];
     
     return significantReasons.includes(reason);
+  }
+
+  /**
+   * Check if the watcher is healthy
+   * 
+   * @returns true if the watcher is actively watching
+   */
+  public isHealthy(): boolean {
+    return this.isWatching;
+  }
+
+  /**
+   * Get the timestamp of the last processed event
+   * 
+   * @returns Unix timestamp in milliseconds, or null if no events processed yet
+   */
+  public getLastEventTime(): number | null {
+    return this.lastEventTime;
   }
 }
 
