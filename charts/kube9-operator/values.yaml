@@ -5,7 +5,7 @@ apiKey: ""
 # Operator image configuration
 image:
   repository: ghcr.io/alto9/kube9-operator
-  tag: "1.1.4"
+  tag: "1.2.0"
   pullPolicy: IfNotPresent
 
 # Operator resource requests and limits
@@ -70,4 +70,18 @@ metrics:
     # Resource configuration patterns collection interval in seconds (default: 43200 = 12 hours)
     # Minimum: 3600 seconds (1 hour)
     resourceConfigurationPatterns: 43200
+
+# Event storage configuration
+events:
+  # PersistentVolume configuration for event database
+  persistence:
+    enabled: true  # Default: enabled
+    size: 5Gi
+    storageClassName: ""  # Uses cluster default if not specified
+    accessMode: ReadWriteOnce
+    
+  # Event retention policies (in days)
+  retention:
+    infoWarning: 7  # Info and warning events retained for 7 days
+    errorCritical: 30  # Error and critical events retained for 30 days
 

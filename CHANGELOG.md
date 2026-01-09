@@ -1,3 +1,10 @@
+# [1.2.0](https://github.com/alto9/kube9-operator/compare/v1.1.4...v1.2.0) (2025-12-31)
+
+
+### Features
+
+* **events:** complete event capturing functionality ([#8](https://github.com/alto9/kube9-operator/issues/8)) ([a8ad239](https://github.com/alto9/kube9-operator/commit/a8ad2392acfb1db177133c25c1947e5078acfdb3))
+
 ## [1.1.4](https://github.com/alto9/kube9-operator/compare/v1.1.3...v1.1.4) (2025-12-22)
 
 

@@ -1,6 +1,7 @@
 import * as k8s from '@kubernetes/client-node';
 import { kubernetesClient } from '../kubernetes/client.js';
 import { getInitialized } from './state.js';
+import { getEventListenerHealth } from '../events/health.js';
 import { logger } from '../logging/logger.js';
 
 /**
@@ -99,7 +100,8 @@ async function testConfigMapWrite(coreApi: k8s.CoreV1Api): Promise<boolean> {
  * Check liveness - verifies that the Kubernetes client is accessible
  * 
  * This is a lightweight check that verifies the operator can communicate
- * with the Kubernetes API server. Used by the liveness probe.
+ * with the Kubernetes API server and that the event system is not stalled.
+ * Used by the liveness probe.
  * 
  * @returns Promise resolving to health check result
  */
@@ -115,6 +117,15 @@ export async function checkLiveness(): Promise<HealthCheckResult> {
       kubernetesClient.getClusterInfo(),
       timeoutPromise,
     ]);
+
+    // Check that event listener is watching (not stalled)
+    const eventHealth = getEventListenerHealth();
+    if (!eventHealth.details.isWatching) {
+      return {
+        healthy: false,
+        message: 'Not healthy: Event listener not watching',
+      };
+    }
 
     return {
       healthy: true,
@@ -135,6 +146,7 @@ export async function checkLiveness(): Promise<HealthCheckResult> {
  * This check verifies:
  * 1. Operator has completed initialization
  * 2. Operator can write ConfigMaps (validates RBAC permissions and cluster connectivity)
+ * 3. Event listener is operational
  * 
  * Used by the readiness probe to determine if the operator is ready to serve traffic.
  * 
@@ -165,6 +177,15 @@ export async function checkReadiness(): Promise<HealthCheckResult> {
       return {
         healthy: false,
         message: 'Not ready: Cannot write ConfigMap',
+      };
+    }
+
+    // Check event listener health
+    const eventHealth = getEventListenerHealth();
+    if (!eventHealth.healthy) {
+      return {
+        healthy: false,
+        message: `Not ready: ${eventHealth.message}`,
       };
     }
 
