@@ -1,3 +1,11 @@
+## [1.2.1](https://github.com/alto9/kube9-operator/compare/v1.2.0...v1.2.1) (2026-01-09)
+
+
+### Bug Fixes
+
+* explicitly set owner parameter in GitHub App token step ([c4b1969](https://github.com/alto9/kube9-operator/commit/c4b196928451924a290a7105ce6ce0bc3389d768))
+* remove comment from repositories list in GitHub App token step ([c210293](https://github.com/alto9/kube9-operator/commit/c2102938def53a50a8c567243c640f94c5f7df49))
+
 # [1.2.0](https://github.com/alto9/kube9-operator/compare/v1.1.4...v1.2.0) (2025-12-31)
 
 
