@@ -35,7 +35,7 @@ const MAX_RETRY_ATTEMPTS = 3;
 
 /**
  * RegistrationManager orchestrates the registration lifecycle:
- * - Initial registration on startup (if API key present)
+ * - Initial registration on startup
  * - Periodic re-registration every N hours
  * - Error handling with exponential backoff
  * - State management for status calculator integration
@@ -83,20 +83,12 @@ export class RegistrationManager {
 
   /**
    * Start registration process
-   * 
-   * If API key is present, initiates initial registration.
-   * If no API key, skips registration and resets state.
+   *
+   * Initiates initial registration.
    */
   async start(): Promise<void> {
     if (this.isStopped) {
       logger.warn('RegistrationManager is stopped, cannot start');
-      return;
-    }
-
-    // Skip registration if no API key
-    if (!this.config.apiKey) {
-      logger.info('No API key configured - skipping registration (free tier mode)');
-      this.stateManager.reset();
       return;
     }
 
@@ -200,11 +192,11 @@ export class RegistrationManager {
 
     // Handle specific error types
     if (error instanceof UnauthorizedError) {
-      // Invalid API key - don't retry, fall back to operated mode
-      logger.error('Registration failed: Invalid API key', {
-        note: 'Falling back to operated (free tier) mode',
+      // Invalid auth credentials - don't retry
+      logger.error('Registration failed: Unauthorized', {
+        note: 'Skipping retries for authorization failures',
       });
-      this.stateManager.setFailed('Invalid API key');
+      this.stateManager.setFailed('Unauthorized');
       this.retryAttempt = 0; // Reset retry attempts
       return;
     }

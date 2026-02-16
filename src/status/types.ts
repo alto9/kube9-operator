@@ -61,15 +61,15 @@ export interface ArgoCDStatus {
 export interface OperatorStatus {
   /**
    * Operating mode of the operator
-   * - operated: Free tier (no API key or invalid key)
-   * - enabled: Pro tier (valid API key and registered)
+   * - operated: Standard operator mode
+   * - enabled: Reserved for future use
    */
   mode: "operated" | "enabled";
   
   /**
    * User-facing tier name
-   * - free: Limited features
-   * - pro: Full features with AI
+   * - free: Open source tier
+   * - pro: Reserved for future use
    */
   tier: "free" | "pro";
   
@@ -98,12 +98,6 @@ export interface OperatorStatus {
    * true only when mode="enabled" and registration successful
    */
   registered: boolean;
-  
-  /**
-   * Whether an API key is configured
-   * true when API key is present (regardless of registration status)
-   */
-  apiKeyConfigured: boolean;
   
   /**
    * Error message if health is degraded or unhealthy

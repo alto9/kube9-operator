@@ -1,4 +1,3 @@
-import { getConfig } from '../config/loader.js';
 import type { OperatorStatus, RegistrationState, CollectionStats, ArgoCDStatus } from './types.js';
 
 /**
@@ -60,19 +59,14 @@ export function calculateStatus(
   },
   argocdStatus: ArgoCDStatus = DEFAULT_ARGOCD_STATUS
 ): OperatorStatus {
-  const config = getConfig();
   const { isRegistered, clusterId, consecutiveFailures = 0 } = registrationState;
   
-  // Calculate mode: "enabled" if API key present, "operated" otherwise
-  const mode: "operated" | "enabled" = config.apiKey ? "enabled" : "operated";
-  
-  // Calculate tier: "pro" only if API key present AND registered, "free" otherwise
-  const tier: "free" | "pro" = config.apiKey && isRegistered ? "pro" : "free";
+  // API key and registration dependencies have been removed.
+  const mode: "operated" | "enabled" = "operated";
+  const tier: "free" | "pro" = "free";
   
   // Calculate health based on system state
   const health = calculateHealth(
-    config.apiKey,
-    isRegistered,
     consecutiveFailures,
     canWriteConfigMap,
     lastError
@@ -96,12 +90,8 @@ export function calculateStatus(
         } else {
           error = "Critical system error";
         }
-      } else if (health === "degraded") {
-        if (config.apiKey && !isRegistered) {
-          error = "API key configured but not registered with kube9-server";
-        } else if (consecutiveFailures > 3) {
-          error = `Registration failed ${consecutiveFailures} times consecutively`;
-        }
+      } else if (health === "degraded" && consecutiveFailures > 3) {
+        error = `Registration failed ${consecutiveFailures} times consecutively`;
       }
     }
   }
@@ -114,7 +104,6 @@ export function calculateStatus(
     health,
     lastUpdate: new Date().toISOString(),
     registered: isRegistered,
-    apiKeyConfigured: !!config.apiKey,
     error,
     namespace: STATUS_NAMESPACE,
     collectionStats: {
@@ -139,19 +128,15 @@ export function calculateStatus(
  * 
  * Health determination logic:
  * - unhealthy: Can't write ConfigMap OR config errors
- * - degraded: API key present but not registered OR consecutive failures > 3
+ * - degraded: Consecutive registration failures > 3
  * - healthy: All other cases
  * 
- * @param apiKey - Whether API key is configured
- * @param isRegistered - Whether operator is registered with server
  * @param consecutiveFailures - Number of consecutive registration failures
  * @param canWriteConfigMap - Whether operator can write to ConfigMap
  * @param lastError - Last error message (if any)
  * @returns Health status
  */
 function calculateHealth(
-  apiKey: string | null,
-  isRegistered: boolean,
   consecutiveFailures: number,
   canWriteConfigMap: boolean,
   lastError: string | null
@@ -166,11 +151,6 @@ function calculateHealth(
   // But we check lastError for any critical errors
   if (lastError && lastError.includes("config") && lastError.includes("required")) {
     return "unhealthy";
-  }
-  
-  // Degraded: Pro mode but not registered
-  if (apiKey && !isRegistered) {
-    return "degraded";
   }
   
   // Degraded: Registration attempts failing repeatedly

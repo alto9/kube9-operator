@@ -12,9 +12,8 @@ import {
 import type { ClusterInfo } from '../kubernetes/client.js';
 
 // Mock implementations
-function createMockConfig(apiKey: string | null = 'kdy_prod_test123'): Config {
+function createMockConfig(): Config {
   return {
-    apiKey,
     serverUrl: 'https://api.kube9.dev',
     logLevel: 'info',
     statusUpdateIntervalSeconds: 60,
@@ -59,7 +58,7 @@ function createMockRegistrationClient(
       case 'success':
         return createMockRegistrationResponse();
       case 'unauthorized':
-        throw new UnauthorizedError('Invalid API key');
+        throw new UnauthorizedError('Unauthorized');
       case 'rateLimit':
         throw new RateLimitError('Rate limited', 3600);
       case 'serverError':
@@ -77,8 +76,8 @@ function createMockRegistrationClient(
 }
 
 describe('RegistrationManager', () => {
-  it('skips registration when no API key', async () => {
-    const config = createMockConfig(null);
+  it('starts from unregistered state', async () => {
+    const config = createMockConfig();
     const client = createMockRegistrationClient();
     const manager = new RegistrationManager(
       config,
@@ -120,7 +119,7 @@ describe('RegistrationManager', () => {
     manager.stop();
   });
 
-  it('handles invalid API key (401)', async () => {
+  it('handles unauthorized response (401)', async () => {
     const config = createMockConfig();
     const client = createMockRegistrationClient('unauthorized');
     const manager = new RegistrationManager(
@@ -138,7 +137,7 @@ describe('RegistrationManager', () => {
     const state = manager.getState();
     expect(state.isRegistered).toBe(false);
     expect(state.clusterId).toBe(undefined);
-    // Should not retry on invalid key
+    // Should not retry on authorization failure
     expect(state.consecutiveFailures).toBe(1);
 
     manager.stop();

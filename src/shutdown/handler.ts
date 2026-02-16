@@ -5,7 +5,6 @@ import type { ArgoCDDetectionManager } from '../argocd/detection-manager.js';
 import type { KubernetesEventWatcher } from '../events/kubernetes-event-watcher.js';
 import type { EventQueueWorker } from '../events/queue-worker.js';
 import { stopHealthServer } from '../health/server.js';
-import { getConfig } from '../config/loader.js';
 import type { OperatorStatus } from '../status/types.js';
 import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
@@ -99,9 +98,6 @@ export async function gracefulShutdown(
     // Stop health server (closes HTTP server)
     await stopHealthServer();
 
-    // Get current config to build final status
-    const config = getConfig();
-    
     // Get registration state if manager is available
     const registrationState = registrationManager
       ? registrationManager.getState()
@@ -111,13 +107,12 @@ export async function gracefulShutdown(
     const collectionStats = collectionStatsTracker.getStats();
     const argocdStatus = argocdStatusTracker.getStatus();
     const finalStatus: OperatorStatus = {
-      mode: config.apiKey ? "enabled" : "operated",
-      tier: config.apiKey && registrationState.isRegistered ? "pro" : "free",
+      mode: "operated",
+      tier: "free",
       version: OPERATOR_VERSION,
       health: "unhealthy",
       lastUpdate: new Date().toISOString(),
       registered: registrationState.isRegistered,
-      apiKeyConfigured: !!config.apiKey,
       error: "Shutting down",
       namespace: process.env.POD_NAMESPACE || 'kube9-system',
       collectionStats: {

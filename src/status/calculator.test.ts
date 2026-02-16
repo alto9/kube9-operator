@@ -60,7 +60,6 @@ describe('calculateStatus', () => {
       expect(status.version).toBe('1.0.0');
       expect(status.health).toBe('healthy');
       expect(status.registered).toBe(false);
-      expect(status.apiKeyConfigured).toBe(false);
       expect(status.error).toBe(null);
       expect(status.namespace).toBe('kube9-system');
       expect(status.lastUpdate).toBeDefined();
@@ -88,7 +87,6 @@ describe('calculateStatus', () => {
       const status = calculatorModule.calculateStatus();
 
       expect(status.mode).toBe('enabled');
-      expect(status.apiKeyConfigured).toBe(true);
       expect(status.namespace).toBe('kube9-system');
     });
 

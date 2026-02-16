@@ -3,11 +3,6 @@
  */
 export interface Config {
   /**
-   * API key for pro tier (null if not configured - free tier)
-   */
-  apiKey: string | null;
-
-  /**
    * kube9-server base URL
    */
   serverUrl: string;
