@@ -1,23 +1,9 @@
-import { kubernetesClient } from '../kubernetes/client.js';
 import type { Config } from './types.js';
 import { logger } from '../logging/logger.js';
 
-const SECRET_NAME = 'kube9-operator-config';
 /**
- * Namespace for operator Secret
- * Uses POD_NAMESPACE environment variable (set by Helm via downward API)
- * Falls back to 'kube9-system' for backwards compatibility
- */
-const SECRET_NAMESPACE = process.env.POD_NAMESPACE || 'kube9-system';
-const SECRET_KEY = 'apiKey';
-
-/**
- * Load configuration from environment variables and Kubernetes Secret
- * 
- * Reads environment variables for configuration and optionally loads API key
- * from Kubernetes Secret. If Secret doesn't exist (404), returns null for
- * apiKey - this is expected for free tier installations.
- * 
+ * Load configuration from environment variables
+ *
  * @returns Promise resolving to Config object
  * @throws Error if required environment variables are missing
  */
@@ -59,56 +45,7 @@ export async function loadConfig(): Promise<Config> {
     throw new Error('SERVER_URL environment variable is required');
   }
 
-  // Attempt to read API key from Secret
-  let apiKey: string | null = null;
-  
-  try {
-    const secret = await kubernetesClient.coreApi.readNamespacedSecret({
-      name: SECRET_NAME,
-      namespace: SECRET_NAMESPACE
-    });
-    
-    // Extract and decode API key from Secret
-    if (secret.data && secret.data[SECRET_KEY]) {
-      const apiKeyBase64 = secret.data[SECRET_KEY];
-      apiKey = Buffer.from(apiKeyBase64, 'base64').toString('utf-8');
-      
-      // Validate that we got a non-empty API key
-      if (!apiKey || apiKey.trim().length === 0) {
-        logger.warn('API key found in Secret but is empty');
-        apiKey = null;
-      } else {
-        logger.info('API key loaded from Secret (pro tier mode)');
-      }
-    } else {
-      logger.info('Secret exists but does not contain apiKey');
-    }
-  } catch (error: unknown) {
-    // Handle 404 as expected (free tier - Secret doesn't exist)
-    // kubernetes-client-node throws HttpError with statusCode for HTTP errors
-    const httpError = error as { statusCode?: number; body?: unknown };
-    
-    if (httpError.statusCode === 404) {
-      logger.info('Secret not found - running in free tier mode');
-      apiKey = null;
-    } else {
-      // Other HTTP errors or network errors - log but don't crash
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      if (httpError.statusCode) {
-        logger.error('Failed to read Secret', {
-          statusCode: httpError.statusCode,
-          error: errorMessage,
-        });
-      } else {
-        logger.error('Failed to read Secret', { error: errorMessage });
-      }
-      logger.error('Continuing without API key (free tier mode)');
-      apiKey = null;
-    }
-  }
-
   const config: Config = {
-    apiKey,
     serverUrl,
     logLevel,
     statusUpdateIntervalSeconds,

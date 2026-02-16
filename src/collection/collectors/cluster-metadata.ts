@@ -18,7 +18,7 @@ import { logger } from '../../logging/logger.js';
 
 /**
  * ClusterMetadataCollector collects cluster metadata and processes it
- * through validation, storage (free tier), or transmission (pro tier).
+ * through validation, local storage, or optional transmission.
  */
 export class ClusterMetadataCollector {
   private readonly kubernetesClient: KubernetesClient;
@@ -132,16 +132,13 @@ export class ClusterMetadataCollector {
         },
       };
 
-      // Determine tier and process accordingly
-      if (this.config.apiKey && this.transmissionClient) {
-        // Pro tier: transmit to server
-        logger.info('Transmitting cluster metadata collection (pro tier)', {
+      if (this.transmissionClient) {
+        logger.info('Transmitting cluster metadata collection', {
           collectionId: validatedMetadata.collectionId,
         });
         await this.transmissionClient.transmit(payload);
       } else {
-        // Free tier: store locally
-        logger.info('Storing cluster metadata collection locally (free tier)', {
+        logger.info('Storing cluster metadata collection locally', {
           collectionId: validatedMetadata.collectionId,
         });
         await this.localStorage.store(payload);
@@ -149,7 +146,7 @@ export class ClusterMetadataCollector {
 
       logger.info('Cluster metadata collection processed successfully', {
         collectionId: validatedMetadata.collectionId,
-        tier: this.config.apiKey ? 'pro' : 'free',
+        transmitted: this.transmissionClient !== null,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

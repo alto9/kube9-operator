@@ -6,9 +6,6 @@ import { kubernetesClient } from './kubernetes/client.js';
 import { loadConfig, setConfig } from './config/loader.js';
 import type { Config } from './config/types.js';
 import { StatusWriter } from './status/writer.js';
-import { RegistrationManager } from './registration/manager.js';
-import { RegistrationClient } from './registration/client.js';
-import { generateClusterIdentifier } from './cluster/identifier.js';
 import { startHealthServer } from './health/server.js';
 import { setInitialized } from './health/state.js';
 import { gracefulShutdown } from './shutdown/handler.js';
@@ -17,7 +14,6 @@ import { ClusterMetadataCollector } from './collection/collectors/cluster-metada
 import { ResourceInventoryCollector } from './collection/collectors/resource-inventory.js';
 import { ResourceConfigurationPatternsCollector } from './collection/collectors/resource-configuration-patterns.js';
 import { LocalStorage } from './collection/storage.js';
-import { TransmissionClient } from './collection/transmission.js';
 import { recordCollection } from './collection/metrics.js';
 import { collectionStatsTracker } from './collection/stats-tracker.js';
 import { logger } from './logging/logger.js';
@@ -31,7 +27,6 @@ import { registerEventWatcher } from './events/health.js';
 
 // Module-level references for shutdown handler
 let statusWriterInstance: StatusWriter | null = null;
-let registrationManagerInstance: RegistrationManager | null = null;
 let collectionSchedulerInstance: CollectionScheduler | null = null;
 let argoCDDetectionManagerInstance: ArgoCDDetectionManager | null = null;
 let eventWatcherInstance: KubernetesEventWatcher | null = null;
@@ -50,7 +45,7 @@ async function initializeConfig(): Promise<Config> {
       logLevel: config.logLevel,
       statusUpdateIntervalSeconds: config.statusUpdateIntervalSeconds,
       reregistrationIntervalHours: config.reregistrationIntervalHours,
-      tier: config.apiKey ? 'pro' : 'free',
+      tier: 'free',
     });
     
     return config;
@@ -154,32 +149,6 @@ export async function startOperator() {
     // Test Kubernetes client
     await testKubernetesClient();
     
-    // Initialize registration manager if API key is present
-    let registrationManager: RegistrationManager | null = null;
-    if (config.apiKey) {
-      logger.info('Initializing registration manager...');
-      const registrationClient = new RegistrationClient(
-        config.serverUrl,
-        config.apiKey
-      );
-      registrationManager = new RegistrationManager(
-        config,
-        registrationClient,
-        generateClusterIdentifier,
-        () => kubernetesClient.getClusterInfo()
-      );
-      
-      // Start registration (non-blocking)
-      registrationManager.start().catch((error) => {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('Failed to start registration', { error: errorMessage });
-        // Continue running even if registration fails initially
-      });
-    }
-    
-    // Store reference for shutdown handler
-    registrationManagerInstance = registrationManager;
-    
     // Perform initial ArgoCD detection before starting status writer
     await performInitialArgoCDDetection();
     
@@ -194,8 +163,7 @@ export async function startOperator() {
     logger.info('Starting status writer...');
     const statusWriter = new StatusWriter(
       kubernetesClient,
-      config.statusUpdateIntervalSeconds,
-      registrationManager ?? undefined
+      config.statusUpdateIntervalSeconds
     );
     statusWriter.start();
     
@@ -211,9 +179,7 @@ export async function startOperator() {
 
       // Initialize collection infrastructure
       const localStorage = new LocalStorage();
-      const transmissionClient = config.apiKey
-        ? new TransmissionClient(config.serverUrl, config.apiKey)
-        : null;
+      const transmissionClient = null;
 
       // Initialize cluster metadata collector
       const clusterMetadataCollector = new ClusterMetadataCollector(
@@ -344,7 +310,7 @@ export async function startOperator() {
       if (statusWriterInstance) {
         gracefulShutdown(
           statusWriterInstance,
-          registrationManagerInstance,
+          null,
           collectionSchedulerInstance,
           argoCDDetectionManagerInstance,
           eventWatcherInstance,
@@ -361,7 +327,7 @@ export async function startOperator() {
       if (statusWriterInstance) {
         gracefulShutdown(
           statusWriterInstance,
-          registrationManagerInstance,
+          null,
           collectionSchedulerInstance,
           argoCDDetectionManagerInstance,
           eventWatcherInstance,

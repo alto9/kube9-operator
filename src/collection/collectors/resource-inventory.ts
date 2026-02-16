@@ -19,7 +19,7 @@ import { logger } from '../../logging/logger.js';
 
 /**
  * ResourceInventoryCollector collects resource inventory and processes it
- * through validation, storage (free tier), or transmission (pro tier).
+ * through validation, local storage, or optional transmission.
  */
 export class ResourceInventoryCollector {
   private readonly kubernetesClient: KubernetesClient;
@@ -139,16 +139,13 @@ export class ResourceInventoryCollector {
         },
       };
 
-      // Determine tier and process accordingly
-      if (this.config.apiKey && this.transmissionClient) {
-        // Pro tier: transmit to server
-        logger.info('Transmitting resource inventory collection (pro tier)', {
+      if (this.transmissionClient) {
+        logger.info('Transmitting resource inventory collection', {
           collectionId: validatedInventory.collectionId,
         });
         await this.transmissionClient.transmit(payload);
       } else {
-        // Free tier: store locally
-        logger.info('Storing resource inventory collection locally (free tier)', {
+        logger.info('Storing resource inventory collection locally', {
           collectionId: validatedInventory.collectionId,
         });
         await this.localStorage.store(payload);
@@ -156,7 +153,7 @@ export class ResourceInventoryCollector {
 
       logger.info('Resource inventory collection processed successfully', {
         collectionId: validatedInventory.collectionId,
-        tier: this.config.apiKey ? 'pro' : 'free',
+        transmitted: this.transmissionClient !== null,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

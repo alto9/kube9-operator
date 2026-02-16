@@ -14,10 +14,6 @@ spec:
       {{- include "kube9-operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      annotations:
-        {{- if .Values.apiKey }}
-        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
-        {{- end }}
       labels:
         {{- include "kube9-operator.selectorLabels" . | nindent 8 }}
     spec:
@@ -78,13 +74,6 @@ spec:
           value: {{ .Values.events.retention.infoWarning | default 7 | quote }}
         - name: EVENT_RETENTION_ERROR_CRITICAL_DAYS
           value: {{ .Values.events.retention.errorCritical | default 30 | quote }}
-        {{- if .Values.apiKey }}
-        - name: API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "kube9-operator.fullname" . }}-config
-              key: apiKey
-        {{- end }}
         ports:
         - name: http
           containerPort: 8080

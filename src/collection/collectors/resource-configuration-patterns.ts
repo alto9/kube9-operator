@@ -665,16 +665,13 @@ export class ResourceConfigurationPatternsCollector {
         },
       };
 
-      // Determine tier and process accordingly
-      if (this.config.apiKey && this.transmissionClient) {
-        // Pro tier: transmit to server
-        logger.info('Transmitting resource configuration patterns collection (pro tier)', {
+      if (this.transmissionClient) {
+        logger.info('Transmitting resource configuration patterns collection', {
           collectionId: validatedData.collectionId,
         });
         await this.transmissionClient.transmit(payload);
       } else {
-        // Free tier: store locally
-        logger.info('Storing resource configuration patterns collection locally (free tier)', {
+        logger.info('Storing resource configuration patterns collection locally', {
           collectionId: validatedData.collectionId,
         });
         await this.localStorage.store(payload);
@@ -682,7 +679,7 @@ export class ResourceConfigurationPatternsCollector {
 
       logger.info('Resource configuration patterns collection processed successfully', {
         collectionId: validatedData.collectionId,
-        tier: this.config.apiKey ? 'pro' : 'free',
+        transmitted: this.transmissionClient !== null,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
