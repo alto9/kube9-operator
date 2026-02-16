@@ -49,7 +49,6 @@ describe('calculateStatus', () => {
         version: '1.0.0',
         health: 'healthy',
         registered: false,
-        apiKeyConfigured: false,
         error: null,
         namespace: 'kube9-system',
       });
@@ -67,7 +66,7 @@ describe('calculateStatus', () => {
       expect(status.argocd).toBeDefined();
     });
 
-    it('should return enabled mode when API key is present', async () => {
+    it('should return operated mode regardless config inputs', async () => {
       delete process.env.POD_NAMESPACE;
       
       vi.resetModules();
@@ -86,11 +85,11 @@ describe('calculateStatus', () => {
       const calculatorModule = await import('./calculator.js');
       const status = calculatorModule.calculateStatus();
 
-      expect(status.mode).toBe('enabled');
+      expect(status.mode).toBe('operated');
       expect(status.namespace).toBe('kube9-system');
     });
 
-    it('should return pro tier when API key present and registered', async () => {
+    it('should return free tier even when registered', async () => {
       delete process.env.POD_NAMESPACE;
       
       vi.resetModules();
@@ -115,7 +114,7 @@ describe('calculateStatus', () => {
 
       const status = calculatorModule.calculateStatus(registrationState);
 
-      expect(status.tier).toBe('pro');
+      expect(status.tier).toBe('free');
       expect(status.registered).toBe(true);
       expect(status.clusterId).toBe('cls_test123');
       expect(status.namespace).toBe('kube9-system');
@@ -240,7 +239,7 @@ describe('calculateStatus', () => {
       expect(status.namespace).toBe('kube9-system');
     });
 
-    it('should return degraded when API key present but not registered', async () => {
+    it('should return healthy when there are no write or registration failures', async () => {
       delete process.env.POD_NAMESPACE;
       
       vi.resetModules();
@@ -262,8 +261,8 @@ describe('calculateStatus', () => {
         consecutiveFailures: 0,
       });
 
-      expect(status.health).toBe('degraded');
-      expect(status.error).toBe('API key configured but not registered with kube9-server');
+      expect(status.health).toBe('healthy');
+      expect(status.error).toBe(null);
       expect(status.namespace).toBe('kube9-system');
     });
 

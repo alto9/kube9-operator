@@ -76,7 +76,7 @@ function createMockRegistrationClient(
 }
 
 describe('RegistrationManager', () => {
-  it('starts from unregistered state', async () => {
+  it('starts in unregistered state', () => {
     const config = createMockConfig();
     const client = createMockRegistrationClient();
     const manager = new RegistrationManager(
@@ -85,8 +85,6 @@ describe('RegistrationManager', () => {
       () => 'sha256:test123',
       async () => createMockClusterInfo()
     );
-
-    await manager.start();
 
     const state = manager.getState();
     expect(state.isRegistered).toBe(false);
