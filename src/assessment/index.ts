@@ -32,3 +32,9 @@ export {
   type CheckValidationResult,
 } from './registry.js';
 export { bootstrapAssessmentRegistry } from './bootstrap.js';
+export {
+  AssessmentRunner,
+  resolveChecksForRun,
+  type AssessmentRunInput,
+  type AssessmentRunnerDeps,
+} from './runner.js';
