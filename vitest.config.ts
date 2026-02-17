@@ -13,6 +13,7 @@ export default defineConfig({
       '**/src/database/event-repository.test.ts',
       '**/src/database/event-repository-queries.test.ts',
       '**/src/database/retention-cleanup.test.ts',
+      '**/src/database/assessment-repository.test.ts',
       // Exclude cleanup workaround files
       '**/zzz-final-cleanup.test.ts',
     ],

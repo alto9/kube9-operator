@@ -105,19 +105,18 @@ describe('SchemaManager', () => {
     expect(indexNames).toContain('idx_events_object_kind');
   });
 
-  it('records initial schema version', () => {
+  it('records schema versions including migrations', () => {
     const schema = new SchemaManager();
     schema.initialize();
     
     const manager = DatabaseManager.getInstance();
     const db = manager.getDatabase();
     
-    const version = db.prepare(`
-      SELECT version FROM schema_version ORDER BY applied_at DESC LIMIT 1
-    `).get() as { version: number } | undefined;
+    const versions = db.prepare(`SELECT version FROM schema_version ORDER BY version`).all() as Array<{ version: number }>;
     
-    expect(version).toBeTruthy();
-    expect(version?.version).toBe(1);
+    expect(versions.length).toBeGreaterThanOrEqual(1);
+    expect(versions[0]?.version).toBe(1);
+    expect(schema.getVersion()).toBeGreaterThanOrEqual(2);
   });
 
   it('schema version has correct fields', () => {
@@ -137,14 +136,17 @@ describe('SchemaManager', () => {
   it('idempotent initialization', () => {
     const schema = new SchemaManager();
     schema.initialize();
-    schema.initialize(); // Call twice
+    const countAfterFirst = schema.getVersion();
+    schema.initialize(); // Call twice - should not re-apply migrations
     
     const manager = DatabaseManager.getInstance();
     const db = manager.getDatabase();
     
-    // Should still have only one version record
-    const versions = db.prepare(`SELECT COUNT(*) as count FROM schema_version`).get() as { count: number };
-    expect(versions.count).toBe(1);
+    // Version should remain the same; no duplicate migration records
+    const versions = db.prepare(`SELECT version FROM schema_version ORDER BY version`).all() as Array<{ version: number }>;
+    const uniqueVersions = new Set(versions.map((v) => v.version));
+    expect(uniqueVersions.size).toBe(versions.length);
+    expect(schema.getVersion()).toBe(countAfterFirst);
   });
 
   it('detects existing schema', () => {
@@ -152,13 +154,13 @@ describe('SchemaManager', () => {
     schema1.initialize();
     
     const schema2 = new SchemaManager();
-    schema2.initialize(); // Should detect existing schema
+    schema2.initialize(); // Should detect existing schema, run migrations if needed
     
     const manager = DatabaseManager.getInstance();
     const db = manager.getDatabase();
     
     const versions = db.prepare(`SELECT COUNT(*) as count FROM schema_version`).get() as { count: number };
-    expect(versions.count).toBe(1);
+    expect(versions.count).toBeGreaterThanOrEqual(1);
   });
 
   it('events table supports inserts', () => {
@@ -197,5 +199,81 @@ describe('SchemaManager', () => {
     expect(() => {
       stmt.run('dup_id', 'cluster', 'info', 'Test 2', new Date().toISOString());
     }).toThrow();
+  });
+
+  it('creates assessments table when migrating to v2', () => {
+    const schema = new SchemaManager();
+    schema.initialize();
+    
+    const manager = DatabaseManager.getInstance();
+    const db = manager.getDatabase();
+    
+    const result = db.prepare(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name='assessments'
+    `).get() as { name: string } | undefined;
+    
+    expect(result).toBeTruthy();
+    expect(result?.name).toBe('assessments');
+  });
+
+  it('creates assessment_history table when migrating to v2', () => {
+    const schema = new SchemaManager();
+    schema.initialize();
+    
+    const manager = DatabaseManager.getInstance();
+    const db = manager.getDatabase();
+    
+    const result = db.prepare(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name='assessment_history'
+    `).get() as { name: string } | undefined;
+    
+    expect(result).toBeTruthy();
+    expect(result?.name).toBe('assessment_history');
+  });
+
+  it('assessment_history has foreign key to assessments', () => {
+    const schema = new SchemaManager();
+    schema.initialize();
+    
+    const manager = DatabaseManager.getInstance();
+    const db = manager.getDatabase();
+    
+    const fks = db.prepare(`PRAGMA foreign_key_list(assessment_history)`).all() as Array<{ table: string; from: string; to: string }>;
+    const runIdFk = fks.find((fk) => fk.from === 'run_id' && fk.table === 'assessments');
+    
+    expect(runIdFk).toBeTruthy();
+    expect(runIdFk?.to).toBe('run_id');
+  });
+
+  it('migration from v1 to v2 is idempotent', () => {
+    const schema = new SchemaManager();
+    schema.initialize();
+    
+    const versionBefore = schema.getVersion();
+    schema.initialize();
+    const versionAfter = schema.getVersion();
+    
+    expect(versionBefore).toBe(versionAfter);
+    expect(versionAfter).toBeGreaterThanOrEqual(2);
+  });
+
+  it('migration runs cleanly on fresh database', () => {
+    DatabaseManager.reset();
+    const schema = new SchemaManager();
+    schema.initialize();
+    
+    expect(schema.getVersion()).toBeGreaterThanOrEqual(1);
+    
+    const manager = DatabaseManager.getInstance();
+    const db = manager.getDatabase();
+    
+    const tables = db.prepare(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name IN ('assessments', 'assessment_history')
+    `).all() as Array<{ name: string }>;
+    
+    expect(tables.length).toBe(2);
   });
 });
