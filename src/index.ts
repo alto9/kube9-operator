@@ -4,7 +4,7 @@
  */
 
 import { program } from 'commander';
-import { createQueryCommands } from './cli/index.js';
+import { createQueryCommands, createAssessCommands } from './cli/index.js';
 import { getConfig } from './config/loader.js';
 import type { Config } from './config/types.js';
 
@@ -24,8 +24,11 @@ program
     await startOperator();
   });
 
-// Query command - CLI queries (subcommands added in later stories)
+// Query command - CLI queries
 program.addCommand(createQueryCommands());
+
+// Assess command - Well-Architected Framework assessment
+program.addCommand(createAssessCommands());
 
 program.parse(process.argv);
 
