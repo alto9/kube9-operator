@@ -27,6 +27,11 @@ import {
   AssessmentRunModeSchema,
   AssessmentLifecycleStateSchema,
 } from './contracts.js';
+import {
+  recordRunState,
+  recordCheckResult,
+  recordRunComplete,
+} from './metrics.js';
 import type { Config } from '../config/types.js';
 import type { KubernetesClient } from '../kubernetes/client.js';
 import type { Logger } from 'winston';
@@ -182,6 +187,7 @@ export class AssessmentRunner {
    * Does not throw on check failures - isolates errors and records outcomes.
    */
   async run(input: AssessmentRunInput): Promise<AssessmentRunRecord> {
+    const runStartTime = Date.now();
     const runId = input.runId ?? randomUUID();
     const timeoutMs = input.timeoutMs ?? DEFAULT_CHECK_TIMEOUT_MS;
     const requestedAt = new Date().toISOString();
@@ -259,6 +265,9 @@ export class AssessmentRunner {
       const storageResult = toStorageResult(result, runId, assessedAt);
       const historyId = `${runId}-${check.id}-${Date.now()}`;
       this.storage.insertCheckResult(storageResult, historyId, result.checkName ?? check.name);
+
+      const durationSeconds = (result.durationMs ?? 0) / 1000;
+      recordCheckResult(result.pillar, result.status, durationSeconds);
     }
 
     const completedChecks = passed + failed + warning + skipped + error + timeout;
@@ -289,6 +298,12 @@ export class AssessmentRunner {
       timeout_checks: timeout,
     };
     this.storage.upsertAssessment(finalRecord);
+
+    recordRunState(
+      AssessmentLifecycleStateSchema.parse(finalState) as AssessmentLifecycleState
+    );
+    const runDurationSeconds = (Date.now() - runStartTime) / 1000;
+    recordRunComplete(runDurationSeconds, totalChecks, passed);
 
     return finalRecord;
   }
