@@ -1,3 +1,15 @@
+# [1.3.0](https://github.com/alto9/kube9-operator/compare/v1.2.1...v1.3.0) (2026-02-17)
+
+
+### Features
+
+* **assessment:** add check registry and validation ([c80f971](https://github.com/alto9/kube9-operator/commit/c80f971d068a4dbad599a59b140f772784eca524)), closes [#33](https://github.com/alto9/kube9-operator/issues/33)
+* **assessment:** add Prometheus metrics instrumentation ([4e97091](https://github.com/alto9/kube9-operator/commit/4e97091179a7237a265660b1f1c1674c5b699f0b)), closes [#37](https://github.com/alto9/kube9-operator/issues/37)
+* **assessment:** create check interfaces and core types (GH-32) ([416c33f](https://github.com/alto9/kube9-operator/commit/416c33fa5f2471bea7908728ec142b22b58264d5)), closes [#32](https://github.com/alto9/kube9-operator/issues/32)
+* **assessment:** implement assessment runner orchestration ([#35](https://github.com/alto9/kube9-operator/issues/35)) ([4be40a8](https://github.com/alto9/kube9-operator/commit/4be40a8ee816c623958a3631dfd342ddc793b2c4))
+* **cli:** add assessment CLI commands and output formatters ([e82d39a](https://github.com/alto9/kube9-operator/commit/e82d39af38f311a2f75fc1b13fe7f99997d7bd1f)), closes [#36](https://github.com/alto9/kube9-operator/issues/36)
+* **db:** implement assessment database schema and migrations (GH-31) ([62542a8](https://github.com/alto9/kube9-operator/commit/62542a85cbc1df6b76d6db97f27d2782d809802f)), closes [#31](https://github.com/alto9/kube9-operator/issues/31) [#14](https://github.com/alto9/kube9-operator/issues/14)
+
 ## [1.2.1](https://github.com/alto9/kube9-operator/compare/v1.2.0...v1.2.1) (2026-01-09)
 
 
