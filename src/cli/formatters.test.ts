@@ -137,8 +137,92 @@ describe('formatOutput', () => {
     const yaml = await import('js-yaml');
     const data = { key: 'value', number: 123 };
     const result = formatOutput(data, 'yaml');
-    
+
     const parsed = yaml.load(result);
     expect(parsed).toEqual(data);
+  });
+
+  it('formats assessments list as table', () => {
+    const data = {
+      assessments: [
+        {
+          run_id: 'run-1',
+          mode: 'full',
+          state: 'completed',
+          total_checks: 10,
+          passed_checks: 8,
+          failed_checks: 2,
+          requested_at: '2025-01-01T10:00:00Z',
+        },
+      ],
+    };
+
+    const result = formatOutput(data, 'table');
+
+    expect(result).toContain('RUN_ID');
+    expect(result).toContain('MODE');
+    expect(result).toContain('STATE');
+    expect(result).toContain('run-1');
+    expect(result).toContain('full');
+    expect(result).toContain('completed');
+  });
+
+  it('formats assessment history as table', () => {
+    const data = {
+      history: [
+        {
+          id: 'hist-1',
+          run_id: 'run-1',
+          check_id: 'security.pod-security',
+          pillar: 'security',
+          status: 'passing',
+          assessed_at: '2025-01-01T10:00:00Z',
+        },
+      ],
+    };
+
+    const result = formatOutput(data, 'table');
+
+    expect(result).toContain('CHECK_ID');
+    expect(result).toContain('PILLAR');
+    expect(result).toContain('STATUS');
+    expect(result).toContain('security');
+    expect(result).toContain('passing');
+  });
+
+  it('supports compact format', () => {
+    const data = {
+      assessments: [
+        {
+          run_id: 'run-1',
+          mode: 'full',
+          state: 'completed',
+          total_checks: 5,
+          passed_checks: 5,
+          failed_checks: 0,
+          requested_at: '2025-01-01T10:00:00Z',
+        },
+      ],
+    };
+
+    const result = formatOutput(data, 'compact');
+
+    expect(result).toContain('RUN_ID');
+    expect(result).toContain('run-1');
+    expect(result).toContain('completed');
+  });
+
+  it('handles empty assessments array', () => {
+    const data = { assessments: [] };
+    const result = formatOutput(data, 'table');
+
+    expect(result).toBe('No results found');
+  });
+
+  it('handles empty history array', () => {
+    const data = { history: [] };
+    const result = formatOutput(data, 'table');
+
+    expect(result).toBe('No results found');
   });
 });
