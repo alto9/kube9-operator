@@ -81,6 +81,7 @@ describe('createAssessCommands', () => {
     const optionNames = historyCmd!.options.map((o) => o.long);
     expect(optionNames).toContain('--pillar');
     expect(optionNames).toContain('--result');
+    expect(optionNames).toContain('--severity');
     expect(optionNames).toContain('--limit');
     expect(optionNames).toContain('--since');
   });
