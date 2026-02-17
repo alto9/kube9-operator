@@ -22,3 +22,13 @@ export {
   type AssessmentRunSummary,
   type AssessmentHistoryEntry,
 } from './types.js';
+
+export {
+  getRegistry,
+  resetRegistry,
+  validateCheck,
+  DuplicateCheckIdError,
+  InvalidCheckMetadataError,
+  type CheckValidationResult,
+} from './registry.js';
+export { bootstrapAssessmentRegistry } from './bootstrap.js';
