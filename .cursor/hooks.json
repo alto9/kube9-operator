@@ -1,0 +1,10 @@
+{"version":1,
+    "hooks":{
+        "afterFileEdit":[
+            {"command":"node .cursor/hooks/validate-json-schema.js"}
+        ],
+        "afterTabFileEdit":[
+            {"command":"node .cursor/hooks/validate-json-schema.js"}
+        ]
+    }
+}

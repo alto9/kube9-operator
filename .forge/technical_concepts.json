@@ -1,0 +1,44 @@
+{
+  "concepts": [
+    {
+      "title": "Helm Chart Values",
+      "description": "Configuration via Helm values. No API key. Includes image, resources, logLevel, statusUpdateIntervalSeconds, argocd config, Prometheus/ArgoCD endpoint overrides, metrics intervals, event retention.",
+      "context_sources": [".forge/operations/build_packaging.md", "charts/kube9-operator/values.yaml"]
+    },
+    {
+      "title": "Well-Architected Framework Assessment",
+      "description": "Check registry, runner, database schema, CLI (assess run/list/get/summary/history), Prometheus metrics. Pillars: security, reliability, performance, cost, operational excellence, sustainability.",
+      "context_sources": [".forge/business_logic/domain_model.md", ".forge/roadmap.json"]
+    },
+    {
+      "title": "Trivy Image Vulnerability Scanning",
+      "description": "Container image scanning via Trivy for security pillar (M3).",
+      "context_sources": [".forge/roadmap.json", ".forge/operations/security.md"]
+    },
+    {
+      "title": "Status ConfigMap",
+      "description": "kube9-operator-status ConfigMap with mode, tier, version, health, lastUpdate, namespace. No registered, clusterId.",
+      "context_sources": [".forge/data/data_model.md"]
+    },
+    {
+      "title": "SQLite Storage",
+      "description": "better-sqlite3 at /data/kube9.db. Tables: assessments, assessment_history, events. argocd_apps and collections planned for M8/M9.",
+      "context_sources": [".forge/data/data_model.md", ".forge/data/persistence_abstractions.md"]
+    },
+    {
+      "title": "CLI Query Interface",
+      "description": "kubectl exec for query status, query events list/get, assess run/list/get/summary/history.",
+      "context_sources": [".forge/interface/input_handling.md", ".forge/data/serialization.md"]
+    },
+    {
+      "title": "ArgoCD Configuration",
+      "description": "M1: Endpoint override, namespace override. M9: Application sync/health status, drift detection.",
+      "context_sources": [".forge/roadmap.json", ".forge/integration/external_systems.md"]
+    },
+    {
+      "title": "Prometheus Configuration",
+      "description": "M1: Endpoint override for metrics scraping.",
+      "context_sources": [".forge/operations/observability.md", ".forge/roadmap.json"]
+    }
+  ]
+}

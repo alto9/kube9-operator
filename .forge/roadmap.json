@@ -1,0 +1,305 @@
+{
+  "roadmap": {
+    "milestones": [
+      {
+        "id": "1",
+        "title": "M1: Configuration & Documentation Foundation",
+        "description": "Clean up configuration, document values, and prepare for framework work. Includes removing API key references, documenting Helm chart values, and adding Prometheus/ArgoCD endpoint overrides. ArgoCD Application sync/drift is out of scope; see M9.",
+        "due_date": "2026-02-13",
+        "technical_concepts": [
+          "Helm values",
+          "API key removal",
+          "Configuration overrides",
+          "Prometheus",
+          "ArgoCD"
+        ],
+        "tickets": [
+          {
+            "id": 11,
+            "title": "Remove API Key References",
+            "description": "Remove API key from Helm chart values, status calculator, registration module, and documentation."
+          },
+          {
+            "id": 12,
+            "title": "Document Helm Chart Values",
+            "description": "Create comprehensive documentation for all Helm chart values including core values, collection intervals, event storage, and ArgoCD configuration."
+          },
+          {
+            "id": 13,
+            "title": "Add Configuration Overrides for Prometheus and ArgoCD Endpoints",
+            "description": "Add configuration options to allow overriding Prometheus and ArgoCD endpoints and locations. Support auto-detection as default with explicit override capability."
+          }
+        ]
+      },
+      {
+        "id": "2",
+        "title": "M2: Well-Architected Framework Infrastructure",
+        "description": "Implement core framework validation infrastructure including assessment system, scheduler, and storage.",
+        "due_date": "2026-02-27",
+        "technical_concepts": [
+          "Assessment system",
+          "Check registry",
+          "Database schema",
+          "CLI",
+          "Prometheus metrics"
+        ],
+        "tickets": [
+          {
+            "id": 14,
+            "title": "Implement Well-Architected Framework Assessment System",
+            "description": "Core assessment system implementation."
+          },
+          {
+            "id": 30,
+            "title": "Design Assessment Architecture and Execution Flow",
+            "description": "Design assessment architecture and execution flow."
+          },
+          {
+            "id": 31,
+            "title": "Implement Assessment Database Schema and Migrations",
+            "description": "Assessment database schema and migrations."
+          },
+          {
+            "id": 32,
+            "title": "Create Assessment Check Interfaces and Core Types",
+            "description": "Assessment check interfaces and core types."
+          },
+          {
+            "id": 33,
+            "title": "Implement Assessment Check Registry and Validation",
+            "description": "Assessment check registry and validation."
+          },
+          {
+            "id": 34,
+            "title": "Implement Assessment Result Storage and Query APIs",
+            "description": "Assessment result storage and query APIs."
+          },
+          {
+            "id": 35,
+            "title": "Implement Assessment Runner Orchestration",
+            "description": "Assessment runner orchestration."
+          },
+          {
+            "id": 36,
+            "title": "Add Assessment CLI Commands and Output Formatters",
+            "description": "Assessment CLI commands and output formatters."
+          },
+          {
+            "id": 37,
+            "title": "Add Assessment Prometheus Metrics Instrumentation",
+            "description": "Assessment Prometheus metrics instrumentation."
+          }
+        ]
+      },
+      {
+        "id": "3",
+        "title": "M3: Security Pillar",
+        "description": "Complete security validation including Trivy image vulnerability scanning and all security checks.",
+        "due_date": "2026-03-13",
+        "technical_concepts": [
+          "Trivy",
+          "Image vulnerability scanning",
+          "Security context",
+          "RBAC",
+          "Secret management"
+        ],
+        "tickets": [
+          {
+            "id": 15,
+            "title": "Implement Image Vulnerability Scanning with Trivy",
+            "description": "Integrate Trivy for container image vulnerability scanning, store results, create security assessment checks, CLI and metrics interfaces."
+          },
+          {
+            "id": 16,
+            "title": "Implement Security Validation Checks",
+            "description": "Security context validation, RBAC policy analysis, and secret management audit checks."
+          }
+        ]
+      },
+      {
+        "id": "4",
+        "title": "M4: Reliability & Performance",
+        "description": "Implement reliability and performance efficiency checks.",
+        "due_date": "2026-03-27",
+        "technical_concepts": [
+          "High availability",
+          "Resource limits",
+          "Health probes",
+          "Autoscaling",
+          "Resource quotas"
+        ],
+        "tickets": [
+          {
+            "id": 17,
+            "title": "Implement Reliability Pillar Checks",
+            "description": "High availability, resource limits/requests, health probes, and backup/disaster recovery validation."
+          },
+          {
+            "id": 18,
+            "title": "Implement Performance Efficiency Pillar Checks",
+            "description": "Autoscaling configuration, resource quotas, and node affinity/placement validation."
+          }
+        ]
+      },
+      {
+        "id": "5",
+        "title": "M5: Cost & Operational Excellence",
+        "description": "Implement cost optimization and operational excellence checks.",
+        "due_date": "2026-04-10",
+        "technical_concepts": [
+          "Cost optimization",
+          "Resource ratios",
+          "Operational excellence",
+          "Monitoring",
+          "GitOps"
+        ],
+        "tickets": [
+          {
+            "id": 19,
+            "title": "Implement Cost Optimization Pillar Checks",
+            "description": "Resource ratio validation, over-provisioning detection, and spot instance usage validation."
+          },
+          {
+            "id": 20,
+            "title": "Implement Operational Excellence Pillar Checks",
+            "description": "Monitoring/observability, logging/audit trail, deployment strategies, and GitOps best practices."
+          }
+        ]
+      },
+      {
+        "id": "6",
+        "title": "M6: Sustainability & Framework Completion",
+        "description": "Implement sustainability checks and complete framework with scheduler, CLI, status integration, documentation, and metrics.",
+        "due_date": "2026-04-24",
+        "technical_concepts": [
+          "Sustainability",
+          "Resource efficiency",
+          "Periodic scheduler",
+          "Status ConfigMap",
+          "Documentation"
+        ],
+        "tickets": [
+          {
+            "id": 21,
+            "title": "Implement Sustainability Pillar Checks",
+            "description": "Resource efficiency analysis and workload consolidation opportunities."
+          },
+          {
+            "id": 22,
+            "title": "Implement Periodic Assessment Scheduler",
+            "description": "Periodic assessment scheduler with configurable intervals, integrate into operator main loop, add assessment summary to status ConfigMap."
+          },
+          {
+            "id": 23,
+            "title": "Complete Framework Documentation and Metrics",
+            "description": "Document all framework checks, create user guide, and add assessment execution Prometheus metrics."
+          }
+        ]
+      },
+      {
+        "id": "7",
+        "title": "M7: Chart Repository & Distribution",
+        "description": "Stand up charts.kube9.io for Helm chart distribution. S3 + CloudFront hosting, CDK stack, automated index.yaml on release. Enables helm install from official repo.",
+        "due_date": "2026-05-08",
+        "technical_concepts": [
+          "S3",
+          "CloudFront",
+          "CDK",
+          "Helm index",
+          "chart publishing"
+        ],
+        "tickets": [
+          {
+            "id": 47,
+            "title": "Implement Chart Repository Infrastructure",
+            "description": "Stand up S3 bucket and CloudFront distribution for charts.kube9.io. Configure DNS and HTTPS."
+          },
+          {
+            "id": 48,
+            "title": "Create CDK Stack for Chart Hosting",
+            "description": "AWS CDK stack in infrastructure/ for S3, CloudFront, and automated index.yaml generation."
+          },
+          {
+            "id": 49,
+            "title": "Add Chart Publishing to Release Pipeline",
+            "description": "GitHub Actions workflow to package Helm chart and publish to charts.kube9.io on release."
+          }
+        ]
+      },
+      {
+        "id": "8",
+        "title": "M8: Data Collection Pipeline",
+        "description": "Implement scheduled data collectors: cluster metadata (24h), resource inventory (6h), resource configuration patterns (12h). Store in SQLite collections table. Supports future insights and analytics.",
+        "due_date": "2026-05-22",
+        "technical_concepts": [
+          "Cluster metadata",
+          "Resource inventory",
+          "Config patterns",
+          "Scheduled collection",
+          "SQLite"
+        ],
+        "tickets": [
+          {
+            "id": 50,
+            "title": "Implement Cluster Metadata Collector",
+            "description": "Collect Kubernetes version, cluster identifier, node count, provider, region/zone. 24h interval with random offset."
+          },
+          {
+            "id": 52,
+            "title": "Implement Resource Inventory Collector",
+            "description": "Collect namespace counts (hashed IDs), pod/deployment/statefulset/replicaset/service counts. 6h interval."
+          },
+          {
+            "id": 54,
+            "title": "Implement Resource Configuration Patterns Collector",
+            "description": "Collect limits/requests, replica counts, image pull policies, security contexts, probes, volume types. 12h interval."
+          },
+          {
+            "id": 51,
+            "title": "Integrate Collection Scheduler with Operator",
+            "description": "Register collectors with scheduler, add Helm configuration for intervals, integrate into operator main loop."
+          },
+          {
+            "id": 53,
+            "title": "Add Collection Data CLI and Storage",
+            "description": "Create collections table schema, implement CLI query commands for collection data, add storage directory creation."
+          }
+        ]
+      },
+      {
+        "id": "9",
+        "title": "M9: ArgoCD Application Integration",
+        "description": "Implement ArgoCD Application sync/health status collection and drift detection. Populate argocd_apps table. Expose via CLI and status.",
+        "due_date": "2026-06-05",
+        "technical_concepts": [
+          "ArgoCD Applications",
+          "Sync status",
+          "Health status",
+          "Drift detection"
+        ],
+        "tickets": [
+          {
+            "id": 55,
+            "title": "Implement ArgoCD Application Status Collector",
+            "description": "Query ArgoCD API for Application sync and health status. Use M1 endpoint override config."
+          },
+          {
+            "id": 56,
+            "title": "Implement Drift Detection Logic",
+            "description": "Compare desired vs live state for Applications; detect and record drift events."
+          },
+          {
+            "id": 57,
+            "title": "Add argocd_apps Schema and Storage",
+            "description": "Create argocd_apps table, migrations, and storage layer for Application status data."
+          },
+          {
+            "id": 58,
+            "title": "Expose ArgoCD Data via CLI and Status",
+            "description": "Add query argocd apps CLI command and optional ArgoCD summary to status ConfigMap."
+          }
+        ]
+      }
+    ]
+  }
+}
