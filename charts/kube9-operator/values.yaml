@@ -56,6 +56,11 @@ argocd:
   # Custom label selector for ArgoCD server deployment (optional)
   # selector: "app.kubernetes.io/name=argocd-server"
   
+  # Override ArgoCD API endpoint (full URL). When set, used for ArgoCD API access (M9).
+  # Detection continues to use namespace/selector for deployment lookup.
+  # Example: "https://argocd-server.my-ns.svc.cluster.local"
+  # endpointOverride: ""
+  
   # Detection check interval in hours (default: 6)
   detectionInterval: 6
 

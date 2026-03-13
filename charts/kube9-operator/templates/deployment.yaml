@@ -71,6 +71,10 @@ spec:
         - name: ARGOCD_SELECTOR
           value: {{ .Values.argocd.selector | quote }}
         {{- end }}
+        {{- if .Values.argocd.endpointOverride }}
+        - name: ARGOCD_ENDPOINT_OVERRIDE
+          value: {{ .Values.argocd.endpointOverride | quote }}
+        {{- end }}
         - name: ARGOCD_DETECTION_INTERVAL
           value: {{ .Values.argocd.detectionInterval | default 6 | quote }}
         # Event retention configuration
