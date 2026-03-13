@@ -108,6 +108,8 @@ The following table lists the configurable parameters and their default values:
 | `statusUpdateIntervalSeconds` | How often the operator updates the status ConfigMap (in seconds) | `60` |
 | `reregistrationIntervalHours` | How often the operator re-registers with kube9-server (in hours, Pro tier only) | `24` |
 | `serverUrl` | URL of the kube9-server API (Pro tier only) | `"https://api.kube9.dev"` |
+| `prometheus.port` | Port for Prometheus metrics and health endpoints (default: 8080) | `8080` |
+| `prometheus.metricsPath` | Path for Prometheus metrics scrape endpoint | `"/metrics"` |
 
 ### Configuration Details
 
@@ -164,6 +166,15 @@ The operator uses Guaranteed QoS for stable performance:
 
 - **reregistrationIntervalHours**: How often to re-register with kube9-server (default: 24 hours)
 - **serverUrl**: The kube9-server API endpoint (default: https://api.kube9.dev)
+
+#### Prometheus Metrics (`prometheus.*`)
+
+Override the default `:8080/metrics` endpoint when deploying in non-standard environments (e.g. custom ports, proxies, or different scrape paths):
+
+- **port**: Port for the health server (liveness, readiness, metrics). Default: 8080.
+- **metricsPath**: Path for the Prometheus metrics endpoint. Default: `/metrics`.
+
+The operator adds `prometheus.io/scrape`, `prometheus.io/port`, and `prometheus.io/path` annotations to the pod for auto-discovery.
 
 ## Examples
 
@@ -396,6 +407,8 @@ Complete reference of all configurable values:
 | `statusUpdateIntervalSeconds` | Status ConfigMap update interval (seconds) | `60` |
 | `reregistrationIntervalHours` | Re-registration interval with kube9-server (hours, Pro tier) | `24` |
 | `serverUrl` | kube9-server API URL (Pro tier) | `"https://api.kube9.dev"` |
+| `prometheus.port` | Port for Prometheus metrics and health endpoints | `8080` |
+| `prometheus.metricsPath` | Path for Prometheus metrics scrape endpoint | `"/metrics"` |
 
 ## Additional Resources
 

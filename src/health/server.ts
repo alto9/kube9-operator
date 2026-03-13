@@ -9,18 +9,35 @@ import { logger } from '../logging/logger.js';
 let server: ReturnType<Express['listen']> | null = null;
 
 /**
+ * Options for the health server
+ */
+export interface HealthServerOptions {
+  /** Port number to listen on (default: 8080) */
+  port: number;
+  /** Path for Prometheus metrics endpoint (default: /metrics) */
+  metricsPath?: string;
+}
+
+/**
  * Start the health check HTTP server
- * 
+ *
  * Sets up Express server with /healthz (liveness) and /readyz (readiness) endpoints.
  * Server starts listening without blocking the main thread.
- * 
- * @param port - Port number to listen on (default: 8080)
+ *
+ * @param portOrOptions - Port number (default: 8080) or options object
  */
-export function startHealthServer(port: number = 8080): void {
+export function startHealthServer(portOrOptions: number | HealthServerOptions = 8080): void {
   if (server !== null) {
     logger.warn('Health server is already running');
     return;
   }
+
+  const port =
+    typeof portOrOptions === 'number' ? portOrOptions : portOrOptions.port;
+  const metricsPath =
+    typeof portOrOptions === 'object' && portOrOptions.metricsPath
+      ? portOrOptions.metricsPath
+      : '/metrics';
 
   const app = express();
 
@@ -55,7 +72,7 @@ export function startHealthServer(port: number = 8080): void {
   });
 
   // Prometheus metrics endpoint
-  app.get('/metrics', async (req, res) => {
+  app.get(metricsPath, async (req, res) => {
     try {
       const metrics = await getMetrics();
       res.set('Content-Type', 'text/plain; version=0.0.4; charset=utf-8');

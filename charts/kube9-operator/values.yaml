@@ -36,6 +36,12 @@ reregistrationIntervalHours: 24
 # kube9-server URL (for pro tier)
 serverUrl: "https://api.kube9.io"
 
+# Prometheus metrics endpoint configuration
+# Override when the default :8080/metrics is not suitable (e.g. custom ports, proxies)
+prometheus:
+  port: 8080
+  metricsPath: "/metrics"
+
 # ArgoCD integration configuration
 argocd:
   # Enable automatic ArgoCD detection (default: true)

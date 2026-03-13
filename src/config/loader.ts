@@ -39,6 +39,9 @@ export async function loadConfig(): Promise<Config> {
     process.env.EVENT_RETENTION_ERROR_CRITICAL_DAYS || '30',
     10
   );
+  const prometheusPort = parseInt(process.env.PROMETHEUS_PORT || '8080', 10);
+  const prometheusMetricsPath =
+    process.env.PROMETHEUS_METRICS_PATH || '/metrics';
 
   // Validate required environment variables
   if (!serverUrl) {
@@ -55,6 +58,10 @@ export async function loadConfig(): Promise<Config> {
     resourceConfigurationPatternsIntervalSeconds,
     eventRetentionInfoWarningDays,
     eventRetentionErrorCriticalDays,
+    prometheus: {
+      port: prometheusPort,
+      metricsPath: prometheusMetricsPath,
+    },
   };
 
   // Log configured intervals (and any overrides)
