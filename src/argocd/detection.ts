@@ -41,6 +41,14 @@ export interface ArgoCDDetectionConfig {
   selector?: string;
   
   /**
+   * Override the ArgoCD API endpoint (full URL).
+   * When set, used for ArgoCD API access (M9); detection continues to use
+   * namespace and selector for deployment lookup.
+   * Example: https://argocd-server.my-ns.svc.cluster.local
+   */
+  endpointOverride?: string;
+  
+  /**
    * Detection check interval in hours
    * How often to re-check ArgoCD presence
    */

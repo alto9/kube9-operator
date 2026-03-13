@@ -110,6 +110,11 @@ The following table lists the configurable parameters and their default values:
 | `serverUrl` | URL of the kube9-server API (Pro tier only) | `"https://api.kube9.dev"` |
 | `prometheus.port` | Port for Prometheus metrics and health endpoints (default: 8080) | `8080` |
 | `prometheus.metricsPath` | Path for Prometheus metrics scrape endpoint | `"/metrics"` |
+| `argocd.endpointOverride` | Override ArgoCD API endpoint (full URL). When set, used for ArgoCD API access (M9). Detection continues to use namespace/selector for deployment lookup. | `""` |
+| `argocd.autoDetect` | Enable automatic ArgoCD detection | `true` |
+| `argocd.namespace` | Custom namespace where ArgoCD is installed | `"argocd"` |
+| `argocd.selector` | Custom label selector for ArgoCD server deployment | `"app.kubernetes.io/name=argocd-server"` |
+| `argocd.detectionInterval` | Detection check interval in hours | `6` |
 
 ### Configuration Details
 
@@ -175,6 +180,16 @@ Override the default `:8080/metrics` endpoint when deploying in non-standard env
 - **metricsPath**: Path for the Prometheus metrics endpoint. Default: `/metrics`.
 
 The operator adds `prometheus.io/scrape`, `prometheus.io/port`, and `prometheus.io/path` annotations to the pod for auto-discovery.
+
+#### ArgoCD Configuration (`argocd.*`)
+
+- **endpointOverride**: Override the ArgoCD API endpoint (full URL). Use when ArgoCD is in a non-standard location or behind a custom URL. When set, used for ArgoCD API access (M9); detection continues to use namespace/selector for deployment lookup. Example: `https://argocd-server.my-ns.svc.cluster.local`
+- **autoDetect**: Enable automatic ArgoCD detection (default: true)
+- **namespace**: Custom namespace where ArgoCD is installed (default: argocd)
+- **selector**: Custom label selector for ArgoCD server deployment (default: app.kubernetes.io/name=argocd-server)
+- **detectionInterval**: How often to re-check ArgoCD presence (in hours, default: 6)
+
+Environment variable `ARGOCD_ENDPOINT_OVERRIDE` can be set directly instead of via Helm values.
 
 ## Examples
 
@@ -409,6 +424,11 @@ Complete reference of all configurable values:
 | `serverUrl` | kube9-server API URL (Pro tier) | `"https://api.kube9.dev"` |
 | `prometheus.port` | Port for Prometheus metrics and health endpoints | `8080` |
 | `prometheus.metricsPath` | Path for Prometheus metrics scrape endpoint | `"/metrics"` |
+| `argocd.endpointOverride` | Override ArgoCD API endpoint (full URL) | `""` |
+| `argocd.autoDetect` | Enable automatic ArgoCD detection | `true` |
+| `argocd.namespace` | Custom namespace where ArgoCD is installed | `"argocd"` |
+| `argocd.selector` | Custom label selector for ArgoCD server deployment | `"app.kubernetes.io/name=argocd-server"` |
+| `argocd.detectionInterval` | Detection check interval in hours | `6` |
 
 ## Additional Resources
 

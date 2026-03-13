@@ -17,7 +17,8 @@ import { LocalStorage } from './collection/storage.js';
 import { recordCollection } from './collection/metrics.js';
 import { collectionStatsTracker } from './collection/stats-tracker.js';
 import { logger } from './logging/logger.js';
-import { detectArgoCDWithTimeout, type ArgoCDDetectionConfig } from './argocd/detection.js';
+import { detectArgoCDWithTimeout } from './argocd/detection.js';
+import { parseArgoCDConfig } from './argocd/config.js';
 import { argocdStatusTracker } from './argocd/state.js';
 import { ArgoCDDetectionManager } from './argocd/detection-manager.js';
 import { SchemaManager } from './database/schema.js';
@@ -74,17 +75,6 @@ async function testKubernetesClient() {
       note: 'This is expected if running outside a cluster. The operator will retry when deployed.',
     });
   }
-}
-
-// Parse ArgoCD configuration from environment variables
-function parseArgoCDConfig(): ArgoCDDetectionConfig {
-  return {
-    autoDetect: process.env.ARGOCD_AUTO_DETECT !== 'false',
-    enabled: process.env.ARGOCD_ENABLED === 'true' ? true : undefined,
-    namespace: process.env.ARGOCD_NAMESPACE || 'argocd',
-    selector: process.env.ARGOCD_SELECTOR || 'app.kubernetes.io/name=argocd-server',
-    detectionInterval: parseInt(process.env.ARGOCD_DETECTION_INTERVAL || '6', 10)
-  };
 }
 
 // Perform initial ArgoCD detection during startup
