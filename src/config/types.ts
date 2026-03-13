@@ -51,5 +51,14 @@ export interface Config {
    * Default: 30 days
    */
   eventRetentionErrorCriticalDays: number;
+
+  /**
+   * Prometheus metrics endpoint configuration
+   * Default: port 8080, path /metrics
+   */
+  prometheus: {
+    port: number;
+    metricsPath: string;
+  };
 }
 

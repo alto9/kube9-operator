@@ -124,7 +124,10 @@ export async function startOperator() {
     const config = await initializeConfig();
     
     // Start health server early so probes are available during initialization
-    startHealthServer(8080);
+    startHealthServer({
+      port: config.prometheus.port,
+      metricsPath: config.prometheus.metricsPath,
+    });
     
     // Initialize database schema for events
     logger.info('Initializing database schema...');

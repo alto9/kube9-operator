@@ -14,6 +14,10 @@ spec:
       {{- include "kube9-operator.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.prometheus.port | default 8080 | quote }}
+        prometheus.io/path: {{ .Values.prometheus.metricsPath | default "/metrics" | quote }}
       labels:
         {{- include "kube9-operator.selectorLabels" . | nindent 8 }}
     spec:
@@ -74,20 +78,25 @@ spec:
           value: {{ .Values.events.retention.infoWarning | default 7 | quote }}
         - name: EVENT_RETENTION_ERROR_CRITICAL_DAYS
           value: {{ .Values.events.retention.errorCritical | default 30 | quote }}
+        # Prometheus metrics endpoint configuration
+        - name: PROMETHEUS_PORT
+          value: {{ .Values.prometheus.port | default 8080 | quote }}
+        - name: PROMETHEUS_METRICS_PATH
+          value: {{ .Values.prometheus.metricsPath | default "/metrics" | quote }}
         ports:
         - name: http
-          containerPort: 8080
+          containerPort: {{ .Values.prometheus.port | default 8080 }}
           protocol: TCP
         livenessProbe:
           httpGet:
             path: /healthz
-            port: 8080
+            port: {{ .Values.prometheus.port | default 8080 }}
           initialDelaySeconds: 30
           periodSeconds: 10
         readinessProbe:
           httpGet:
             path: /readyz
-            port: 8080
+            port: {{ .Values.prometheus.port | default 8080 }}
           initialDelaySeconds: 10
           periodSeconds: 5
         resources:

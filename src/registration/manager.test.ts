@@ -23,6 +23,7 @@ function createMockConfig(): Config {
     resourceConfigurationPatternsIntervalSeconds: 43200,
     eventRetentionInfoWarningDays: 7,
     eventRetentionErrorCriticalDays: 30,
+    prometheus: { port: 8080, metricsPath: '/metrics' },
   };
 }
 
