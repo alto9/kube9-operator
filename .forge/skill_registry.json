@@ -1,8 +1,7 @@
 {
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Canonical skill registry for agent and command execution. Agents and commands should resolve skill IDs from assignment maps below, then execute via the skill entry script_path and usage.",
   "canonical_categories": [
-    "gh_cli",
     "npm_wrapper",
     "git_flow",
     "research"
@@ -18,6 +17,7 @@
       "primary_consumers": [
         "visionary",
         "architect",
+        "planner",
         "runtime",
         "business_logic",
         "data",
@@ -25,129 +25,6 @@
         "integration",
         "operations"
       ]
-    },
-    {
-      "id": "gh-get-milestones",
-      "status": "active",
-      "category": "gh_cli",
-      "retag": "gh-get-milestones",
-      "script_path": ".cursor/skills/gh-get-milestones/scripts/gh-get-milestones.js",
-      "usage": "node .cursor/skills/gh-get-milestones/scripts/gh-get-milestones.js [state] [per_page]",
-      "primary_consumers": ["planner"]
-    },
-    {
-      "id": "gh-create-milestone",
-      "status": "active",
-      "category": "gh_cli",
-      "retag": "gh-create-milestone",
-      "script_path": ".cursor/skills/gh-create-milestone/scripts/gh-create-milestone.js",
-      "usage": "node .cursor/skills/gh-create-milestone/scripts/gh-create-milestone.js <title> [description] [due_date]",
-      "primary_consumers": ["planner"]
-    },
-    {
-      "id": "gh-save-milestone",
-      "status": "active",
-      "category": "gh_cli",
-      "retag": "gh-save-milestone",
-      "script_path": ".cursor/skills/gh-save-milestone/scripts/gh-save-milestone.js",
-      "usage": "node .cursor/skills/gh-save-milestone/scripts/gh-save-milestone.js",
-      "primary_consumers": ["planner"]
-    },
-    {
-      "id": "gh-issue-list",
-      "status": "active",
-      "category": "gh_cli",
-      "retag": "gh-issue-list",
-      "script_path": ".cursor/skills/gh-issue-list/scripts/gh-issue-list.js",
-      "usage": "node .cursor/skills/gh-issue-list/scripts/gh-issue-list.js [state] [limit]",
-      "primary_consumers": ["planner", "scribe", "build_preparation", "review_implementation"]
-    },
-    {
-      "id": "gh-create-issue",
-      "status": "active",
-      "category": "gh_cli",
-      "retag": "gh-create-issue",
-      "script_path": ".cursor/skills/gh-create-issue/scripts/gh-create-issue.js",
-      "usage": "node .cursor/skills/gh-create-issue/scripts/gh-create-issue.js <title> [body] [--parent <parent-ref>]",
-      "primary_consumers": ["planner", "scribe"]
-    },
-    {
-      "id": "gh-get-issue",
-      "status": "active",
-      "category": "gh_cli",
-      "retag": "gh-get-issue",
-      "script_path": ".cursor/skills/gh-get-issue/scripts/gh-get-issue.js",
-      "usage": "node .cursor/skills/gh-get-issue/scripts/gh-get-issue.js <issue-ref>",
-      "primary_consumers": [
-        "planner",
-        "scribe",
-        "build_preparation",
-        "build_security",
-        "review_implementation"
-      ]
-    },
-    {
-      "id": "gh-edit-issue",
-      "status": "active",
-      "category": "gh_cli",
-      "retag": "gh-edit-issue",
-      "script_path": ".cursor/skills/gh-edit-issue/scripts/gh-edit-issue.js",
-      "usage": "node .cursor/skills/gh-edit-issue/scripts/gh-edit-issue.js <issue-ref> [--title \"...\"] [--body \"...\"] [--state open|closed]",
-      "primary_consumers": ["planner"]
-    },
-    {
-      "id": "gh-project-item-add",
-      "status": "active",
-      "category": "gh_cli",
-      "retag": "gh-project-item-add",
-      "script_path": ".cursor/skills/gh-project-item-add/scripts/gh-project-item-add.js",
-      "usage": "node .cursor/skills/gh-project-item-add/scripts/gh-project-item-add.js <issue-ref> [project-url]",
-      "primary_consumers": ["planner", "scribe"]
-    },
-    {
-      "id": "gh-pr-checkout",
-      "status": "active",
-      "category": "gh_cli",
-      "retag": "gh-pr-checkout",
-      "script_path": ".cursor/skills/gh-pr-checkout/scripts/gh-pr-checkout.js",
-      "usage": "node .cursor/skills/gh-pr-checkout/scripts/gh-pr-checkout.js <pr-ref>",
-      "primary_consumers": ["review_implementation"]
-    },
-    {
-      "id": "gh-pr-review",
-      "status": "active",
-      "category": "gh_cli",
-      "retag": "gh-pr-review",
-      "script_path": ".cursor/skills/gh-pr-review/scripts/gh-pr-review.js",
-      "usage": "node .cursor/skills/gh-pr-review/scripts/gh-pr-review.js <pr-ref>",
-      "primary_consumers": ["review_security", "review_wrap"]
-    },
-    {
-      "id": "gh-create-pr",
-      "status": "active",
-      "category": "gh_cli",
-      "retag": "gh-create-pr",
-      "script_path": ".cursor/skills/gh-create-pr/scripts/gh-create-pr.js",
-      "usage": "node .cursor/skills/gh-create-pr/scripts/gh-create-pr.js [base-branch]",
-      "primary_consumers": ["build_wrap"]
-    },
-    {
-      "id": "gh-issue-comment",
-      "status": "active",
-      "category": "gh_cli",
-      "retag": "gh-issue-comment",
-      "script_path": ".cursor/skills/gh-issue-comment/scripts/gh-issue-comment.js",
-      "usage": "node .cursor/skills/gh-issue-comment/scripts/gh-issue-comment.js <issue-ref> <comment>",
-      "primary_consumers": ["review_wrap"]
-    },
-    {
-      "id": "gh-pr-merge",
-      "status": "active",
-      "category": "gh_cli",
-      "retag": "gh-pr-merge",
-      "script_path": ".cursor/skills/gh-pr-merge/scripts/gh-pr-merge.js",
-      "usage": "node .cursor/skills/gh-pr-merge/scripts/gh-pr-merge.js <pr-ref> [merge|squash|rebase]",
-      "primary_consumers": ["review_wrap"]
     },
     {
       "id": "lint-test",
@@ -183,16 +60,7 @@
       "retag": "branch-create",
       "script_path": ".cursor/skills/create-feature-branch/scripts/create-feature-branch.js",
       "usage": "node .cursor/skills/create-feature-branch/scripts/create-feature-branch.js <branch-name> [root-branch]",
-      "primary_consumers": ["build_preparation"]
-    },
-    {
-      "id": "start-issue-build",
-      "status": "active",
-      "category": "git_flow",
-      "retag": "workspace-bootstrap",
-      "script_path": ".cursor/skills/start-issue-build/scripts/start-issue-build.js",
-      "usage": "node .cursor/skills/start-issue-build/scripts/start-issue-build.js",
-      "primary_consumers": ["build_preparation"]
+      "primary_consumers": ["refine", "build_development"]
     },
     {
       "id": "commit",
@@ -211,63 +79,162 @@
       "script_path": ".cursor/skills/push-branch/scripts/push-branch.js",
       "usage": "node .cursor/skills/push-branch/scripts/push-branch.js",
       "primary_consumers": ["build_wrap"]
+    },
+    {
+      "id": "pull-milestones",
+      "status": "active",
+      "category": "git_flow",
+      "retag": "github-milestones",
+      "script_path": ".cursor/skills/pull-milestones/scripts/pull-milestones.js",
+      "usage": "node .cursor/skills/pull-milestones/scripts/pull-milestones.js [owner/repo] --state open --format json [--compact]",
+      "primary_consumers": ["planner", "refine", "build_development"]
+    },
+    {
+      "id": "pull-milestone-issues",
+      "status": "active",
+      "category": "git_flow",
+      "retag": "github-milestone-issues",
+      "script_path": ".cursor/skills/pull-milestone-issues/scripts/pull-milestone-issues.js",
+      "usage": "node .cursor/skills/pull-milestone-issues/scripts/pull-milestone-issues.js <milestone-id> [owner/repo] --state open --format json [--compact]",
+      "primary_consumers": ["planner", "refine", "build_development"]
+    },
+    {
+      "id": "sync-roadmap-to-github",
+      "status": "active",
+      "category": "git_flow",
+      "retag": "roadmap-sync",
+      "script_path": ".cursor/skills/sync-roadmap-to-github/scripts/sync-roadmap-to-github.js",
+      "usage": "node .cursor/skills/sync-roadmap-to-github/scripts/sync-roadmap-to-github.js [owner/repo] [--dry-run]",
+      "primary_consumers": ["planner", "refine"]
     }
   ],
   "agent_assignments": {
-    "planner": ["gh-get-milestones", "gh-create-milestone", "gh-save-milestone", "gh-issue-list", "gh-get-issue", "gh-create-issue", "gh-edit-issue", "gh-project-item-add"],
-    "scribe": ["gh-issue-list", "gh-get-issue", "gh-create-issue", "gh-project-item-add"],
-    "build_preparation": ["gh-get-issue", "create-feature-branch"],
-    "build_development": ["lint-test", "unit-test", "integration-test"],
+    "planner": ["fetch-url", "pull-milestones", "pull-milestone-issues", "sync-roadmap-to-github"],
+    "refine": ["create-feature-branch", "pull-milestone-issues", "sync-roadmap-to-github"],
+    "build_development": ["create-feature-branch", "lint-test", "unit-test", "integration-test", "pull-milestone-issues"],
     "build_security": [],
-    "build_wrap": ["commit", "push-branch", "gh-create-pr"],
+    "build_wrap": ["commit", "push-branch"],
     "review_implementation": [],
     "review_security": [],
-    "review_wrap": ["gh-issue-comment", "gh-pr-review", "gh-pr-merge"]
+    "review_wrap": []
   },
   "command_assignments": {
-    "start-issue-build": ["gh-get-issue", "create-feature-branch"],
-    "start-pr-review": ["gh-get-issue", "gh-pr-checkout"]
+    "architect-this": [],
+    "plan-roadmap": ["pull-milestones", "pull-milestone-issues", "sync-roadmap-to-github"],
+    "refine-issue": [],
+    "build-from-github": [],
+    "review-pr": []
   },
   "archived_legacy_removed": [
     {
+      "id": "start-issue-build",
+      "replaced_by": "manual workspace setup",
+      "reason": "Removed per spec; not part of sub-issue/build flow. Users ensure workspace is ready before build-from-github."
+    },
+    {
       "id": "pull-milestones",
-      "replaced_by": "gh-get-milestones",
-      "reason": "Archived after canonical gh-* milestone wrappers were added."
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
     },
     {
       "id": "make-milestone",
-      "replaced_by": "gh-create-milestone",
-      "reason": "Archived after canonical gh-* milestone wrappers were added."
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
     },
     {
       "id": "push-milestones",
-      "replaced_by": "gh-save-milestone",
-      "reason": "Archived after canonical gh-* milestone wrappers were added."
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
     },
     {
       "id": "make-issue",
-      "replaced_by": "gh-create-issue",
-      "reason": "Archived after canonical gh-* issue wrappers were added."
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
     },
     {
       "id": "get-issue-details",
-      "replaced_by": "gh-get-issue",
-      "reason": "Archived after canonical gh-* issue wrappers were added."
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
     },
     {
       "id": "review-pr",
-      "replaced_by": "gh-pr-checkout",
-      "reason": "Archived after canonical gh-* PR wrappers were added."
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
     },
     {
       "id": "make-pull-request",
-      "replaced_by": "gh-cli direct usage",
-      "reason": "Archived to keep the skill set scoped to contract-required workflows."
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
     },
     {
       "id": "make-sub-issue",
-      "replaced_by": "gh-create-issue",
-      "reason": "Archived to keep issue creation workflows consolidated."
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
+    },
+    {
+      "id": "gh-get-milestones",
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
+    },
+    {
+      "id": "gh-create-milestone",
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
+    },
+    {
+      "id": "gh-save-milestone",
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
+    },
+    {
+      "id": "gh-issue-list",
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
+    },
+    {
+      "id": "gh-create-issue",
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
+    },
+    {
+      "id": "gh-get-issue",
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
+    },
+    {
+      "id": "gh-edit-issue",
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
+    },
+    {
+      "id": "gh-project-item-add",
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
+    },
+    {
+      "id": "gh-pr-checkout",
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
+    },
+    {
+      "id": "gh-pr-review",
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
+    },
+    {
+      "id": "gh-create-pr",
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
+    },
+    {
+      "id": "gh-issue-comment",
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
+    },
+    {
+      "id": "gh-pr-merge",
+      "replaced_by": "available tools",
+      "reason": "Removed; agents use available tools (MCP, etc.) for GitHub operations."
     }
   ],
   "pruned_defaults": [

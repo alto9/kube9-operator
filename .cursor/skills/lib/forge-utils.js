@@ -1,5 +1,5 @@
 /**
- * Shared Forge project utilities for forge-cursor-plugin skills.
+ * Shared Forge project utilities for skills.
  */
 
 import path from "path";

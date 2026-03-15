@@ -1,5 +1,5 @@
 /**
- * Shared git utilities for forge-cursor-plugin skills.
+ * Shared git utilities for Forge skills.
  */
 
 import path from "path";

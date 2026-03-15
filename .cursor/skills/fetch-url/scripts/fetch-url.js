@@ -11,7 +11,7 @@ import { NodeHtmlMarkdown } from "node-html-markdown";
 
 const DEFAULTS = { timeoutSec: 15, maxChars: 24000 };
 const USER_AGENT =
-  "Mozilla/5.0 (compatible; ForgeFetch/1.0; +https://github.com/alto9/forge-cursor-plugin)";
+  "Mozilla/5.0 (compatible; ForgeFetch/1.0; +https://github.com/alto9/forge)";
 
 /** Parse argv. Returns { url, timeoutSec, maxChars } or null or { help: true }. */
 export function parseArgs(argv) {

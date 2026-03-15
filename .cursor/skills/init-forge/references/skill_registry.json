@@ -63,15 +63,6 @@
       "primary_consumers": ["refine", "build_development"]
     },
     {
-      "id": "start-issue-build",
-      "status": "active",
-      "category": "git_flow",
-      "retag": "workspace-bootstrap",
-      "script_path": ".cursor/skills/start-issue-build/scripts/start-issue-build.js",
-      "usage": "node .cursor/skills/start-issue-build/scripts/start-issue-build.js",
-      "primary_consumers": ["build_development"]
-    },
-    {
       "id": "commit",
       "status": "active",
       "category": "git_flow",
@@ -88,12 +79,39 @@
       "script_path": ".cursor/skills/push-branch/scripts/push-branch.js",
       "usage": "node .cursor/skills/push-branch/scripts/push-branch.js",
       "primary_consumers": ["build_wrap"]
+    },
+    {
+      "id": "pull-milestones",
+      "status": "active",
+      "category": "git_flow",
+      "retag": "github-milestones",
+      "script_path": ".cursor/skills/pull-milestones/scripts/pull-milestones.js",
+      "usage": "node .cursor/skills/pull-milestones/scripts/pull-milestones.js [owner/repo] --state open --format json [--compact]",
+      "primary_consumers": ["planner", "refine", "build_development"]
+    },
+    {
+      "id": "pull-milestone-issues",
+      "status": "active",
+      "category": "git_flow",
+      "retag": "github-milestone-issues",
+      "script_path": ".cursor/skills/pull-milestone-issues/scripts/pull-milestone-issues.js",
+      "usage": "node .cursor/skills/pull-milestone-issues/scripts/pull-milestone-issues.js <milestone-id> [owner/repo] --state open --format json [--compact]",
+      "primary_consumers": ["planner", "refine", "build_development"]
+    },
+    {
+      "id": "sync-roadmap-to-github",
+      "status": "active",
+      "category": "git_flow",
+      "retag": "roadmap-sync",
+      "script_path": ".cursor/skills/sync-roadmap-to-github/scripts/sync-roadmap-to-github.js",
+      "usage": "node .cursor/skills/sync-roadmap-to-github/scripts/sync-roadmap-to-github.js [owner/repo] [--dry-run]",
+      "primary_consumers": ["planner", "refine"]
     }
   ],
   "agent_assignments": {
-    "planner": ["fetch-url"],
-    "refine": ["create-feature-branch"],
-    "build_development": ["create-feature-branch", "start-issue-build", "lint-test", "unit-test", "integration-test"],
+    "planner": ["fetch-url", "pull-milestones", "pull-milestone-issues", "sync-roadmap-to-github"],
+    "refine": ["create-feature-branch", "pull-milestone-issues", "sync-roadmap-to-github"],
+    "build_development": ["create-feature-branch", "lint-test", "unit-test", "integration-test", "pull-milestone-issues"],
     "build_security": [],
     "build_wrap": ["commit", "push-branch"],
     "review_implementation": [],
@@ -102,12 +120,17 @@
   },
   "command_assignments": {
     "architect-this": [],
-    "plan-roadmap": [],
+    "plan-roadmap": ["pull-milestones", "pull-milestone-issues", "sync-roadmap-to-github"],
     "refine-issue": [],
     "build-from-github": [],
     "review-pr": []
   },
   "archived_legacy_removed": [
+    {
+      "id": "start-issue-build",
+      "replaced_by": "manual workspace setup",
+      "reason": "Removed per spec; not part of sub-issue/build flow. Users ensure workspace is ready before build-from-github."
+    },
     {
       "id": "pull-milestones",
       "replaced_by": "available tools",
