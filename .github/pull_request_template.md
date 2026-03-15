@@ -20,27 +20,18 @@ Fixes #(issue)
 - [ ] Code refactoring
 - [ ] Performance improvement
 - [ ] Test update
-- [ ] Helm chart update
 
 ## How Has This Been Tested?
 
 <!-- Please describe the tests you ran to verify your changes -->
 <!-- Include relevant details like test configuration, test cases, etc. -->
 
-- [ ] Unit tests added/updated (`npm test`)
+- [ ] Manual testing in Extension Development Host (F5)
+- [ ] Unit tests added/updated
 - [ ] Integration tests added/updated
-- [ ] Tested locally with `npm run dev:watch`
-- [ ] Tested in-cluster deployment (`npm run deploy:minikube`)
-- [ ] Tested Helm chart installation
-- [ ] Tested with Free tier (no API key)
-- [ ] Tested with Pro tier (with API key)
-- [ ] Tested on multiple Kubernetes versions
-- [ ] Verified operator logs are correct
-- [ ] Verified status ConfigMap is updated correctly
-
-## Screenshots (if appropriate)
-
-<!-- Add screenshots or logs demonstrating the change -->
+- [ ] Tested with multiple Kubernetes clusters
+- [ ] Tested on multiple OS (macOS, Windows, Linux)
+- [ ] Tested with different VS Code versions
 
 ## Checklist
 
@@ -48,18 +39,23 @@ Fixes #(issue)
 - [ ] I have updated the documentation accordingly
 - [ ] I have added tests to cover my changes
 - [ ] All new and existing tests pass (`npm test`)
-- [ ] I have run the linter and fixed any issues (if available)
+- [ ] I have run the linter and fixed any issues (`npm run lint`)
 - [ ] My changes generate no new warnings
 - [ ] I have checked my code and corrected any misspellings
 - [ ] I have updated the CHANGELOG.md (if applicable)
-- [ ] I have tested the operator locally
-- [ ] I have tested the operator in-cluster
-- [ ] I have verified Helm chart works correctly
-- [ ] I have verified RBAC permissions are correct (if changed)
+- [ ] I have tested the extension in Extension Development Host
+- [ ] I have verified the change works with real Kubernetes clusters
+
+## How to Test this Work
+
+<!-- Include Step by Step Technical Testing steps for technical users and stories -->
+
+## How to Validate this Work
+
+<!-- Include Step by Step BAT Testing steps for non-technical users -->
 
 ## Additional Notes
 
 <!-- Any additional information that reviewers should know -->
 <!-- Include any breaking changes, migration steps, etc. -->
-<!-- Include any impact on Free tier vs Pro tier -->
 

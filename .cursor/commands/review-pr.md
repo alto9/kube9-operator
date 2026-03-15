@@ -24,4 +24,4 @@ This command activates the staged review workflow from a PR link. It resolves PR
 
 ## Goal
 
-Establish PR/issue context and execute a staged review pipeline ending in explicit review and merge disposition.
+Establish PR/issue context and execute a staged review pipeline ending in explicit review disposition (no merge; human performs merge).

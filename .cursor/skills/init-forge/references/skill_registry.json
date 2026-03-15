@@ -60,7 +60,7 @@
       "retag": "branch-create",
       "script_path": ".cursor/skills/create-feature-branch/scripts/create-feature-branch.js",
       "usage": "node .cursor/skills/create-feature-branch/scripts/create-feature-branch.js <branch-name> [root-branch]",
-      "primary_consumers": ["build_preparation"]
+      "primary_consumers": ["refine", "build_development"]
     },
     {
       "id": "start-issue-build",
@@ -69,7 +69,7 @@
       "retag": "workspace-bootstrap",
       "script_path": ".cursor/skills/start-issue-build/scripts/start-issue-build.js",
       "usage": "node .cursor/skills/start-issue-build/scripts/start-issue-build.js",
-      "primary_consumers": ["build_preparation"]
+      "primary_consumers": ["build_development"]
     },
     {
       "id": "commit",
@@ -92,9 +92,8 @@
   ],
   "agent_assignments": {
     "planner": ["fetch-url"],
-    "scribe": [],
-    "build_preparation": ["create-feature-branch"],
-    "build_development": ["lint-test", "unit-test", "integration-test"],
+    "refine": ["create-feature-branch"],
+    "build_development": ["create-feature-branch", "start-issue-build", "lint-test", "unit-test", "integration-test"],
     "build_security": [],
     "build_wrap": ["commit", "push-branch"],
     "review_implementation": [],
@@ -104,8 +103,8 @@
   "command_assignments": {
     "architect-this": [],
     "plan-roadmap": [],
-    "scribe-issue": [],
-    "build-from-github": ["create-feature-branch"],
+    "refine-issue": [],
+    "build-from-github": [],
     "review-pr": []
   },
   "archived_legacy_removed": [

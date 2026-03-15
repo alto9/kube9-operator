@@ -1,6 +1,6 @@
 # Build from GitHub
 
-This command activates the staged build workflow from a GitHub issue link. It prepares issue context and branch state, then hands execution to build-stage subagents.
+This command activates the staged build workflow from a GitHub issue link. It prepares issue context and hands execution to build-stage subagents.
 
 ## Input
 
@@ -16,10 +16,7 @@ This command activates the staged build workflow from a GitHub issue link. It pr
 
 1. Parse and validate issue reference.
 2. Retrieve issue details using available tools (e.g. MCP GitHub, gh CLI).
-3. Determine if single issue (branch from main) or sub-issue (branch from parent).
-4. Run `create-feature-branch` using the registry: `feature/issue-{number}` from the appropriate root branch.
-5. Handoff to staged build agents:
-   - `build_preparation`
+3. Handoff to staged build agents:
    - `build_development`
    - `build_security`
    - `build_wrap`
