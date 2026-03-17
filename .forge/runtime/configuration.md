@@ -154,9 +154,9 @@ argocd:
 ```yaml
 metrics:
   intervals:
-    clusterMetadata: 86400                    # 24 hours (default)
-    resourceInventory: 21600                  # 6 hours (default)
-    resourceConfigurationPatterns: 43200     # 12 hours (default)
+    clusterMetadata: 86400                    # 24 hours (default), minimum 3600 (1h)
+    resourceInventory: 21600                  # 6 hours (default), minimum 1800 (30m)
+    resourceConfigurationPatterns: 43200     # 12 hours (default), minimum 3600 (1h)
 ```
 - Maps to `*_INTERVAL_SECONDS` environment variables
 - Operator enforces minimum intervals to prevent abuse
