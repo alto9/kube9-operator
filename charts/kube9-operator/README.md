@@ -17,7 +17,6 @@ The operator is installed via Helm and requires no ingress - all communication i
 - **Deployment**: The kube9-operator pod running in your cluster
 - **ServiceAccount**: Service account for the operator (if `serviceAccount.create` is true)
 - **RBAC Resources**: ClusterRole and ClusterRoleBinding for necessary permissions (if `rbac.create` is true)
-- **Secret**: Kubernetes Secret containing API key (only if `apiKey` is provided)
 - **ConfigMap**: Status ConfigMap written by the operator (created automatically by the operator)
 
 ## Prerequisites
@@ -36,9 +35,7 @@ helm repo add kube9 https://charts.kube9.io
 helm repo update
 ```
 
-### Install Free Tier (No API Key)
-
-The operator can run in free tier mode without an API key. This enables basic features and status exposure.
+### Install the Operator
 
 ```bash
 helm install kube9-operator kube9/kube9-operator \
@@ -49,30 +46,7 @@ helm install kube9-operator kube9/kube9-operator \
 After installation, the operator will:
 - Start in "operated" (free tier) mode
 - Create a status ConfigMap for the VS Code extension to read
-- **Not** attempt to connect to kube9-server
 - Provide basic cluster status information
-
-### Install Pro Tier (With API Key)
-
-To enable Pro tier features including AI-powered insights and advanced dashboards, install with an API key.
-
-1. **Get your API key** from [portal.kube9.dev](https://portal.kube9.dev)
-
-2. **Install with API key:**
-
-```bash
-helm install kube9-operator kube9/kube9-operator \
-  --set apiKey=kdy_prod_YOUR_KEY_HERE \
-  --namespace kube9-system \
-  --create-namespace
-```
-
-After installation, the operator will:
-- Start in "enabled" (pro tier) mode
-- Store the API key securely in a Kubernetes Secret
-- Register with kube9-server
-- Create a status ConfigMap indicating pro tier status
-- Enable Pro features in the VS Code extension
 
 ### Verify Installation
 
@@ -93,9 +67,8 @@ The following table lists the configurable parameters and their default values:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `apiKey` | API key for Pro tier. Get from https://portal.kube9.dev. Leave empty for free tier. | `""` |
 | `image.repository` | Container image repository | `ghcr.io/alto9/kube9-operator` |
-| `image.tag` | Container image tag | `"1.0.0"` |
+| `image.tag` | Container image tag | `"1.3.0"` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `resources.requests.memory` | Memory request for operator pod | `"1Gi"` |
 | `resources.requests.cpu` | CPU request for operator pod | `"500m"` |
@@ -107,17 +80,9 @@ The following table lists the configurable parameters and their default values:
 | `logLevel` | Log level for the operator. Options: `debug`, `info`, `warn`, `error` | `"info"` |
 | `statusUpdateIntervalSeconds` | How often the operator updates the status ConfigMap (in seconds) | `60` |
 | `reregistrationIntervalHours` | How often the operator re-registers with kube9-server (in hours, Pro tier only) | `24` |
-| `serverUrl` | URL of the kube9-server API (Pro tier only) | `"https://api.kube9.dev"` |
+| `serverUrl` | URL of the kube9-server API | `"https://api.kube9.io"` |
 
 ### Configuration Details
-
-#### API Key (`apiKey`)
-
-- **Required for Pro tier**: Set this to enable Pro features
-- **Optional for free tier**: Leave empty to run in free tier mode
-- **Security**: Stored securely in a Kubernetes Secret, never logged or exposed
-- **Format**: API keys typically start with `kdy_prod_` or `kdy_test_`
-- **Obtain from**: [portal.kube9.dev](https://portal.kube9.dev)
 
 #### Image Configuration (`image.*`)
 
@@ -153,28 +118,64 @@ The operator uses Guaranteed QoS for stable performance:
 - **warn**: Only warnings and errors
 - **error**: Only errors
 
-#### Status Updates (`statusUpdateIntervalSeconds`)
+#### Status Intervals and Server URL
 
-- How frequently the operator writes status to the ConfigMap
-- Default: 60 seconds
-- Lower values provide more real-time status but increase API calls
-- Higher values reduce API load but status may be slightly stale
-
-#### Pro Tier Settings
-
+- **statusUpdateIntervalSeconds**: How frequently the operator writes status to the ConfigMap (default: 60 seconds). Lower values provide more real-time status but increase API calls; higher values reduce API load but status may be slightly stale.
 - **reregistrationIntervalHours**: How often to re-register with kube9-server (default: 24 hours)
-- **serverUrl**: The kube9-server API endpoint (default: https://api.kube9.dev)
+- **serverUrl**: The kube9-server API endpoint (default: https://api.kube9.io)
 
 ## Examples
 
-### Custom Values File
+### Custom Image Tag
 
-Create a `custom-values.yaml` file:
+Deploy a specific image version:
+
+```bash
+helm install kube9-operator kube9/kube9-operator \
+  --namespace kube9-system \
+  --create-namespace \
+  --set image.tag=1.3.0
+```
+
+### Resource Tuning
+
+Create a `custom-values.yaml` file to adjust resource limits:
 
 ```yaml
-# Pro tier configuration
-apiKey: kdy_prod_YOUR_KEY_HERE
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "200m"
+  limits:
+    memory: "512Mi"
+    cpu: "400m"
+```
 
+Install with custom values:
+
+```bash
+helm install kube9-operator kube9/kube9-operator \
+  --namespace kube9-system \
+  --create-namespace \
+  --values custom-values.yaml
+```
+
+### Debug Logging
+
+Enable verbose logging for troubleshooting:
+
+```bash
+helm install kube9-operator kube9/kube9-operator \
+  --namespace kube9-system \
+  --create-namespace \
+  --set logLevel=debug
+```
+
+### Combined Custom Values
+
+Create a `custom-values.yaml` file with multiple overrides:
+
+```yaml
 # Custom resource limits
 resources:
   requests:
@@ -192,7 +193,7 @@ statusUpdateIntervalSeconds: 30
 
 # Custom image tag
 image:
-  tag: "1.0.0"
+  tag: "1.3.0"
 ```
 
 Install with custom values:
@@ -203,20 +204,6 @@ helm install kube9-operator kube9/kube9-operator \
   --create-namespace \
   --values custom-values.yaml
 ```
-
-### Upgrade from Free Tier to Pro Tier
-
-If you installed without an API key and want to upgrade to Pro tier:
-
-```bash
-# Get your API key from https://portal.kube9.dev
-helm upgrade kube9-operator kube9/kube9-operator \
-  --namespace kube9-system \
-  --set apiKey=kdy_prod_YOUR_KEY_HERE \
-  --reuse-values
-```
-
-The `--reuse-values` flag preserves your existing configuration while adding the API key.
 
 ### Upgrade to New Version
 
@@ -231,7 +218,7 @@ helm upgrade kube9-operator kube9/kube9-operator \
   --namespace kube9-system
 ```
 
-Existing configuration (including API key) will be preserved.
+Existing configuration will be preserved.
 
 ### Uninstall
 
@@ -244,7 +231,6 @@ helm uninstall kube9-operator --namespace kube9-system
 This removes:
 - The operator Deployment
 - ServiceAccount (if created by the chart)
-- Secret (if API key was provided)
 - RBAC resources (ClusterRole and ClusterRoleBinding, if created by the chart)
 
 **Note**: The status ConfigMap created by the operator will remain. You can manually delete it if desired:
@@ -279,7 +265,7 @@ kubectl logs -n kube9-system deployment/kube9-operator
 - Invalid configuration: Check values.yaml for syntax errors
 
 **Solutions**:
-- Verify image exists: `docker pull ghcr.io/alto9/kube9-operator:1.0.0`
+- Verify image exists: `docker pull ghcr.io/alto9/kube9-operator:1.3.0`
 - Check resource availability: `kubectl top nodes`
 - Review RBAC: `kubectl get clusterrole,clusterrolebinding | grep kube9-operator`
 - Validate Helm values: `helm template kube9-operator . --debug`
@@ -314,9 +300,9 @@ kubectl get role,rolebinding -n kube9-system | grep kube9-operator
 - Check operator logs for permission errors
 - Reinstall with `rbac.create: true` if needed
 
-### Pro Tier Registration Failing
+### Registration Failing
 
-**Symptoms**: Operator installed with API key but status shows `registered: false` or `mode: degraded`
+**Symptoms**: Status shows `registered: false` or `mode: degraded`
 
 **Diagnosis**:
 
@@ -326,25 +312,15 @@ kubectl logs -n kube9-system deployment/kube9-operator | grep -i registration
 
 # View status ConfigMap with error details
 kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.status}' | jq .
-
-# Verify Secret exists
-kubectl get secret kube9-operator-config -n kube9-system
-
-# Check API key format (first few characters only)
-kubectl get secret kube9-operator-config -n kube9-system -o jsonpath='{.data.apiKey}' | base64 -d | head -c 20
 ```
 
 **Common Causes**:
-- Invalid API key: Key may be incorrect or expired
-- Network connectivity: Cluster cannot reach api.kube9.dev
-- Secret not created: API key not properly stored
+- Network connectivity: Cluster cannot reach the kube9-server API
 - Server URL incorrect: Wrong `serverUrl` value
 
 **Solutions**:
-- Verify API key at [portal.kube9.dev](https://portal.kube9.dev)
-- Test connectivity: `kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- curl -v https://api.kube9.dev/health`
-- Check Secret exists and contains correct key
-- Verify `serverUrl` is set to `https://api.kube9.dev`
+- Test connectivity: `kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- curl -v https://api.kube9.io/health`
+- Verify `serverUrl` is set to `https://api.kube9.io`
 - Review operator logs for specific error messages
 
 ### RBAC Permission Issues
@@ -381,9 +357,8 @@ Complete reference of all configurable values:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `apiKey` | API key for Pro tier. Get from https://portal.kube9.dev. Leave empty for free tier. | `""` |
 | `image.repository` | Container image repository | `ghcr.io/alto9/kube9-operator` |
-| `image.tag` | Container image tag | `"1.0.0"` |
+| `image.tag` | Container image tag | `"1.3.0"` |
 | `image.pullPolicy` | Image pull policy (`IfNotPresent`, `Always`, `Never`) | `IfNotPresent` |
 | `resources.requests.memory` | Memory request for operator pod | `"1Gi"` |
 | `resources.requests.cpu` | CPU request for operator pod | `"500m"` |
@@ -395,12 +370,11 @@ Complete reference of all configurable values:
 | `logLevel` | Log level (`debug`, `info`, `warn`, `error`) | `"info"` |
 | `statusUpdateIntervalSeconds` | Status ConfigMap update interval (seconds) | `60` |
 | `reregistrationIntervalHours` | Re-registration interval with kube9-server (hours, Pro tier) | `24` |
-| `serverUrl` | kube9-server API URL (Pro tier) | `"https://api.kube9.dev"` |
+| `serverUrl` | kube9-server API URL | `"https://api.kube9.io"` |
 
 ## Additional Resources
 
 - **Documentation**: https://docs.kube9.dev
-- **Get API Key**: https://portal.kube9.dev
 - **VS Code Extension**: https://github.com/alto9/kube9-vscode
 - **Project Repository**: https://github.com/alto9/kube9-operator
 - **Helm Chart Best Practices**: https://helm.sh/docs/chart_best_practices/
