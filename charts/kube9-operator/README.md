@@ -81,6 +81,9 @@ The following table lists the configurable parameters and their default values:
 | `statusUpdateIntervalSeconds` | How often the operator updates the status ConfigMap (in seconds) | `60` |
 | `reregistrationIntervalHours` | How often the operator re-registers with kube9-server (in hours, Pro tier only) | `24` |
 | `serverUrl` | URL of the kube9-server API | `"https://api.kube9.io"` |
+| `metrics.intervals.clusterMetadata` | Cluster metadata collection interval (seconds). Default 86400 (24h), minimum 3600 (1h) | `86400` |
+| `metrics.intervals.resourceInventory` | Resource inventory collection interval (seconds). Default 21600 (6h), minimum 1800 (30m) | `21600` |
+| `metrics.intervals.resourceConfigurationPatterns` | Resource configuration patterns collection interval (seconds). Default 43200 (12h), minimum 3600 (1h) | `43200` |
 
 ### Configuration Details
 
@@ -123,6 +126,21 @@ The operator uses Guaranteed QoS for stable performance:
 - **statusUpdateIntervalSeconds**: How frequently the operator writes status to the ConfigMap (default: 60 seconds). Lower values provide more real-time status but increase API calls; higher values reduce API load but status may be slightly stale.
 - **reregistrationIntervalHours**: How often to re-register with kube9-server (default: 24 hours)
 - **serverUrl**: The kube9-server API endpoint (default: https://api.kube9.io)
+
+#### Metrics Collection Intervals (`metrics.intervals`)
+
+Controls how often the operator collects different types of metrics data. All values are in **seconds**. The operator enforces minimum intervals to prevent excessive API usage and cluster load.
+
+| Interval | Default | Minimum | Human-readable |
+|----------|---------|---------|----------------|
+| `clusterMetadata` | 86400 | 3600 | 24h / 1h |
+| `resourceInventory` | 21600 | 1800 | 6h / 30m |
+| `resourceConfigurationPatterns` | 43200 | 3600 | 12h / 1h |
+
+**Usage scenarios:**
+
+- **Production**: Use defaults. Balances freshness with API load and cluster impact.
+- **Testing/debugging**: Override with shorter intervals within the minimums to get faster feedback during development or troubleshooting.
 
 ## Examples
 
@@ -194,6 +212,18 @@ statusUpdateIntervalSeconds: 30
 # Custom image tag
 image:
   tag: "1.3.0"
+```
+
+### Testing/Debugging: Shorter Collection Intervals
+
+For faster feedback during development or troubleshooting, override metrics intervals with values at or above the minimums:
+
+```yaml
+metrics:
+  intervals:
+    clusterMetadata: 3600          # 1h (minimum)
+    resourceInventory: 1800       # 30m (minimum)
+    resourceConfigurationPatterns: 3600  # 1h (minimum)
 ```
 
 Install with custom values:
@@ -371,6 +401,9 @@ Complete reference of all configurable values:
 | `statusUpdateIntervalSeconds` | Status ConfigMap update interval (seconds) | `60` |
 | `reregistrationIntervalHours` | Re-registration interval with kube9-server (hours, Pro tier) | `24` |
 | `serverUrl` | kube9-server API URL | `"https://api.kube9.io"` |
+| `metrics.intervals.clusterMetadata` | Cluster metadata collection interval (seconds). Default 86400 (24h), minimum 3600 (1h) | `86400` |
+| `metrics.intervals.resourceInventory` | Resource inventory collection interval (seconds). Default 21600 (6h), minimum 1800 (30m) | `21600` |
+| `metrics.intervals.resourceConfigurationPatterns` | Resource configuration patterns collection interval (seconds). Default 43200 (12h), minimum 3600 (1h) | `43200` |
 
 ## Additional Resources
 
