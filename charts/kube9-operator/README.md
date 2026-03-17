@@ -84,6 +84,12 @@ The following table lists the configurable parameters and their default values:
 | `metrics.intervals.clusterMetadata` | Cluster metadata collection interval (seconds). Default 86400 (24h), minimum 3600 (1h) | `86400` |
 | `metrics.intervals.resourceInventory` | Resource inventory collection interval (seconds). Default 21600 (6h), minimum 1800 (30m) | `21600` |
 | `metrics.intervals.resourceConfigurationPatterns` | Resource configuration patterns collection interval (seconds). Default 43200 (12h), minimum 3600 (1h) | `43200` |
+| `events.persistence.enabled` | Enable PersistentVolume for event storage. When false, uses emptyDir (data lost on pod restart) | `true` |
+| `events.persistence.size` | PVC size for event database | `5Gi` |
+| `events.persistence.storageClassName` | Storage class for PVC. Empty uses cluster default | `""` |
+| `events.persistence.accessMode` | PVC access mode | `ReadWriteOnce` |
+| `events.retention.infoWarning` | Days to retain info/warning events | `7` |
+| `events.retention.errorCritical` | Days to retain error/critical events | `30` |
 
 ### Configuration Details
 
@@ -141,6 +147,35 @@ Controls how often the operator collects different types of metrics data. All va
 
 - **Production**: Use defaults. Balances freshness with API load and cluster impact.
 - **Testing/debugging**: Override with shorter intervals within the minimums to get faster feedback during development or troubleshooting.
+
+#### Event Storage and Retention (`events.*`)
+
+The operator stores Kubernetes events in a SQLite database for insights and dashboards. You can configure persistence and retention policies.
+
+**Persistence (`events.persistence`):**
+
+- **enabled** (default: `true`): When `true`, uses a PersistentVolumeClaim (PVC) so event data survives pod restarts. When `false`, uses `emptyDir`—data is lost when the pod restarts.
+- **size** (default: `5Gi`): Volume size for the event database.
+- **storageClassName** (default: `""`): Storage class for the PVC. Empty string uses the cluster default.
+- **accessMode**: `ReadWriteOnce` (single node read/write).
+
+**Retention (`events.retention`):**
+
+- **infoWarning** (default: `7`): Days to retain info and warning events.
+- **errorCritical** (default: `30`): Days to retain error and critical events.
+
+**PVC vs emptyDir behavior:**
+
+- **Persistence enabled**: A PVC is created; event data persists across pod restarts and upgrades.
+- **Persistence disabled**: Uses `emptyDir`; no PVC is created. Suitable for ephemeral or low-resource clusters where event history is not required.
+
+**Usage scenarios:**
+
+| Scenario | Persistence | Size | Retention (infoWarning / errorCritical) | Use case |
+|----------|-------------|------|----------------------------------------|----------|
+| High-event cluster | `true` | `10Gi` or more | `14` / `60` | Busy clusters needing longer history |
+| Low-resource cluster | `false` | N/A | `3` / `7` | Ephemeral or resource-constrained clusters |
+| Default | `true` | `5Gi` | `7` / `30` | General production use |
 
 ## Examples
 
@@ -233,6 +268,34 @@ helm install kube9-operator kube9/kube9-operator \
   --namespace kube9-system \
   --create-namespace \
   --values custom-values.yaml
+```
+
+### High-Event Cluster (Larger Size, Longer Retention)
+
+For clusters with high event volume that need extended history:
+
+```yaml
+events:
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: ""  # or specify e.g. "fast-ssd"
+  retention:
+    infoWarning: 14   # 2 weeks
+    errorCritical: 60  # 2 months
+```
+
+### Low-Resource Cluster (Ephemeral Storage, Shorter Retention)
+
+For resource-constrained or ephemeral clusters where event history is not critical:
+
+```yaml
+events:
+  persistence:
+    enabled: false  # Uses emptyDir; no PVC
+  retention:
+    infoWarning: 3
+    errorCritical: 7
 ```
 
 ### Upgrade to New Version
@@ -404,6 +467,12 @@ Complete reference of all configurable values:
 | `metrics.intervals.clusterMetadata` | Cluster metadata collection interval (seconds). Default 86400 (24h), minimum 3600 (1h) | `86400` |
 | `metrics.intervals.resourceInventory` | Resource inventory collection interval (seconds). Default 21600 (6h), minimum 1800 (30m) | `21600` |
 | `metrics.intervals.resourceConfigurationPatterns` | Resource configuration patterns collection interval (seconds). Default 43200 (12h), minimum 3600 (1h) | `43200` |
+| `events.persistence.enabled` | Enable PersistentVolume for event storage. When false, uses emptyDir | `true` |
+| `events.persistence.size` | PVC size for event database | `5Gi` |
+| `events.persistence.storageClassName` | Storage class for PVC. Empty uses cluster default | `""` |
+| `events.persistence.accessMode` | PVC access mode | `ReadWriteOnce` |
+| `events.retention.infoWarning` | Days to retain info/warning events | `7` |
+| `events.retention.errorCritical` | Days to retain error/critical events | `30` |
 
 ## Additional Resources
 
