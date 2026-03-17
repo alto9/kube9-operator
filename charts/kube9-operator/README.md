@@ -90,6 +90,11 @@ The following table lists the configurable parameters and their default values:
 | `events.persistence.accessMode` | PVC access mode | `ReadWriteOnce` |
 | `events.retention.infoWarning` | Days to retain info/warning events | `7` |
 | `events.retention.errorCritical` | Days to retain error/critical events | `30` |
+| `argocd.autoDetect` | Enable automatic ArgoCD detection | `true` |
+| `argocd.enabled` | Explicitly enable or disable ArgoCD integration (optional; bypasses CRD check when set) | - |
+| `argocd.namespace` | Custom namespace where ArgoCD is installed | `"argocd"` |
+| `argocd.selector` | Custom label selector for ArgoCD server deployment | `app.kubernetes.io/name=argocd-server` |
+| `argocd.detectionInterval` | Detection check interval in hours (valid range: 1–24) | `6` |
 
 ### Configuration Details
 
@@ -176,6 +181,31 @@ The operator stores Kubernetes events in a SQLite database for insights and dash
 | High-event cluster | `true` | `10Gi` or more | `14` / `60` | Busy clusters needing longer history |
 | Low-resource cluster | `false` | N/A | `3` / `7` | Ephemeral or resource-constrained clusters |
 | Default | `true` | `5Gi` | `7` / `30` | General production use |
+
+#### ArgoCD Configuration (`argocd.*`)
+
+The operator can detect and integrate with ArgoCD installations in your cluster. Use these settings when ArgoCD is in a non-standard namespace or you need custom detection behavior.
+
+- **autoDetect** (default: `true`): When enabled, the operator periodically detects ArgoCD by checking for the ArgoCD CRD and server deployment. Disable to turn off ArgoCD integration entirely.
+- **enabled** (optional): Explicitly enable or disable ArgoCD integration. When set, bypasses the CRD check—use when ArgoCD is installed but the CRD is not present or detection fails. Leave unset to use autoDetect behavior.
+- **namespace** (default: `"argocd"`): The namespace where ArgoCD is installed. Override when using a custom namespace (e.g. `gitops`).
+- **selector** (default: `app.kubernetes.io/name=argocd-server`): Kubernetes label selector used to find the ArgoCD server deployment. Override only if your ArgoCD uses different labels.
+- **detectionInterval** (default: `6`): How often the operator re-checks for ArgoCD installation changes, in hours. Valid range: 1–24 hours.
+
+**When to use `enabled` vs `autoDetect`:**
+
+- **autoDetect only (default)**: Operator checks for ArgoCD CRD and server deployment. Best for standard ArgoCD installs.
+- **enabled: true**: Bypasses CRD check; directly checks the namespace for the server deployment. Use when ArgoCD is installed without the CRD or auto-detection fails.
+- **autoDetect: false**: Disables ArgoCD integration. Use when you do not want the operator to detect or report ArgoCD status.
+
+**Usage scenarios:**
+
+| Scenario | Configuration | Use case |
+|----------|---------------|----------|
+| Default auto-detect | `autoDetect: true` (default) | Standard ArgoCD in `argocd` namespace |
+| Custom namespace | `namespace: "gitops"` | ArgoCD installed in `gitops` or other namespace |
+| Explicit enable | `enabled: true`, `namespace: "argocd"` | ArgoCD without CRD; bypass CRD check |
+| Disable ArgoCD | `autoDetect: false` | No ArgoCD integration desired |
 
 ## Examples
 
@@ -296,6 +326,56 @@ events:
   retention:
     infoWarning: 3
     errorCritical: 7
+```
+
+### ArgoCD Configuration Examples
+
+**Default auto-detect** (recommended for standard ArgoCD installs):
+
+```yaml
+argocd:
+  autoDetect: true  # default
+```
+
+**Custom namespace** (e.g. ArgoCD in `gitops`):
+
+```yaml
+argocd:
+  autoDetect: true
+  namespace: "gitops"
+```
+
+**Explicit enable** (ArgoCD without CRD; bypasses CRD check):
+
+```yaml
+argocd:
+  enabled: true
+  namespace: "argocd"
+```
+
+**Disable ArgoCD integration**:
+
+```yaml
+argocd:
+  autoDetect: false
+```
+
+**Custom detection interval** (check every 12 hours instead of default 6):
+
+```yaml
+argocd:
+  autoDetect: true
+  detectionInterval: 12  # valid range: 1–24 hours
+```
+
+Install with ArgoCD overrides:
+
+```bash
+helm install kube9-operator kube9/kube9-operator \
+  --namespace kube9-system \
+  --create-namespace \
+  --set argocd.namespace=gitops \
+  --set argocd.detectionInterval=12
 ```
 
 ### Upgrade to New Version
@@ -473,6 +553,11 @@ Complete reference of all configurable values:
 | `events.persistence.accessMode` | PVC access mode | `ReadWriteOnce` |
 | `events.retention.infoWarning` | Days to retain info/warning events | `7` |
 | `events.retention.errorCritical` | Days to retain error/critical events | `30` |
+| `argocd.autoDetect` | Enable automatic ArgoCD detection | `true` |
+| `argocd.enabled` | Explicitly enable or disable ArgoCD integration (optional; bypasses CRD check when set) | - |
+| `argocd.namespace` | Custom namespace where ArgoCD is installed | `"argocd"` |
+| `argocd.selector` | Custom label selector for ArgoCD server deployment | `app.kubernetes.io/name=argocd-server` |
+| `argocd.detectionInterval` | Detection check interval in hours (valid range: 1–24) | `6` |
 
 ## Additional Resources
 
