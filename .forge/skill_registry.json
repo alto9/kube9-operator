@@ -15,7 +15,7 @@
       "script_path": ".cursor/skills/fetch-url/scripts/fetch-url.js",
       "usage": "node .cursor/skills/fetch-url/scripts/fetch-url.js \"<url>\" --timeout 20 --max-chars 24000",
       "primary_consumers": [
-        "visionary",
+        "product_owner",
         "architect",
         "planner",
         "runtime",
@@ -33,7 +33,7 @@
       "retag": "lint-test",
       "script_path": ".cursor/skills/lint-test/scripts/lint-test.js",
       "usage": "node .cursor/skills/lint-test/scripts/lint-test.js",
-      "primary_consumers": ["build", "build_development", "review"]
+      "primary_consumers": ["engineer", "quality_assurance"]
     },
     {
       "id": "unit-test",
@@ -42,7 +42,7 @@
       "retag": "unit-test",
       "script_path": ".cursor/skills/unit-test/scripts/unit-test.js",
       "usage": "node .cursor/skills/unit-test/scripts/unit-test.js",
-      "primary_consumers": ["build", "build_development", "review"]
+      "primary_consumers": ["engineer", "quality_assurance"]
     },
     {
       "id": "integration-test",
@@ -51,7 +51,7 @@
       "retag": "integration-test",
       "script_path": ".cursor/skills/integration-test/scripts/integration-test.js",
       "usage": "node .cursor/skills/integration-test/scripts/integration-test.js",
-      "primary_consumers": ["build", "build_development", "review"]
+      "primary_consumers": ["engineer", "quality_assurance"]
     },
     {
       "id": "create-feature-branch",
@@ -60,7 +60,7 @@
       "retag": "branch-create",
       "script_path": ".cursor/skills/create-feature-branch/scripts/create-feature-branch.js",
       "usage": "node .cursor/skills/create-feature-branch/scripts/create-feature-branch.js <branch-name> [root-branch]",
-      "primary_consumers": ["refine", "build", "build_development"]
+      "primary_consumers": ["tech_writer", "engineer"]
     },
     {
       "id": "commit",
@@ -69,7 +69,7 @@
       "retag": "commit-code",
       "script_path": ".cursor/skills/commit/scripts/commit.js",
       "usage": "node .cursor/skills/commit/scripts/commit.js -m \"<message>\"",
-      "primary_consumers": ["build_wrap"]
+      "primary_consumers": ["engineer"]
     },
     {
       "id": "push-branch",
@@ -78,7 +78,7 @@
       "retag": "branch-push",
       "script_path": ".cursor/skills/push-branch/scripts/push-branch.js",
       "usage": "node .cursor/skills/push-branch/scripts/push-branch.js",
-      "primary_consumers": ["build_wrap"]
+      "primary_consumers": ["engineer"]
     },
     {
       "id": "pull-milestones",
@@ -87,7 +87,7 @@
       "retag": "github-milestones",
       "script_path": ".cursor/skills/pull-milestones/scripts/pull-milestones.js",
       "usage": "node .cursor/skills/pull-milestones/scripts/pull-milestones.js [owner/repo] --state open --format json [--compact]",
-      "primary_consumers": ["planner", "refine", "build"]
+      "primary_consumers": ["planner", "tech_writer", "engineer"]
     },
     {
       "id": "pull-milestone-issues",
@@ -96,18 +96,14 @@
       "retag": "github-milestone-issues",
       "script_path": ".cursor/skills/pull-milestone-issues/scripts/pull-milestone-issues.js",
       "usage": "node .cursor/skills/pull-milestone-issues/scripts/pull-milestone-issues.js <milestone-id> [owner/repo] --state open --format json [--compact]",
-      "primary_consumers": ["planner", "refine", "build"]
+      "primary_consumers": ["planner", "tech_writer", "engineer"]
     }
   ],
   "agent_assignments": {
     "planner": ["fetch-url", "pull-milestones", "pull-milestone-issues"],
-    "refine": ["create-feature-branch", "pull-milestone-issues"],
-    "build": ["create-feature-branch", "lint-test", "unit-test", "integration-test", "pull-milestone-issues"],
-    "build_development": ["create-feature-branch", "lint-test", "unit-test", "integration-test", "pull-milestone-issues"],
-    "build_wrap": ["commit", "push-branch"],
-    "review_implementation": [],
-    "review_security": [],
-    "review_wrap": []
+    "tech_writer": ["create-feature-branch", "pull-milestone-issues"],
+    "engineer": ["create-feature-branch", "lint-test", "unit-test", "integration-test", "commit", "push-branch"],
+    "quality_assurance": []
   },
   "command_assignments": {
     "architect-this": [],
