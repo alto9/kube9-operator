@@ -11,7 +11,7 @@ rules:
   nonResourceURLs: ["/version"]
 # Read cluster metadata and resources (for data collection: cluster metadata and resource inventory)
 - apiGroups: [""]
-  resources: ["nodes", "namespaces", "pods"]
+  resources: ["nodes", "namespaces", "pods", "configmaps"]
   verbs: ["get", "list", "watch"]
 # Read Kubernetes events (for event monitoring and recording)
 - apiGroups: [""]
