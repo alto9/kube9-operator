@@ -15,7 +15,7 @@ function createMockCtx(pods: unknown[]): AssessmentRunContext {
     logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() } as never,
     runId: 'test-run',
     mode: 'full',
-  } as AssessmentRunContext;
+  } as unknown as AssessmentRunContext;
 }
 
 describe('runAsNonRootCheck', () => {
