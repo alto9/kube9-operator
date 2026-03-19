@@ -1,3 +1,18 @@
+# [1.4.0](https://github.com/alto9/kube9-operator/compare/v1.3.0...v1.4.0) (2026-03-19)
+
+
+### Bug Fixes
+
+* **assessment:** resolve TypeScript errors in security check test mocks ([fa522b8](https://github.com/alto9/kube9-operator/commit/fa522b8151581f82e9b036de3e0818ae2590edc4))
+* **tests:** resolve TypeScript and integration test failures ([5b652b0](https://github.com/alto9/kube9-operator/commit/5b652b002565de46227caff1614bd41e61006340))
+
+
+### Features
+
+* **assessment:** implement security context validation checks ([71d7ac1](https://github.com/alto9/kube9-operator/commit/71d7ac1653bb92fdf4de0cb8d871da4f401e1c4f))
+* **security:** implement RBAC policy analysis checks ([62e50ee](https://github.com/alto9/kube9-operator/commit/62e50ee96f883be7b2c2fd2aae8edf704288e5ff)), closes [#74](https://github.com/alto9/kube9-operator/issues/74)
+* **security:** implement secret management audit checks ([#75](https://github.com/alto9/kube9-operator/issues/75)) ([082d91e](https://github.com/alto9/kube9-operator/commit/082d91eafa6cecfc15824f89dea00b3904559cc4))
+
 # [1.3.0](https://github.com/alto9/kube9-operator/compare/v1.2.1...v1.3.0) (2026-02-17)
 
 
