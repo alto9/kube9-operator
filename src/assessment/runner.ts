@@ -108,6 +108,9 @@ function toStorageResult(
     duration_ms: result.durationMs ?? 0,
     assessed_at: assessedAt,
     error_code: result.errorCode,
+    object_kind: result.objectKind ?? undefined,
+    object_namespace: result.objectNamespace ?? undefined,
+    object_name: result.objectName ?? undefined,
   };
 }
 
