@@ -59,5 +59,8 @@
     "operator",
     "kube9"
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "overrides": {
+    "@isaacs/brace-expansion": "5.0.1"
+  }
 }
