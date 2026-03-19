@@ -14,13 +14,13 @@ function createMockContext(overrides: Partial<{
         listRoleBindingForAllNamespaces:
           overrides.listRoleBindingForAllNamespaces ?? (async () => ({ items: [] })),
       },
-    } as never,
-    config: {} as never,
+    },
+    config: {},
     timeoutMs: 30000,
-    logger: { error: vi.fn(), info: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+    logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
     runId: 'test-run',
-    mode: 'full' as never,
-  };
+    mode: 'full',
+  } as unknown as AssessmentRunContext;
 }
 
 describe('rbac-cluster-admin-misuse', () => {
