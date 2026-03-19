@@ -35,6 +35,16 @@ function createMockCheck(overrides: Partial<AssessmentCheck> = {}): AssessmentCh
 const mockKubernetes = {
   coreApi: {
     listPodForAllNamespaces: async () => ({ items: [] }),
+    listConfigMapForAllNamespaces: async () => ({ items: [] }),
+  },
+  appsApi: {
+    listDeploymentForAllNamespaces: async () => ({ items: [] }),
+    listStatefulSetForAllNamespaces: async () => ({ items: [] }),
+  },
+  apiextensionsApi: {
+    readCustomResourceDefinition: async () => ({
+      metadata: { name: 'externalsecrets.external-secrets.io' },
+    }),
   },
   rbacApi: {
     listClusterRole: async () => ({ items: [] }),
@@ -181,13 +191,16 @@ describe('AssessmentRunner (integration)', () => {
       pillarFilter: Pillar.Security,
     });
 
-    expect(checks.length).toBeGreaterThanOrEqual(5);
+    expect(checks.length).toBeGreaterThanOrEqual(8);
     const ids = checks.map((c) => c.id).sort();
     expect(ids).toContain('security.run-as-non-root');
     expect(ids).toContain('security.privileged-containers');
     expect(ids).toContain('security.capabilities-validation');
     expect(ids).toContain('security.rbac-wildcard-permissions');
     expect(ids).toContain('security.rbac-cluster-admin-misuse');
+    expect(ids).toContain('security.secrets-in-configmaps');
+    expect(ids).toContain('security.external-secrets-usage');
+    expect(ids).toContain('security.hardcoded-secrets');
   });
 
   it('security checks run successfully with empty cluster (all pass)', async () => {
@@ -210,12 +223,12 @@ describe('AssessmentRunner (integration)', () => {
 
     expect(record.run_id).toBe('run-security-pillar');
     expect(record.state).toBe('completed');
-    expect(record.total_checks).toBe(5);
-    expect(record.passed_checks).toBe(5);
+    expect(record.total_checks).toBe(8);
+    expect(record.passed_checks).toBe(8);
     expect(record.failed_checks).toBe(0);
 
     const history = storage.queryHistory({ filters: { run_id: 'run-security-pillar' } });
-    expect(history).toHaveLength(5);
+    expect(history).toHaveLength(8);
     expect(history.every((h) => h.status === 'passing')).toBe(true);
   });
 });

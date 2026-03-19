@@ -92,4 +92,24 @@ describe('privilegedContainersCheck', () => {
 
     expect(result.status).toBe(CheckStatus.Passing);
   });
+
+  it('fails when initContainer has privileged: true', async () => {
+    const pods = [
+      {
+        metadata: { namespace: 'default', name: 'init-priv-pod' },
+        spec: {
+          containers: [{ name: 'main' }],
+          initContainers: [
+            { name: 'init', securityContext: { privileged: true } },
+          ],
+        },
+      },
+    ];
+    const ctx = createMockCtx(pods);
+    const result = await privilegedContainersCheck.run(ctx);
+
+    expect(result.status).toBe(CheckStatus.Failing);
+    expect(result.message).toContain('default/init-priv-pod');
+    expect(result.message).toContain('init');
+  });
 });

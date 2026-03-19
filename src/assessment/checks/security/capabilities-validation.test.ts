@@ -137,4 +137,28 @@ describe('capabilitiesValidationCheck', () => {
 
     expect(result.status).toBe(CheckStatus.Passing);
   });
+
+  it('fails when initContainer adds SYS_ADMIN without drop ALL', async () => {
+    const pods = [
+      {
+        metadata: { namespace: 'default', name: 'init-cap-pod' },
+        spec: {
+          containers: [{ name: 'main', securityContext: { capabilities: { drop: ['ALL'] } } }],
+          initContainers: [
+            {
+              name: 'init',
+              securityContext: { capabilities: { add: ['SYS_ADMIN'] } },
+            },
+          ],
+        },
+      },
+    ];
+    const ctx = createMockCtx(pods);
+    const result = await capabilitiesValidationCheck.run(ctx);
+
+    expect(result.status).toBe(CheckStatus.Failing);
+    expect(result.message).toContain('default/init-cap-pod');
+    expect(result.message).toContain('init');
+    expect(result.message).toContain('SYS_ADMIN');
+  });
 });

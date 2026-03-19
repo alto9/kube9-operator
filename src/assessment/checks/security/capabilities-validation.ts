@@ -74,7 +74,11 @@ export const capabilitiesValidationCheck: AssessmentCheck = {
     for (const pod of items) {
       const ns = pod.metadata?.namespace ?? '';
       const podName = pod.metadata?.name ?? 'unknown';
-      const containers = pod.spec?.containers ?? [];
+      const containers = [
+        ...(pod.spec?.containers ?? []),
+        ...(pod.spec?.initContainers ?? []),
+        ...(pod.spec?.ephemeralContainers ?? []),
+      ];
 
       for (const container of containers) {
         const { hasDangerous, dangerous } = hasDangerousCapability(

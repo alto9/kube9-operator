@@ -119,4 +119,22 @@ describe('runAsNonRootCheck', () => {
 
     expect(result.status).toBe(CheckStatus.Passing);
   });
+
+  it('fails when initContainer lacks runAsNonRoot', async () => {
+    const pods = [
+      {
+        metadata: { namespace: 'default', name: 'init-pod' },
+        spec: {
+          containers: [{ name: 'main', securityContext: { runAsNonRoot: true } }],
+          initContainers: [{ name: 'init' }],
+        },
+      },
+    ];
+    const ctx = createMockCtx(pods);
+    const result = await runAsNonRootCheck.run(ctx);
+
+    expect(result.status).toBe(CheckStatus.Failing);
+    expect(result.message).toContain('default/init-pod');
+    expect(result.message).toContain('init');
+  });
 });

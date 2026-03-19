@@ -77,13 +77,15 @@ export const hardcodedSecretsCheck: AssessmentCheck = {
         .map((v) => `${v.namespace}/${v.workload} (${v.container})`)
         .join(', ');
 
+      const firstKind = violations[0]?.kind ?? 'Deployment';
+
       return {
         checkId: 'security.hardcoded-secrets',
         checkName: 'Hardcoded Secrets in Workloads',
         pillar: Pillar.Security,
         status: CheckStatus.Failing,
         severity: Severity.High,
-        objectKind: 'Deployment',
+        objectKind: firstKind,
         message: `Found ${violations.length} workload(s) with likely hardcoded secrets: ${summary}`,
         remediation: REMEDIATION,
       };

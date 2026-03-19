@@ -22,7 +22,11 @@ function isRunAsNonRootCompliant(
   const podName = pod.metadata?.name ?? 'unknown';
 
   const podRunAsNonRoot = pod.spec?.securityContext?.runAsNonRoot;
-  const containers = pod.spec?.containers ?? [];
+  const containers = [
+    ...(pod.spec?.containers ?? []),
+    ...(pod.spec?.initContainers ?? []),
+    ...(pod.spec?.ephemeralContainers ?? []),
+  ];
 
   for (const container of containers) {
     const containerRunAsNonRoot = container.securityContext?.runAsNonRoot;
