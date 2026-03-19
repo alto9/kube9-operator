@@ -81,6 +81,9 @@ export const AssessmentCheckResultSchema = z.object({
   duration_ms: z.number().int().nonnegative(),
   assessed_at: z.string().datetime(),
   error_code: z.string().optional(),
+  object_kind: z.string().optional(),
+  object_namespace: z.string().optional(),
+  object_name: z.string().optional(),
 });
 
 export const AssessmentRunRecordSchema = z.object({

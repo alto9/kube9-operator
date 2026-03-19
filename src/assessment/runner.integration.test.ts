@@ -7,8 +7,9 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
 import { DatabaseManager } from '../database/manager.js';
 import { SchemaManager } from '../database/schema.js';
 import { AssessmentRepository } from '../database/assessment-repository.js';
-import { AssessmentRunner } from './runner.js';
+import { AssessmentRunner, resolveChecksForRun } from './runner.js';
 import { getRegistry, resetRegistry } from './registry.js';
+import { bootstrapAssessmentRegistry } from './bootstrap.js';
 import type { AssessmentCheck, AssessmentCheckResult } from './types.js';
 import { Pillar, CheckStatus, AssessmentRunMode } from './types.js';
 import { existsSync, rmSync, mkdirSync } from 'fs';
@@ -31,7 +32,11 @@ function createMockCheck(overrides: Partial<AssessmentCheck> = {}): AssessmentCh
   };
 }
 
-const mockKubernetes = {} as never;
+const mockKubernetes = {
+  coreApi: {
+    listPodForAllNamespaces: async () => ({ items: [] }),
+  },
+} as never;
 const mockConfig = {
   serverUrl: 'https://test',
   logLevel: 'info',
@@ -159,5 +164,50 @@ describe('AssessmentRunner (integration)', () => {
     expect(passing).toBeTruthy();
     expect(failing).toBeTruthy();
     expect(failing?.message).toBe('RBAC misconfigured');
+  });
+
+  it('security pillar checks are discoverable and runnable via resolveChecksForRun', async () => {
+    resetRegistry();
+    bootstrapAssessmentRegistry();
+
+    const checks = resolveChecksForRun({
+      mode: AssessmentRunMode.Pillar,
+      pillarFilter: Pillar.Security,
+    });
+
+    expect(checks.length).toBeGreaterThanOrEqual(3);
+    const ids = checks.map((c) => c.id).sort();
+    expect(ids).toContain('security.run-as-non-root');
+    expect(ids).toContain('security.privileged-containers');
+    expect(ids).toContain('security.capabilities-validation');
+  });
+
+  it('security checks run successfully with empty cluster (all pass)', async () => {
+    resetRegistry();
+    bootstrapAssessmentRegistry();
+
+    const storage = new AssessmentRepository();
+    const runner = new AssessmentRunner({
+      kubernetes: mockKubernetes,
+      config: mockConfig,
+      logger: mockLogger,
+      storage,
+    });
+
+    const record = await runner.run({
+      runId: 'run-security-pillar',
+      mode: AssessmentRunMode.Pillar,
+      pillarFilter: Pillar.Security,
+    });
+
+    expect(record.run_id).toBe('run-security-pillar');
+    expect(record.state).toBe('completed');
+    expect(record.total_checks).toBe(3);
+    expect(record.passed_checks).toBe(3);
+    expect(record.failed_checks).toBe(0);
+
+    const history = storage.queryHistory({ filters: { run_id: 'run-security-pillar' } });
+    expect(history).toHaveLength(3);
+    expect(history.every((h) => h.status === 'passing')).toBe(true);
   });
 });
