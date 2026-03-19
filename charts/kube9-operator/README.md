@@ -17,7 +17,6 @@ The operator is installed via Helm and requires no ingress - all communication i
 - **Deployment**: The kube9-operator pod running in your cluster
 - **ServiceAccount**: Service account for the operator (if `serviceAccount.create` is true)
 - **RBAC Resources**: ClusterRole and ClusterRoleBinding for necessary permissions (if `rbac.create` is true)
-- **Secret**: Kubernetes Secret containing API key (only if `apiKey` is provided)
 - **ConfigMap**: Status ConfigMap written by the operator (created automatically by the operator)
 
 ## Prerequisites
@@ -36,9 +35,7 @@ helm repo add kube9 https://charts.kube9.io
 helm repo update
 ```
 
-### Install Free Tier (No API Key)
-
-The operator can run in free tier mode without an API key. This enables basic features and status exposure.
+### Install the Operator
 
 ```bash
 helm install kube9-operator kube9/kube9-operator \
@@ -49,30 +46,7 @@ helm install kube9-operator kube9/kube9-operator \
 After installation, the operator will:
 - Start in "operated" (free tier) mode
 - Create a status ConfigMap for the VS Code extension to read
-- **Not** attempt to connect to kube9-server
 - Provide basic cluster status information
-
-### Install Pro Tier (With API Key)
-
-To enable Pro tier features including AI-powered insights and advanced dashboards, install with an API key.
-
-1. **Get your API key** from [portal.kube9.dev](https://portal.kube9.dev)
-
-2. **Install with API key:**
-
-```bash
-helm install kube9-operator kube9/kube9-operator \
-  --set apiKey=kdy_prod_YOUR_KEY_HERE \
-  --namespace kube9-system \
-  --create-namespace
-```
-
-After installation, the operator will:
-- Start in "enabled" (pro tier) mode
-- Store the API key securely in a Kubernetes Secret
-- Register with kube9-server
-- Create a status ConfigMap indicating pro tier status
-- Enable Pro features in the VS Code extension
 
 ### Verify Installation
 
@@ -93,9 +67,8 @@ The following table lists the configurable parameters and their default values:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `apiKey` | API key for Pro tier. Get from https://portal.kube9.dev. Leave empty for free tier. | `""` |
 | `image.repository` | Container image repository | `ghcr.io/alto9/kube9-operator` |
-| `image.tag` | Container image tag | `"1.0.0"` |
+| `image.tag` | Container image tag | `"1.3.0"` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
 | `resources.requests.memory` | Memory request for operator pod | `"1Gi"` |
 | `resources.requests.cpu` | CPU request for operator pod | `"500m"` |
@@ -107,17 +80,23 @@ The following table lists the configurable parameters and their default values:
 | `logLevel` | Log level for the operator. Options: `debug`, `info`, `warn`, `error` | `"info"` |
 | `statusUpdateIntervalSeconds` | How often the operator updates the status ConfigMap (in seconds) | `60` |
 | `reregistrationIntervalHours` | How often the operator re-registers with kube9-server (in hours, Pro tier only) | `24` |
-| `serverUrl` | URL of the kube9-server API (Pro tier only) | `"https://api.kube9.dev"` |
+| `serverUrl` | URL of the kube9-server API | `"https://api.kube9.io"` |
+| `metrics.intervals.clusterMetadata` | Cluster metadata collection interval (seconds). Default 86400 (24h), minimum 3600 (1h) | `86400` |
+| `metrics.intervals.resourceInventory` | Resource inventory collection interval (seconds). Default 21600 (6h), minimum 1800 (30m) | `21600` |
+| `metrics.intervals.resourceConfigurationPatterns` | Resource configuration patterns collection interval (seconds). Default 43200 (12h), minimum 3600 (1h) | `43200` |
+| `events.persistence.enabled` | Enable PersistentVolume for event storage. When false, uses emptyDir (data lost on pod restart) | `true` |
+| `events.persistence.size` | PVC size for event database | `5Gi` |
+| `events.persistence.storageClassName` | Storage class for PVC. Empty uses cluster default | `""` |
+| `events.persistence.accessMode` | PVC access mode | `ReadWriteOnce` |
+| `events.retention.infoWarning` | Days to retain info/warning events | `7` |
+| `events.retention.errorCritical` | Days to retain error/critical events | `30` |
+| `argocd.autoDetect` | Enable automatic ArgoCD detection | `true` |
+| `argocd.enabled` | Explicitly enable or disable ArgoCD integration (optional; bypasses CRD check when set) | - |
+| `argocd.namespace` | Custom namespace where ArgoCD is installed | `"argocd"` |
+| `argocd.selector` | Custom label selector for ArgoCD server deployment | `app.kubernetes.io/name=argocd-server` |
+| `argocd.detectionInterval` | Detection check interval in hours (valid range: 1–24) | `6` |
 
 ### Configuration Details
-
-#### API Key (`apiKey`)
-
-- **Required for Pro tier**: Set this to enable Pro features
-- **Optional for free tier**: Leave empty to run in free tier mode
-- **Security**: Stored securely in a Kubernetes Secret, never logged or exposed
-- **Format**: API keys typically start with `kdy_prod_` or `kdy_test_`
-- **Obtain from**: [portal.kube9.dev](https://portal.kube9.dev)
 
 #### Image Configuration (`image.*`)
 
@@ -153,28 +132,133 @@ The operator uses Guaranteed QoS for stable performance:
 - **warn**: Only warnings and errors
 - **error**: Only errors
 
-#### Status Updates (`statusUpdateIntervalSeconds`)
+#### Status Intervals and Server URL
 
-- How frequently the operator writes status to the ConfigMap
-- Default: 60 seconds
-- Lower values provide more real-time status but increase API calls
-- Higher values reduce API load but status may be slightly stale
-
-#### Pro Tier Settings
-
+- **statusUpdateIntervalSeconds**: How frequently the operator writes status to the ConfigMap (default: 60 seconds). Lower values provide more real-time status but increase API calls; higher values reduce API load but status may be slightly stale.
 - **reregistrationIntervalHours**: How often to re-register with kube9-server (default: 24 hours)
-- **serverUrl**: The kube9-server API endpoint (default: https://api.kube9.dev)
+- **serverUrl**: The kube9-server API endpoint (default: https://api.kube9.io)
+
+#### Metrics Collection Intervals (`metrics.intervals`)
+
+Controls how often the operator collects different types of metrics data. All values are in **seconds**. The operator enforces minimum intervals to prevent excessive API usage and cluster load.
+
+| Interval | Default | Minimum | Human-readable |
+|----------|---------|---------|----------------|
+| `clusterMetadata` | 86400 | 3600 | 24h / 1h |
+| `resourceInventory` | 21600 | 1800 | 6h / 30m |
+| `resourceConfigurationPatterns` | 43200 | 3600 | 12h / 1h |
+
+**Usage scenarios:**
+
+- **Production**: Use defaults. Balances freshness with API load and cluster impact.
+- **Testing/debugging**: Override with shorter intervals within the minimums to get faster feedback during development or troubleshooting.
+
+#### Event Storage and Retention (`events.*`)
+
+The operator stores Kubernetes events in a SQLite database for insights and dashboards. You can configure persistence and retention policies.
+
+**Persistence (`events.persistence`):**
+
+- **enabled** (default: `true`): When `true`, uses a PersistentVolumeClaim (PVC) so event data survives pod restarts. When `false`, uses `emptyDir`—data is lost when the pod restarts.
+- **size** (default: `5Gi`): Volume size for the event database.
+- **storageClassName** (default: `""`): Storage class for the PVC. Empty string uses the cluster default.
+- **accessMode**: `ReadWriteOnce` (single node read/write).
+
+**Retention (`events.retention`):**
+
+- **infoWarning** (default: `7`): Days to retain info and warning events.
+- **errorCritical** (default: `30`): Days to retain error and critical events.
+
+**PVC vs emptyDir behavior:**
+
+- **Persistence enabled**: A PVC is created; event data persists across pod restarts and upgrades.
+- **Persistence disabled**: Uses `emptyDir`; no PVC is created. Suitable for ephemeral or low-resource clusters where event history is not required.
+
+**Usage scenarios:**
+
+| Scenario | Persistence | Size | Retention (infoWarning / errorCritical) | Use case |
+|----------|-------------|------|----------------------------------------|----------|
+| High-event cluster | `true` | `10Gi` or more | `14` / `60` | Busy clusters needing longer history |
+| Low-resource cluster | `false` | N/A | `3` / `7` | Ephemeral or resource-constrained clusters |
+| Default | `true` | `5Gi` | `7` / `30` | General production use |
+
+#### ArgoCD Configuration (`argocd.*`)
+
+The operator can detect and integrate with ArgoCD installations in your cluster. Use these settings when ArgoCD is in a non-standard namespace or you need custom detection behavior.
+
+- **autoDetect** (default: `true`): When enabled, the operator periodically detects ArgoCD by checking for the ArgoCD CRD and server deployment. Disable to turn off ArgoCD integration entirely.
+- **enabled** (optional): Explicitly enable or disable ArgoCD integration. When set, bypasses the CRD check—use when ArgoCD is installed but the CRD is not present or detection fails. Leave unset to use autoDetect behavior.
+- **namespace** (default: `"argocd"`): The namespace where ArgoCD is installed. Override when using a custom namespace (e.g. `gitops`).
+- **selector** (default: `app.kubernetes.io/name=argocd-server`): Kubernetes label selector used to find the ArgoCD server deployment. Override only if your ArgoCD uses different labels.
+- **detectionInterval** (default: `6`): How often the operator re-checks for ArgoCD installation changes, in hours. Valid range: 1–24 hours.
+
+**When to use `enabled` vs `autoDetect`:**
+
+- **autoDetect only (default)**: Operator checks for ArgoCD CRD and server deployment. Best for standard ArgoCD installs.
+- **enabled: true**: Bypasses CRD check; directly checks the namespace for the server deployment. Use when ArgoCD is installed without the CRD or auto-detection fails.
+- **autoDetect: false**: Disables ArgoCD integration. Use when you do not want the operator to detect or report ArgoCD status.
+
+**Usage scenarios:**
+
+| Scenario | Configuration | Use case |
+|----------|---------------|----------|
+| Default auto-detect | `autoDetect: true` (default) | Standard ArgoCD in `argocd` namespace |
+| Custom namespace | `namespace: "gitops"` | ArgoCD installed in `gitops` or other namespace |
+| Explicit enable | `enabled: true`, `namespace: "argocd"` | ArgoCD without CRD; bypass CRD check |
+| Disable ArgoCD | `autoDetect: false` | No ArgoCD integration desired |
 
 ## Examples
 
-### Custom Values File
+### Custom Image Tag
 
-Create a `custom-values.yaml` file:
+Deploy a specific image version:
+
+```bash
+helm install kube9-operator kube9/kube9-operator \
+  --namespace kube9-system \
+  --create-namespace \
+  --set image.tag=1.3.0
+```
+
+### Resource Tuning
+
+Create a `custom-values.yaml` file to adjust resource limits:
 
 ```yaml
-# Pro tier configuration
-apiKey: kdy_prod_YOUR_KEY_HERE
+resources:
+  requests:
+    memory: "256Mi"
+    cpu: "200m"
+  limits:
+    memory: "512Mi"
+    cpu: "400m"
+```
 
+Install with custom values:
+
+```bash
+helm install kube9-operator kube9/kube9-operator \
+  --namespace kube9-system \
+  --create-namespace \
+  --values custom-values.yaml
+```
+
+### Debug Logging
+
+Enable verbose logging for troubleshooting:
+
+```bash
+helm install kube9-operator kube9/kube9-operator \
+  --namespace kube9-system \
+  --create-namespace \
+  --set logLevel=debug
+```
+
+### Combined Custom Values
+
+Create a `custom-values.yaml` file with multiple overrides:
+
+```yaml
 # Custom resource limits
 resources:
   requests:
@@ -192,7 +276,19 @@ statusUpdateIntervalSeconds: 30
 
 # Custom image tag
 image:
-  tag: "1.0.0"
+  tag: "1.3.0"
+```
+
+### Testing/Debugging: Shorter Collection Intervals
+
+For faster feedback during development or troubleshooting, override metrics intervals with values at or above the minimums:
+
+```yaml
+metrics:
+  intervals:
+    clusterMetadata: 3600          # 1h (minimum)
+    resourceInventory: 1800       # 30m (minimum)
+    resourceConfigurationPatterns: 3600  # 1h (minimum)
 ```
 
 Install with custom values:
@@ -204,19 +300,83 @@ helm install kube9-operator kube9/kube9-operator \
   --values custom-values.yaml
 ```
 
-### Upgrade from Free Tier to Pro Tier
+### High-Event Cluster (Larger Size, Longer Retention)
 
-If you installed without an API key and want to upgrade to Pro tier:
+For clusters with high event volume that need extended history:
 
-```bash
-# Get your API key from https://portal.kube9.dev
-helm upgrade kube9-operator kube9/kube9-operator \
-  --namespace kube9-system \
-  --set apiKey=kdy_prod_YOUR_KEY_HERE \
-  --reuse-values
+```yaml
+events:
+  persistence:
+    enabled: true
+    size: 10Gi
+    storageClassName: ""  # or specify e.g. "fast-ssd"
+  retention:
+    infoWarning: 14   # 2 weeks
+    errorCritical: 60  # 2 months
 ```
 
-The `--reuse-values` flag preserves your existing configuration while adding the API key.
+### Low-Resource Cluster (Ephemeral Storage, Shorter Retention)
+
+For resource-constrained or ephemeral clusters where event history is not critical:
+
+```yaml
+events:
+  persistence:
+    enabled: false  # Uses emptyDir; no PVC
+  retention:
+    infoWarning: 3
+    errorCritical: 7
+```
+
+### ArgoCD Configuration Examples
+
+**Default auto-detect** (recommended for standard ArgoCD installs):
+
+```yaml
+argocd:
+  autoDetect: true  # default
+```
+
+**Custom namespace** (e.g. ArgoCD in `gitops`):
+
+```yaml
+argocd:
+  autoDetect: true
+  namespace: "gitops"
+```
+
+**Explicit enable** (ArgoCD without CRD; bypasses CRD check):
+
+```yaml
+argocd:
+  enabled: true
+  namespace: "argocd"
+```
+
+**Disable ArgoCD integration**:
+
+```yaml
+argocd:
+  autoDetect: false
+```
+
+**Custom detection interval** (check every 12 hours instead of default 6):
+
+```yaml
+argocd:
+  autoDetect: true
+  detectionInterval: 12  # valid range: 1–24 hours
+```
+
+Install with ArgoCD overrides:
+
+```bash
+helm install kube9-operator kube9/kube9-operator \
+  --namespace kube9-system \
+  --create-namespace \
+  --set argocd.namespace=gitops \
+  --set argocd.detectionInterval=12
+```
 
 ### Upgrade to New Version
 
@@ -231,7 +391,7 @@ helm upgrade kube9-operator kube9/kube9-operator \
   --namespace kube9-system
 ```
 
-Existing configuration (including API key) will be preserved.
+Existing configuration will be preserved.
 
 ### Uninstall
 
@@ -244,7 +404,6 @@ helm uninstall kube9-operator --namespace kube9-system
 This removes:
 - The operator Deployment
 - ServiceAccount (if created by the chart)
-- Secret (if API key was provided)
 - RBAC resources (ClusterRole and ClusterRoleBinding, if created by the chart)
 
 **Note**: The status ConfigMap created by the operator will remain. You can manually delete it if desired:
@@ -279,7 +438,7 @@ kubectl logs -n kube9-system deployment/kube9-operator
 - Invalid configuration: Check values.yaml for syntax errors
 
 **Solutions**:
-- Verify image exists: `docker pull ghcr.io/alto9/kube9-operator:1.0.0`
+- Verify image exists: `docker pull ghcr.io/alto9/kube9-operator:1.3.0`
 - Check resource availability: `kubectl top nodes`
 - Review RBAC: `kubectl get clusterrole,clusterrolebinding | grep kube9-operator`
 - Validate Helm values: `helm template kube9-operator . --debug`
@@ -314,9 +473,9 @@ kubectl get role,rolebinding -n kube9-system | grep kube9-operator
 - Check operator logs for permission errors
 - Reinstall with `rbac.create: true` if needed
 
-### Pro Tier Registration Failing
+### Registration Failing
 
-**Symptoms**: Operator installed with API key but status shows `registered: false` or `mode: degraded`
+**Symptoms**: Status shows `registered: false` or `mode: degraded`
 
 **Diagnosis**:
 
@@ -326,25 +485,15 @@ kubectl logs -n kube9-system deployment/kube9-operator | grep -i registration
 
 # View status ConfigMap with error details
 kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.status}' | jq .
-
-# Verify Secret exists
-kubectl get secret kube9-operator-config -n kube9-system
-
-# Check API key format (first few characters only)
-kubectl get secret kube9-operator-config -n kube9-system -o jsonpath='{.data.apiKey}' | base64 -d | head -c 20
 ```
 
 **Common Causes**:
-- Invalid API key: Key may be incorrect or expired
-- Network connectivity: Cluster cannot reach api.kube9.dev
-- Secret not created: API key not properly stored
+- Network connectivity: Cluster cannot reach the kube9-server API
 - Server URL incorrect: Wrong `serverUrl` value
 
 **Solutions**:
-- Verify API key at [portal.kube9.dev](https://portal.kube9.dev)
-- Test connectivity: `kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- curl -v https://api.kube9.dev/health`
-- Check Secret exists and contains correct key
-- Verify `serverUrl` is set to `https://api.kube9.dev`
+- Test connectivity: `kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- curl -v https://api.kube9.io/health`
+- Verify `serverUrl` is set to `https://api.kube9.io`
 - Review operator logs for specific error messages
 
 ### RBAC Permission Issues
@@ -381,9 +530,8 @@ Complete reference of all configurable values:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `apiKey` | API key for Pro tier. Get from https://portal.kube9.dev. Leave empty for free tier. | `""` |
 | `image.repository` | Container image repository | `ghcr.io/alto9/kube9-operator` |
-| `image.tag` | Container image tag | `"1.0.0"` |
+| `image.tag` | Container image tag | `"1.3.0"` |
 | `image.pullPolicy` | Image pull policy (`IfNotPresent`, `Always`, `Never`) | `IfNotPresent` |
 | `resources.requests.memory` | Memory request for operator pod | `"1Gi"` |
 | `resources.requests.cpu` | CPU request for operator pod | `"500m"` |
@@ -395,12 +543,25 @@ Complete reference of all configurable values:
 | `logLevel` | Log level (`debug`, `info`, `warn`, `error`) | `"info"` |
 | `statusUpdateIntervalSeconds` | Status ConfigMap update interval (seconds) | `60` |
 | `reregistrationIntervalHours` | Re-registration interval with kube9-server (hours, Pro tier) | `24` |
-| `serverUrl` | kube9-server API URL (Pro tier) | `"https://api.kube9.dev"` |
+| `serverUrl` | kube9-server API URL | `"https://api.kube9.io"` |
+| `metrics.intervals.clusterMetadata` | Cluster metadata collection interval (seconds). Default 86400 (24h), minimum 3600 (1h) | `86400` |
+| `metrics.intervals.resourceInventory` | Resource inventory collection interval (seconds). Default 21600 (6h), minimum 1800 (30m) | `21600` |
+| `metrics.intervals.resourceConfigurationPatterns` | Resource configuration patterns collection interval (seconds). Default 43200 (12h), minimum 3600 (1h) | `43200` |
+| `events.persistence.enabled` | Enable PersistentVolume for event storage. When false, uses emptyDir | `true` |
+| `events.persistence.size` | PVC size for event database | `5Gi` |
+| `events.persistence.storageClassName` | Storage class for PVC. Empty uses cluster default | `""` |
+| `events.persistence.accessMode` | PVC access mode | `ReadWriteOnce` |
+| `events.retention.infoWarning` | Days to retain info/warning events | `7` |
+| `events.retention.errorCritical` | Days to retain error/critical events | `30` |
+| `argocd.autoDetect` | Enable automatic ArgoCD detection | `true` |
+| `argocd.enabled` | Explicitly enable or disable ArgoCD integration (optional; bypasses CRD check when set) | - |
+| `argocd.namespace` | Custom namespace where ArgoCD is installed | `"argocd"` |
+| `argocd.selector` | Custom label selector for ArgoCD server deployment | `app.kubernetes.io/name=argocd-server` |
+| `argocd.detectionInterval` | Detection check interval in hours (valid range: 1–24) | `6` |
 
 ## Additional Resources
 
 - **Documentation**: https://docs.kube9.dev
-- **Get API Key**: https://portal.kube9.dev
 - **VS Code Extension**: https://github.com/alto9/kube9-vscode
 - **Project Repository**: https://github.com/alto9/kube9-operator
 - **Helm Chart Best Practices**: https://helm.sh/docs/chart_best_practices/
