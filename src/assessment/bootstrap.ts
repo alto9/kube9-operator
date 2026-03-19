@@ -7,11 +7,17 @@
 
 import type { AssessmentCheck } from './types.js';
 import { getRegistry } from './registry.js';
+import {
+  runAsNonRootCheck,
+  privilegedContainersCheck,
+  capabilitiesValidationCheck,
+} from './checks/security/index.js';
 
 /** Built-in checks to register at bootstrap (extend as checks are implemented) */
 const BUILT_IN_CHECKS: AssessmentCheck[] = [
-  // Placeholder: add built-in checks here as they are implemented
-  // e.g., security.pod-security-context, reliability.pod-disruption-budget, etc.
+  runAsNonRootCheck,
+  privilegedContainersCheck,
+  capabilitiesValidationCheck,
 ];
 
 /**
