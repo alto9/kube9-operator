@@ -11,6 +11,8 @@ import {
   runAsNonRootCheck,
   privilegedContainersCheck,
   capabilitiesValidationCheck,
+  rbacWildcardPermissionsCheck,
+  rbacClusterAdminMisuseCheck,
 } from './checks/security/index.js';
 
 /** Built-in checks to register at bootstrap (extend as checks are implemented) */
@@ -18,6 +20,8 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   runAsNonRootCheck,
   privilegedContainersCheck,
   capabilitiesValidationCheck,
+  rbacWildcardPermissionsCheck,
+  rbacClusterAdminMisuseCheck,
 ];
 
 /**

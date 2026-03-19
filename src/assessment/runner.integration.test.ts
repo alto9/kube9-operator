@@ -36,6 +36,12 @@ const mockKubernetes = {
   coreApi: {
     listPodForAllNamespaces: async () => ({ items: [] }),
   },
+  rbacApi: {
+    listClusterRole: async () => ({ items: [] }),
+    listRoleForAllNamespaces: async () => ({ items: [] }),
+    listClusterRoleBinding: async () => ({ items: [] }),
+    listRoleBindingForAllNamespaces: async () => ({ items: [] }),
+  },
 } as never;
 const mockConfig = {
   serverUrl: 'https://test',
@@ -175,11 +181,13 @@ describe('AssessmentRunner (integration)', () => {
       pillarFilter: Pillar.Security,
     });
 
-    expect(checks.length).toBeGreaterThanOrEqual(3);
+    expect(checks.length).toBeGreaterThanOrEqual(5);
     const ids = checks.map((c) => c.id).sort();
     expect(ids).toContain('security.run-as-non-root');
     expect(ids).toContain('security.privileged-containers');
     expect(ids).toContain('security.capabilities-validation');
+    expect(ids).toContain('security.rbac-wildcard-permissions');
+    expect(ids).toContain('security.rbac-cluster-admin-misuse');
   });
 
   it('security checks run successfully with empty cluster (all pass)', async () => {
@@ -202,12 +210,12 @@ describe('AssessmentRunner (integration)', () => {
 
     expect(record.run_id).toBe('run-security-pillar');
     expect(record.state).toBe('completed');
-    expect(record.total_checks).toBe(3);
-    expect(record.passed_checks).toBe(3);
+    expect(record.total_checks).toBe(5);
+    expect(record.passed_checks).toBe(5);
     expect(record.failed_checks).toBe(0);
 
     const history = storage.queryHistory({ filters: { run_id: 'run-security-pillar' } });
-    expect(history).toHaveLength(3);
+    expect(history).toHaveLength(5);
     expect(history.every((h) => h.status === 'passing')).toBe(true);
   });
 });

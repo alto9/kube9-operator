@@ -34,5 +34,9 @@ rules:
 - apiGroups: ["apps"]
   resources: ["deployments"]
   verbs: ["get", "list"]
+# RBAC policy analysis (assessment checks)
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterroles", "roles", "clusterrolebindings", "rolebindings"]
+  verbs: ["get", "list"]
 {{- end }}
 
