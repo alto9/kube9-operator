@@ -280,35 +280,31 @@ helm uninstall kube9-operator --namespace kube9-system
 
 ### Local Development with Minikube
 
-The recommended workflow for developing kube9-operator is to run it locally connected to a minikube cluster. This provides the fastest iteration cycle without Docker rebuilds.
-
-#### Quick Start
+Bring up a cluster from **[kube9-localcluster](https://github.com/alto9/kube9-localcluster)** (this repo does not create clusters). Export its kubeconfig, then run the operator on your host against that API:
 
 ```bash
-# Step 1: Ensure minikube is running (run this helper script)
-./scripts/dev-minikube.sh
+# From kube9-localcluster (sibling clone recommended)
+./scripts/start.sh
+export KUBECONFIG="$PWD/out/kubeconfig"
 
-# Step 2: Run operator locally (connects to minikube via kubeconfig)
-npm run dev:watch  # For auto-reload on file changes
-# Or: npm run dev   # For single run
+# From kube9-operator
+npm run dev:watch   # or npm run dev
 ```
 
-**Important:** 
-- minikube must be started separately before running the operator. The `dev-minikube.sh` script will start it if it's not running.
-- Environment variables are set with defaults in the npm scripts. To override, set them in your shell or create a `.env` file (see `.env.example`).
+**Important:** Set `KUBECONFIG` to the file kube9-localcluster writes (`out/kubeconfig` by default). Use the same Minikube profile in both places (`MINIKUBE_PROFILE`, default `kube9-demo`). Environment variables for the operator process are set via npm scripts or `.env` (see `.env.example`).
 
 The operator will:
 - Run on your local machine (not in a pod)
-- Connect to minikube via kubeconfig (from `~/.kube/config`)
+- Connect via `kubectl` using your current `KUBECONFIG`
 - Auto-reload on code changes (with `dev:watch` via nodemon)
-- Create/update ConfigMaps in the minikube cluster
+- Create/update ConfigMaps in the target cluster
 
 #### Prerequisites for Local Development
 
-1. **Install minikube**: https://minikube.sigs.k8s.io/docs/start/
-2. **Start minikube**: `minikube start` (or use `./scripts/dev-minikube.sh`)
-3. **Verify kubectl context**: `kubectl config current-context` should show "minikube"
-4. **Environment variables**: Defaults are set in npm scripts. To customize, set `SERVER_URL` and other vars in your shell or create a `.env` file (see `.env.example`)
+1. **Cluster**: [kube9-localcluster](https://github.com/alto9/kube9-localcluster) `scripts/start.sh` (or any cluster you trust)
+2. **`export KUBECONFIG=.../kube9-localcluster/out/kubeconfig`** (or equivalent)
+3. **`kubectl config current-context`** should match the cluster you intend (e.g. `kube9-demo` when using the localcluster profile)
+4. **Environment variables**: Defaults are set in npm scripts. Override `SERVER_URL`, `LOG_LEVEL`, etc. in your shell or `.env` (see `.env.example`)
 
 #### Environment Variables
 
@@ -326,28 +322,30 @@ cp .env.example .env
 
 #### Development Workflow
 
-**Local Development (Recommended for daily work):**
+**Operator process on host (daily iteration):**
 ```bash
-# Step 1: Ensure minikube is running
-./scripts/dev-minikube.sh  # Starts minikube if not running
-
-# Step 2: Run operator locally with auto-reload
+export KUBECONFIG=/path/to/kube9-localcluster/out/kubeconfig
 npm run dev:watch
-
-# Edit code → changes auto-reload → test immediately
 ```
 
-**Note:** `npm run dev` runs once (no auto-reload). Use `npm run dev:watch` for development with auto-reload.
+**In-cluster build (before PR):** builds a local image, loads it into the Minikube node for `MINIKUBE_PROFILE` (default `kube9-demo`), and installs/upgrades via Helm:
 
-**In-Cluster Testing (Recommended before PR):**
 ```bash
-# Build Docker image, load into minikube, and deploy
+export KUBECONFIG=/path/to/kube9-localcluster/out/kubeconfig
 npm run deploy:minikube
 
-# Verify deployment
 kubectl get pods -n kube9-system
 kubectl logs -n kube9-system deployment/kube9-operator
 ```
+
+**Two ways to get the operator into the cluster:**
+
+| Flow | Use case |
+|------|----------|
+| `kube9-localcluster` → `./scripts/populate.sh with-operator` | Predictable demo / extension testing (Helm chart from disk + demo workloads; not necessarily your latest local image) |
+| This repo → `npm run deploy:minikube` | Iterate on **local** operator code with `kube9-operator:local` image |
+
+Use the same `KUBECONFIG` and `MINIKUBE_PROFILE` for both.
 
 #### Available npm Scripts
 
@@ -356,25 +354,22 @@ kubectl logs -n kube9-system deployment/kube9-operator
 | `npm run dev` | Run operator locally once (connects to minikube) |
 | `npm run dev:watch` | Run operator locally with auto-reload on file changes |
 | `npm run docker:build` | Build Docker image locally |
-| `npm run docker:load:minikube` | Build and load image into minikube |
+| `npm run docker:load:minikube` | Build and load image into minikube (`MINIKUBE_PROFILE`, default `kube9-demo`) |
 | `npm run deploy:minikube` | Build, load, and deploy operator to minikube |
 | `npm run clean:minikube` | Uninstall operator from minikube |
 
 #### Helper Scripts
 
-- **`scripts/dev-minikube.sh`**: Checks minikube setup and provides development commands
-- **`scripts/deploy-minikube.sh`**: Builds image, loads into minikube, and deploys with Helm
+- **`scripts/deploy-minikube.sh`**: Builds image, loads into minikube, deploys with Helm (requires running cluster; honors `MINIKUBE_PROFILE`, default `kube9-demo`)
+- **`scripts/test-helm-chart.sh`**: Lint/template/package the chart; if [kind](https://kind.sigs.k8s.io/) is installed, creates a disposable cluster (`kube9-test`), installs/upgrades/uninstalls the operator, then deletes the cluster
 
 #### Troubleshooting
 
-**Operator can't connect to minikube:**
+**Operator can't connect to the cluster:**
 ```bash
-# Verify minikube is running
-minikube status
-
-# Verify kubectl context
-kubectl config current-context  # Should be "minikube"
-kubectl config use-context minikube  # If not set
+minikube status -p "${MINIKUBE_PROFILE:-kube9-demo}"
+kubectl config current-context
+echo "$KUBECONFIG"
 ```
 
 **Image not found when deploying:**
@@ -664,17 +659,16 @@ This project uses [Forge](https://github.com/alto9/forge) for structured context
 ### Quick Start for Contributors
 
 ```bash
-# Fork and clone
+# Fork and clone kube9-operator (and clone kube9-localcluster beside it)
 git clone https://github.com/alto9/kube9-operator.git
 cd kube9-operator
-
-# Install dependencies
 npm install
 
-# Start minikube
-./scripts/dev-minikube.sh
+# In another terminal: start local cluster (see kube9-localcluster README)
+cd ../kube9-localcluster && ./scripts/start.sh && export KUBECONFIG="$PWD/out/kubeconfig"
 
 # Run operator locally with auto-reload
+cd ../kube9-operator
 npm run dev:watch
 ```
 

@@ -43,11 +43,12 @@ This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDU
    npm install
    ```
 
-3. **Start minikube (if not running):**
+3. **Start a local cluster** (this repo does not create clusters — use [kube9-localcluster](https://github.com/alto9/kube9-localcluster)):
    ```bash
-   ./scripts/dev-minikube.sh
-   # Or manually:
-   minikube start
+   cd ../kube9-localcluster
+   ./scripts/start.sh
+   export KUBECONFIG="$PWD/out/kubeconfig"
+   cd ../kube9-operator
    ```
 
 4. **Run operator locally:**
@@ -159,13 +160,13 @@ kube9-operator/
 
 ### Local Development
 
-**Recommended workflow:** Run operator locally connected to minikube
+**Recommended workflow:** Run operator locally against a cluster from [kube9-localcluster](https://github.com/alto9/kube9-localcluster)
 
 ```bash
-# Terminal 1: Ensure minikube is running
-./scripts/dev-minikube.sh
+# From kube9-localcluster: create cluster, then in the same shell you use for dev:
+#   export KUBECONFIG=/path/to/kube9-localcluster/out/kubeconfig
 
-# Terminal 2: Run operator locally with auto-reload
+# From kube9-operator: run with auto-reload
 npm run dev:watch
 ```
 

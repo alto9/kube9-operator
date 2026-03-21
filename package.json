@@ -21,7 +21,7 @@
     "test:watch": "vitest",
     "test:ui": "vitest --ui",
     "docker:build": "docker build -t kube9-operator:local .",
-    "docker:load:minikube": "npm run docker:build && minikube image load kube9-operator:local",
+    "docker:load:minikube": "npm run docker:build && minikube -p \"${MINIKUBE_PROFILE:-kube9-demo}\" image load kube9-operator:local",
     "deploy:minikube": "./scripts/deploy-minikube.sh",
     "test:minikube": "echo 'Run integration tests against minikube cluster' && exit 1",
     "clean:minikube": "helm uninstall kube9-operator --namespace kube9-system 2>/dev/null || true",

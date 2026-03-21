@@ -39,31 +39,45 @@
 - Old images are retained for rollback purposes
 - Image tags match Git release tags
 
-## Local Development
+## Local Testing & Development
 
-### Minikube Deployment
-- **Command**: `npm run deploy:minikube`
-- **Purpose**: Local development and testing environment
-- **Process**: 
-  1. Builds Docker image locally
-  2. Loads image into Minikube
-  3. Deploys Helm chart with development overrides
+Procedures below map to scripts in `scripts/` and npm scripts in `package.json`. Use the path that matches what you are validating.
 
-### Development Configuration
-- Helm values can be overridden for local development
-- Dev server URL can be configured via values override
-- Local image builds use development tags
-- Supports hot-reload and debugging configurations
+### Quick reference
 
-### Development Workflow
-1. Make code changes
-2. Build Docker image locally
-3. Load into Minikube: `minikube image load ghcr.io/alto9/kube9-operator:dev`
-4. Deploy with Helm: `helm upgrade --install kube9-operator ./charts/kube9-operator -f dev-values.yaml`
-5. Test operator functionality
-6. Iterate on changes
+| Goal | What to run | Notes |
+|------|-------------|--------|
+| Fast feedback (no cluster) | `npm test`, `npm run test:unit`, `npm run test:integration` | Vitest; `test:integration` covers database-heavy paths locally (no Kubernetes required) |
+| Disposable cluster + Helm E2E | `./scripts/test-helm-chart.sh` | Phases 1–4 always (lint, template, package). Phase 5 creates **kind** cluster `kube9-test`, install/upgrade/uninstall, then deletes cluster. Skips Phase 5 if `kind` is missing. Requires `jq` for status ConfigMap assertions in Phase 5 |
+| Local Minikube for dev / demos | **[kube9-localcluster](https://github.com/alto9/kube9-localcluster)** `scripts/start.sh`, `scripts/populate.sh` | Creates profile `kube9-demo` (default), writes `out/kubeconfig`. This repo does **not** create clusters. |
+| In-cluster image on Minikube | `npm run deploy:minikube` → `scripts/deploy-minikube.sh` | After localcluster is running: builds `kube9-operator:local`, `minikube -p $MINIKUBE_PROFILE image load`, Helm with local image overrides. `MINIKUBE_PROFILE` defaults to `kube9-demo`. |
+| Operator process on host + API access | `export KUBECONFIG=.../kube9-localcluster/out/kubeconfig` then `npm run dev` or `npm run dev:watch` | Cluster must already exist; use kube9-localcluster to create it |
+| Uninstall from current context | `npm run clean:minikube` | `helm uninstall kube9-operator -n kube9-system` |
 
-### Environment Variables
-- Development can override default values via Helm values
-- Local testing can use different database paths
-- Debug logging enabled via `logLevel: debug`
+### Minikube profile and kubectl context
+
+`scripts/deploy-minikube.sh` passes **`MINIKUBE_PROFILE`** (default **`kube9-demo`**) to all `minikube` subcommands. Set **`KUBECONFIG`** to the file from kube9-localcluster (`out/kubeconfig`) so `kubectl` and `helm` target the same cluster as `minikube image load`.
+
+- **Scenario / extension demos** — In kube9-localcluster, `./scripts/populate.sh with-operator` installs the chart from disk plus demo workloads (chart default image is often GHCR, not your local build).
+- **Local operator image iteration** — From this repo, `npm run deploy:minikube` after `export KUBECONFIG` to that cluster.
+
+### Script details
+
+**`scripts/deploy-minikube.sh`** — Prerequisites: `docker`, `minikube`, `helm`, `kubectl`; cluster must already be running (e.g. kube9-localcluster). Produces image `kube9-operator:local`, loads into the Minikube node for `MINIKUBE_PROFILE`, deploys `./charts/kube9-operator` with local image overrides.
+
+**`scripts/test-helm-chart.sh`** — Chart path `charts/kube9-operator`; release `kube9-operator`, namespace `kube9-system`. Uses published chart defaults for the in-cluster image during Phase 5 (pull from registry per `values.yaml`), not the local Docker tag.
+
+**`npm run test:minikube`** — Placeholder in `package.json` (not a working harness); prefer `./scripts/test-helm-chart.sh` or `deploy:minikube` for cluster validation.
+
+### kube9-localcluster (related repo)
+
+Shared local cluster for **kube9-vscode** and **kube9-operator** development: [kube9-localcluster](https://github.com/alto9/kube9-localcluster).
+
+- **Start**: `./scripts/start.sh` — profile `kube9-demo`, writes `out/kubeconfig`.
+- **Operator scenario**: `./scripts/populate.sh with-operator` — sibling `kube9-operator` for chart path unless `KUBE9_OPERATOR_ROOT` is set; Helm defaults often pull GHCR, not `kube9-operator:local`.
+- **Local image**: From this repo, `export KUBECONFIG` to `out/kubeconfig` and run `npm run deploy:minikube`.
+
+### Environment variables (local)
+
+- Host-run dev: `SERVER_URL`, `LOG_LEVEL` (npm scripts set defaults; see `.env.example`).
+- In-cluster: override via Helm values (e.g. `logLevel: debug`) on install/upgrade.

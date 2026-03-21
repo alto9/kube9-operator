@@ -1,8 +1,14 @@
 #!/bin/bash
 # Deploy kube9-operator to minikube cluster for in-cluster testing
 # Builds Docker image, loads into minikube, and deploys with Helm
+#
+# Prerequisites: cluster already running (e.g. from kube9-localcluster). Set KUBECONFIG
+# to your local cluster kubeconfig. MINIKUBE_PROFILE must match that cluster (default: kube9-demo).
 
 set -e
+
+MINIKUBE_PROFILE="${MINIKUBE_PROFILE:-kube9-demo}"
+mk() { minikube -p "${MINIKUBE_PROFILE}" "$@"; }
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -38,7 +44,7 @@ info() {
 }
 
 echo "=========================================="
-echo "Deploying kube9-operator to minikube"
+echo "Deploying kube9-operator to minikube (profile: ${MINIKUBE_PROFILE})"
 echo "=========================================="
 echo ""
 
@@ -69,13 +75,13 @@ if ! command -v kubectl &> /dev/null; then
 fi
 success "kubectl is installed"
 
-# Check if minikube is running
-if ! minikube status &> /dev/null; then
-    error "minikube cluster is not running"
-    echo "  Start minikube: minikube start"
+# Check if minikube is running for this profile
+if ! mk status &> /dev/null; then
+    error "minikube cluster is not running (profile: ${MINIKUBE_PROFILE})"
+    echo "  Create a local cluster from kube9-localcluster, or: minikube start -p ${MINIKUBE_PROFILE}"
     exit 1
 fi
-success "minikube cluster is running"
+success "minikube cluster is running (profile: ${MINIKUBE_PROFILE})"
 
 echo ""
 
@@ -98,7 +104,7 @@ NEW_IMAGE_ID=$(docker images "${IMAGE_NAME}:${IMAGE_TAG}" --format "{{.ID}}" | h
 info "New image ID: ${NEW_IMAGE_ID}"
 
 # Get the current image ID from minikube (if it exists)
-CURRENT_IMAGE_ID=$(minikube ssh "docker images ${IMAGE_NAME}:${IMAGE_TAG} --format '{{.ID}}'" 2>/dev/null | head -n 1 || echo "")
+CURRENT_IMAGE_ID=$(mk ssh "docker images ${IMAGE_NAME}:${IMAGE_TAG} --format '{{.ID}}'" 2>/dev/null | head -n 1 || echo "")
 
 if [ -n "$CURRENT_IMAGE_ID" ] && [ "$CURRENT_IMAGE_ID" != "$NEW_IMAGE_ID" ]; then
     warning "Different image already exists in minikube (${CURRENT_IMAGE_ID}), replacing..."
@@ -112,16 +118,16 @@ if [ -n "$CURRENT_IMAGE_ID" ] && [ "$CURRENT_IMAGE_ID" != "$NEW_IMAGE_ID" ]; the
     
     # Remove old containers and image from minikube
     info "Removing old image from minikube..."
-    minikube ssh "docker rm -f \$(docker ps -a -q --filter ancestor=${CURRENT_IMAGE_ID}) 2>/dev/null; docker rmi -f ${CURRENT_IMAGE_ID}" &> /dev/null || true
+    mk ssh "docker rm -f \$(docker ps -a -q --filter ancestor=${CURRENT_IMAGE_ID}) 2>/dev/null; docker rmi -f ${CURRENT_IMAGE_ID}" &> /dev/null || true
     sleep 2
 fi
 
 # Load the new image
-if minikube image load "${IMAGE_NAME}:${IMAGE_TAG}"; then
+if mk image load "${IMAGE_NAME}:${IMAGE_TAG}"; then
     success "Image loaded into minikube"
     
     # Verify the image was loaded correctly
-    LOADED_IMAGE_ID=$(minikube ssh "docker images ${IMAGE_NAME}:${IMAGE_TAG} --format '{{.ID}}'" 2>/dev/null | head -n 1)
+    LOADED_IMAGE_ID=$(mk ssh "docker images ${IMAGE_NAME}:${IMAGE_TAG} --format '{{.ID}}'" 2>/dev/null | head -n 1)
     if [ "$LOADED_IMAGE_ID" = "$NEW_IMAGE_ID" ]; then
         success "Verified image ID matches: ${LOADED_IMAGE_ID}"
     else
