@@ -18,6 +18,9 @@ import {
   hardcodedSecretsCheck,
 } from './checks/security/index.js';
 import {
+  replicaCountsCheck,
+  spreadAntiAffinityCheck,
+  podDisruptionBudgetsCheck,
   resourceRequestsCheck,
   resourceLimitsCheck,
 } from './checks/reliability/index.js';
@@ -32,6 +35,9 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   secretsInConfigMapsCheck,
   externalSecretsUsageCheck,
   hardcodedSecretsCheck,
+  replicaCountsCheck,
+  spreadAntiAffinityCheck,
+  podDisruptionBudgetsCheck,
   resourceRequestsCheck,
   resourceLimitsCheck,
 ];

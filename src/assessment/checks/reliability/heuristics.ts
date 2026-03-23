@@ -1,16 +1,28 @@
 /**
- * Resource-check heuristics for reliability assessments.
+ * High availability heuristics for reliability checks.
  *
- * Determines which workloads are subject to resource requests/limits validation.
- * Default: all containers in user namespaces; system namespaces excluded.
+ * Determines which workloads are considered "HA-relevant" for replica,
+ * spread/anti-affinity, and PDB checks.
  *
- * Extend via label kube9.io/resource-exempt="true" to skip checks.
+ * How to extend:
+ * - Allowlist: label kube9.io/ha-required="true" marks workload as HA-relevant
+ * - Denylist: label kube9.io/ha-exempt="true" skips HA checks for that workload
+ * - Namespace: system namespaces (kube-system, etc.) are excluded by default
+ *
+ * Resource checks (requests/limits) use separate heuristics:
+ * - Label kube9.io/resource-exempt="true" skips resource validation
  */
+
+/** Label to mark a workload as requiring HA checks */
+export const HA_REQUIRED_LABEL = 'kube9.io/ha-required';
+
+/** Label to exempt a workload from HA checks */
+export const HA_EXEMPT_LABEL = 'kube9.io/ha-exempt';
 
 /** Label to exempt a workload from resource requests/limits checks */
 export const RESOURCE_EXEMPT_LABEL = 'kube9.io/resource-exempt';
 
-/** Namespaces excluded from resource checks (system / infra) */
+/** Namespaces excluded from HA and resource checks (system / infra) */
 const EXCLUDED_NAMESPACES = new Set([
   'kube-system',
   'kube-public',
@@ -19,11 +31,22 @@ const EXCLUDED_NAMESPACES = new Set([
   'calico-system',
 ]);
 
+/** Default minimum replicas for HA workloads */
+export const MIN_HA_REPLICAS = 2;
+
 export interface WorkloadMetadata {
   namespace: string;
   name: string;
   kind: string;
   labels?: Record<string, string>;
+}
+
+/**
+ * Check if a workload is exempt from HA checks (denylist).
+ */
+export function isHaExempt(metadata: WorkloadMetadata): boolean {
+  const labels = metadata.labels ?? {};
+  return labels[HA_EXEMPT_LABEL] === 'true' || labels[HA_EXEMPT_LABEL] === '1';
 }
 
 /** Check if a workload is exempt from resource checks */
@@ -32,9 +55,31 @@ export function isResourceExempt(metadata: WorkloadMetadata): boolean {
   return labels[RESOURCE_EXEMPT_LABEL] === 'true' || labels[RESOURCE_EXEMPT_LABEL] === '1';
 }
 
-/** Check if a namespace is excluded from resource checks */
+/**
+ * Check if a workload's namespace is excluded from HA checks.
+ */
 export function isNamespaceExcluded(namespace: string): boolean {
   return EXCLUDED_NAMESPACES.has(namespace);
+}
+
+/**
+ * Check if a workload should be considered HA-relevant (allowlist + heuristics).
+ * Returns true if:
+ * - Label kube9.io/ha-required=true, OR
+ * - Not exempt, not in excluded namespace, and kind is Deployment/StatefulSet
+ */
+export function isHaRelevant(metadata: WorkloadMetadata): boolean {
+  if (isHaExempt(metadata)) {
+    return false;
+  }
+  if (isNamespaceExcluded(metadata.namespace)) {
+    return false;
+  }
+  const labels = metadata.labels ?? {};
+  if (labels[HA_REQUIRED_LABEL] === 'true' || labels[HA_REQUIRED_LABEL] === '1') {
+    return true;
+  }
+  return metadata.kind === 'Deployment' || metadata.kind === 'StatefulSet';
 }
 
 /** Check if a workload should be validated for resource requests/limits */
