@@ -23,6 +23,7 @@ import {
   podDisruptionBudgetsCheck,
   resourceRequestsCheck,
   resourceLimitsCheck,
+  livenessReadinessProbesCheck,
 } from './checks/reliability/index.js';
 
 /** Built-in checks to register at bootstrap (extend as checks are implemented) */
@@ -40,6 +41,7 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   podDisruptionBudgetsCheck,
   resourceRequestsCheck,
   resourceLimitsCheck,
+  livenessReadinessProbesCheck,
 ];
 
 /**
