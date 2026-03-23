@@ -24,6 +24,7 @@ import {
   resourceRequestsCheck,
   resourceLimitsCheck,
   livenessReadinessProbesCheck,
+  backupDrSignalsCheck,
 } from './checks/reliability/index.js';
 
 /** Built-in checks to register at bootstrap (extend as checks are implemented) */
@@ -42,6 +43,7 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   resourceRequestsCheck,
   resourceLimitsCheck,
   livenessReadinessProbesCheck,
+  backupDrSignalsCheck,
 ];
 
 /**

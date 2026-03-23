@@ -48,6 +48,7 @@ const mockKubernetes = {
     readCustomResourceDefinition: async () => ({
       metadata: { name: 'externalsecrets.external-secrets.io' },
     }),
+    listCustomResourceDefinition: async () => ({ body: { items: [] }, items: [] }),
   },
   rbacApi: {
     listClusterRole: async () => ({ items: [] }),
