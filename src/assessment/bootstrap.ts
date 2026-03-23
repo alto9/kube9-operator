@@ -21,6 +21,8 @@ import {
   replicaCountsCheck,
   spreadAntiAffinityCheck,
   podDisruptionBudgetsCheck,
+  resourceRequestsCheck,
+  resourceLimitsCheck,
 } from './checks/reliability/index.js';
 
 /** Built-in checks to register at bootstrap (extend as checks are implemented) */
@@ -36,6 +38,8 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   replicaCountsCheck,
   spreadAntiAffinityCheck,
   podDisruptionBudgetsCheck,
+  resourceRequestsCheck,
+  resourceLimitsCheck,
 ];
 
 /**
