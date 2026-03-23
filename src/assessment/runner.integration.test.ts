@@ -41,6 +41,9 @@ const mockKubernetes = {
     listDeploymentForAllNamespaces: async () => ({ items: [] }),
     listStatefulSetForAllNamespaces: async () => ({ items: [] }),
   },
+  policyApi: {
+    listPodDisruptionBudgetForAllNamespaces: async () => ({ items: [] }),
+  },
   apiextensionsApi: {
     readCustomResourceDefinition: async () => ({
       metadata: { name: 'externalsecrets.external-secrets.io' },
