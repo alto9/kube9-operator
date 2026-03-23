@@ -17,6 +17,10 @@ import {
   externalSecretsUsageCheck,
   hardcodedSecretsCheck,
 } from './checks/security/index.js';
+import {
+  resourceRequestsCheck,
+  resourceLimitsCheck,
+} from './checks/reliability/index.js';
 
 /** Built-in checks to register at bootstrap (extend as checks are implemented) */
 const BUILT_IN_CHECKS: AssessmentCheck[] = [
@@ -28,6 +32,8 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   secretsInConfigMapsCheck,
   externalSecretsUsageCheck,
   hardcodedSecretsCheck,
+  resourceRequestsCheck,
+  resourceLimitsCheck,
 ];
 
 /**
