@@ -3,8 +3,11 @@ import {
   isHaExempt,
   isNamespaceExcluded,
   isHaRelevant,
+  isProbeExempt,
+  isProbeCheckRelevant,
   HA_EXEMPT_LABEL,
   HA_REQUIRED_LABEL,
+  PROBE_EXEMPT_LABEL,
 } from './heuristics.js';
 
 describe('reliability heuristics', () => {
@@ -82,6 +85,42 @@ describe('reliability heuristics', () => {
       expect(isHaRelevant({
         namespace: 'default', name: 'x', kind: 'CronJob',
       })).toBe(false);
+    });
+  });
+
+  describe('isProbeExempt', () => {
+    it('returns true when kube9.io/probe-exempt is true', () => {
+      expect(isProbeExempt({
+        namespace: 'default', name: 'x', kind: 'Deployment',
+        labels: { [PROBE_EXEMPT_LABEL]: 'true' },
+      })).toBe(true);
+    });
+
+    it('returns false when label is absent', () => {
+      expect(isProbeExempt({
+        namespace: 'default', name: 'x', kind: 'Deployment',
+      })).toBe(false);
+    });
+  });
+
+  describe('isProbeCheckRelevant', () => {
+    it('returns false when probe-exempt', () => {
+      expect(isProbeCheckRelevant({
+        namespace: 'default', name: 'x', kind: 'Deployment',
+        labels: { [PROBE_EXEMPT_LABEL]: 'true' },
+      })).toBe(false);
+    });
+
+    it('returns false when namespace is excluded', () => {
+      expect(isProbeCheckRelevant({
+        namespace: 'kube-system', name: 'x', kind: 'Deployment',
+      })).toBe(false);
+    });
+
+    it('returns true for Deployment in non-excluded namespace', () => {
+      expect(isProbeCheckRelevant({
+        namespace: 'default', name: 'app', kind: 'Deployment',
+      })).toBe(true);
     });
   });
 });

@@ -22,6 +22,9 @@ export const HA_EXEMPT_LABEL = 'kube9.io/ha-exempt';
 /** Label to exempt a workload from resource requests/limits checks */
 export const RESOURCE_EXEMPT_LABEL = 'kube9.io/resource-exempt';
 
+/** Label to exempt a workload from liveness/readiness probe checks */
+export const PROBE_EXEMPT_LABEL = 'kube9.io/probe-exempt';
+
 /** Namespaces excluded from HA and resource checks (system / infra) */
 const EXCLUDED_NAMESPACES = new Set([
   'kube-system',
@@ -85,6 +88,19 @@ export function isHaRelevant(metadata: WorkloadMetadata): boolean {
 /** Check if a workload should be validated for resource requests/limits */
 export function isResourceCheckRelevant(metadata: WorkloadMetadata): boolean {
   if (isResourceExempt(metadata)) return false;
+  if (isNamespaceExcluded(metadata.namespace)) return false;
+  return true;
+}
+
+/** Check if a workload is exempt from probe checks */
+export function isProbeExempt(metadata: WorkloadMetadata): boolean {
+  const labels = metadata.labels ?? {};
+  return labels[PROBE_EXEMPT_LABEL] === 'true' || labels[PROBE_EXEMPT_LABEL] === '1';
+}
+
+/** Check if a workload should be validated for liveness/readiness probes. Excludes Jobs/CronJobs (not in scope). */
+export function isProbeCheckRelevant(metadata: WorkloadMetadata): boolean {
+  if (isProbeExempt(metadata)) return false;
   if (isNamespaceExcluded(metadata.namespace)) return false;
   return true;
 }
