@@ -34,6 +34,7 @@ function createMockCheck(overrides: Partial<AssessmentCheck> = {}): AssessmentCh
 
 const mockKubernetes = {
   coreApi: {
+    listNode: async () => ({ items: [] }),
     listPodForAllNamespaces: async () => ({ items: [] }),
     listConfigMapForAllNamespaces: async () => ({ items: [] }),
     listResourceQuotaForAllNamespaces: async () => ({ items: [] }),
@@ -255,11 +256,12 @@ describe('AssessmentRunner (integration)', () => {
       pillarFilter: Pillar.PerformanceEfficiency,
     });
 
-    expect(checks.length).toBe(3);
+    expect(checks.length).toBe(4);
     const ids = checks.map((c) => c.id).sort();
     expect(ids).toEqual([
       'performance-efficiency.hpa-configuration-sanity',
       'performance-efficiency.namespace-resource-governance',
+      'performance-efficiency.node-affinity-and-placement',
       'performance-efficiency.vpa-configuration-sanity',
     ]);
 
@@ -278,12 +280,12 @@ describe('AssessmentRunner (integration)', () => {
     });
 
     expect(record.run_id).toBe('run-perf-pillar');
-    expect(record.total_checks).toBe(3);
-    expect(record.completed_checks).toBe(3);
+    expect(record.total_checks).toBe(4);
+    expect(record.completed_checks).toBe(4);
     expect(record.failed_checks).toBe(0);
 
     const history = storage.queryHistory({ filters: { run_id: 'run-perf-pillar' } });
-    expect(history).toHaveLength(3);
+    expect(history).toHaveLength(4);
     expect(history.map((h) => h.check_id).sort()).toEqual(ids);
   });
 });
