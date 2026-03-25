@@ -1,3 +1,18 @@
+# [1.5.0](https://github.com/alto9/kube9-operator/compare/v1.4.0...v1.5.0) (2026-03-25)
+
+
+### Bug Fixes
+
+* **reliability:** support PDB matchExpressions in workload coverage ([cb9d7bc](https://github.com/alto9/kube9-operator/commit/cb9d7bce2b95cde6881b4031c6832e187fec5b56))
+
+
+### Features
+
+* **assessment:** add liveness and readiness probe reliability checks ([4fba6a4](https://github.com/alto9/kube9-operator/commit/4fba6a4853fe4abf865513992712eac4aed3bd43)), closes [#82](https://github.com/alto9/kube9-operator/issues/82)
+* **assessment:** add reliability checks for resource requests and limits ([4103c8b](https://github.com/alto9/kube9-operator/commit/4103c8b4fb4c0bd85e77570d9842f34022ecd61a)), closes [#81](https://github.com/alto9/kube9-operator/issues/81)
+* **assessment:** add reliability HA checks (replicas, spread, PDB) ([2fa7635](https://github.com/alto9/kube9-operator/commit/2fa763547f30a7fb610d54e02fa640c96e4fbb48)), closes [#80](https://github.com/alto9/kube9-operator/issues/80)
+* **reliability:** add backup and disaster recovery signals check ([59d9128](https://github.com/alto9/kube9-operator/commit/59d9128a0636d1aacba6da3e17844c5b1fc73b99)), closes [#83](https://github.com/alto9/kube9-operator/issues/83)
+
 # [1.4.0](https://github.com/alto9/kube9-operator/compare/v1.3.0...v1.4.0) (2026-03-19)
 
 
