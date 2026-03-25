@@ -38,13 +38,58 @@ function pdbCoversWorkload(
     return false;
   }
   const matchLabels = pdb.spec?.selector?.matchLabels ?? {};
+  const matchExpressions = pdb.spec?.selector?.matchExpressions ?? [];
   const workloadLabels = podLabels ?? {};
+
+  const selectorHasClauses =
+    Object.keys(matchLabels).length > 0 || matchExpressions.length > 0;
+  if (!selectorHasClauses) {
+    return false;
+  }
+
   for (const [k, v] of Object.entries(matchLabels)) {
     if (workloadLabels[k] !== v) {
       return false;
     }
   }
-  return Object.keys(matchLabels).length > 0;
+
+  for (const expr of matchExpressions) {
+    const key = expr.key ?? '';
+    if (!key) {
+      return false;
+    }
+
+    const hasKey = Object.prototype.hasOwnProperty.call(workloadLabels, key);
+    const labelValue = workloadLabels[key];
+    const values = expr.values ?? [];
+
+    switch (expr.operator) {
+      case 'In':
+        if (!hasKey || !values.includes(labelValue)) {
+          return false;
+        }
+        break;
+      case 'NotIn':
+        if (!hasKey || values.includes(labelValue)) {
+          return false;
+        }
+        break;
+      case 'Exists':
+        if (!hasKey) {
+          return false;
+        }
+        break;
+      case 'DoesNotExist':
+        if (hasKey) {
+          return false;
+        }
+        break;
+      default:
+        return false;
+    }
+  }
+
+  return true;
 }
 
 function toWorkloadMeta(

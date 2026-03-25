@@ -170,4 +170,99 @@ describe('podDisruptionBudgetsCheck', () => {
 
     expect(result.status).toBe(CheckStatus.Warning);
   });
+
+  it('matches selector using only matchExpressions', async () => {
+    const deployments = [
+      {
+        metadata: { namespace: 'default', name: 'api' },
+        spec: {
+          replicas: 2,
+          template: {
+            metadata: { labels: { app: 'api', tier: 'backend', env: 'prod' } },
+          },
+        },
+      },
+    ];
+    const pdbs = [
+      {
+        metadata: { namespace: 'default' },
+        spec: {
+          selector: {
+            matchExpressions: [
+              { key: 'tier', operator: 'In', values: ['backend', 'worker'] },
+              { key: 'app', operator: 'Exists' },
+              { key: 'track', operator: 'DoesNotExist' },
+              { key: 'env', operator: 'NotIn', values: ['staging'] },
+            ],
+          },
+          minAvailable: 1,
+        },
+      },
+    ];
+    const ctx = createMockCtx(deployments, [], pdbs);
+    const result = await podDisruptionBudgetsCheck.run(ctx);
+
+    expect(result.status).toBe(CheckStatus.Passing);
+  });
+
+  it('matches selector using matchLabels and matchExpressions together', async () => {
+    const deployments = [
+      {
+        metadata: { namespace: 'default', name: 'api' },
+        spec: {
+          replicas: 2,
+          template: {
+            metadata: { labels: { app: 'api', tier: 'backend', env: 'prod' } },
+          },
+        },
+      },
+    ];
+    const pdbs = [
+      {
+        metadata: { namespace: 'default' },
+        spec: {
+          selector: {
+            matchLabels: { app: 'api' },
+            matchExpressions: [{ key: 'tier', operator: 'In', values: ['backend'] }],
+          },
+          minAvailable: 1,
+        },
+      },
+    ];
+    const ctx = createMockCtx(deployments, [], pdbs);
+    const result = await podDisruptionBudgetsCheck.run(ctx);
+
+    expect(result.status).toBe(CheckStatus.Passing);
+  });
+
+  it('does not match selector when a matchExpression mismatches', async () => {
+    const deployments = [
+      {
+        metadata: { namespace: 'default', name: 'api' },
+        spec: {
+          replicas: 2,
+          template: {
+            metadata: { labels: { app: 'api', tier: 'backend', env: 'prod' } },
+          },
+        },
+      },
+    ];
+    const pdbs = [
+      {
+        metadata: { namespace: 'default' },
+        spec: {
+          selector: {
+            matchLabels: { app: 'api' },
+            matchExpressions: [{ key: 'env', operator: 'NotIn', values: ['prod', 'staging'] }],
+          },
+          minAvailable: 1,
+        },
+      },
+    ];
+    const ctx = createMockCtx(deployments, [], pdbs);
+    const result = await podDisruptionBudgetsCheck.run(ctx);
+
+    expect(result.status).toBe(CheckStatus.Warning);
+    expect(result.message).toContain('default/api');
+  });
 });
