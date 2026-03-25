@@ -26,6 +26,10 @@ import {
   livenessReadinessProbesCheck,
   backupDrSignalsCheck,
 } from './checks/reliability/index.js';
+import {
+  hpaConfigurationSanityCheck,
+  vpaConfigurationSanityCheck,
+} from './checks/performance-efficiency/index.js';
 
 /** Built-in checks to register at bootstrap (extend as checks are implemented) */
 const BUILT_IN_CHECKS: AssessmentCheck[] = [
@@ -44,6 +48,8 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   resourceLimitsCheck,
   livenessReadinessProbesCheck,
   backupDrSignalsCheck,
+  hpaConfigurationSanityCheck,
+  vpaConfigurationSanityCheck,
 ];
 
 /**

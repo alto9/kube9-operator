@@ -40,6 +40,10 @@ const mockKubernetes = {
   appsApi: {
     listDeploymentForAllNamespaces: async () => ({ items: [] }),
     listStatefulSetForAllNamespaces: async () => ({ items: [] }),
+    listDaemonSetForAllNamespaces: async () => ({ items: [] }),
+  },
+  autoscalingApi: {
+    listHorizontalPodAutoscalerForAllNamespaces: async () => ({ items: [] }),
   },
   policyApi: {
     listPodDisruptionBudgetForAllNamespaces: async () => ({ items: [] }),
@@ -49,6 +53,9 @@ const mockKubernetes = {
       metadata: { name: 'externalsecrets.external-secrets.io' },
     }),
     listCustomResourceDefinition: async () => ({ body: { items: [] }, items: [] }),
+  },
+  customObjectsApi: {
+    listClusterCustomObject: async () => ({ body: { items: [] }, items: [] }),
   },
   rbacApi: {
     listClusterRole: async () => ({ items: [] }),
@@ -234,5 +241,45 @@ describe('AssessmentRunner (integration)', () => {
     const history = storage.queryHistory({ filters: { run_id: 'run-security-pillar' } });
     expect(history).toHaveLength(8);
     expect(history.every((h) => h.status === 'passing')).toBe(true);
+  });
+
+  it('performance-efficiency pillar checks are discoverable and runnable', async () => {
+    resetRegistry();
+    bootstrapAssessmentRegistry();
+
+    const checks = resolveChecksForRun({
+      mode: AssessmentRunMode.Pillar,
+      pillarFilter: Pillar.PerformanceEfficiency,
+    });
+
+    expect(checks.length).toBe(2);
+    const ids = checks.map((c) => c.id).sort();
+    expect(ids).toEqual([
+      'performance-efficiency.hpa-configuration-sanity',
+      'performance-efficiency.vpa-configuration-sanity',
+    ]);
+
+    const storage = new AssessmentRepository();
+    const runner = new AssessmentRunner({
+      kubernetes: mockKubernetes,
+      config: mockConfig,
+      logger: mockLogger,
+      storage,
+    });
+
+    const record = await runner.run({
+      runId: 'run-perf-pillar',
+      mode: AssessmentRunMode.Pillar,
+      pillarFilter: Pillar.PerformanceEfficiency,
+    });
+
+    expect(record.run_id).toBe('run-perf-pillar');
+    expect(record.total_checks).toBe(2);
+    expect(record.completed_checks).toBe(2);
+    expect(record.failed_checks).toBe(0);
+
+    const history = storage.queryHistory({ filters: { run_id: 'run-perf-pillar' } });
+    expect(history).toHaveLength(2);
+    expect(history.map((h) => h.check_id).sort()).toEqual(ids);
   });
 });
