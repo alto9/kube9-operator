@@ -29,6 +29,7 @@ import {
 import {
   hpaConfigurationSanityCheck,
   vpaConfigurationSanityCheck,
+  namespaceResourceGovernanceCheck,
 } from './checks/performance-efficiency/index.js';
 
 /** Built-in checks to register at bootstrap (extend as checks are implemented) */
@@ -50,6 +51,7 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   backupDrSignalsCheck,
   hpaConfigurationSanityCheck,
   vpaConfigurationSanityCheck,
+  namespaceResourceGovernanceCheck,
 ];
 
 /**
