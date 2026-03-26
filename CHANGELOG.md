@@ -1,3 +1,12 @@
+# [1.6.0](https://github.com/alto9/kube9-operator/compare/v1.5.0...v1.6.0) (2026-03-26)
+
+
+### Features
+
+* **assessment:** add namespace resource governance performance check ([641e780](https://github.com/alto9/kube9-operator/commit/641e780dfb0d69981df5139bf0d56a31a364fd2c))
+* **assessment:** add performance-efficiency autoscaling checks ([4ffc36e](https://github.com/alto9/kube9-operator/commit/4ffc36e931bff97a8245d7db258b54ea5cbca75f))
+* **assessment:** add placement checks for node affinity ([6d62fe8](https://github.com/alto9/kube9-operator/commit/6d62fe81042c81e94adb94d11ba936face2138f6))
+
 # [1.5.0](https://github.com/alto9/kube9-operator/compare/v1.4.0...v1.5.0) (2026-03-25)
 
 
