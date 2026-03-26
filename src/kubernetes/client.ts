@@ -15,7 +15,9 @@ export interface ClusterInfo {
  * 
  * Uses in-cluster configuration when running as a pod.
  * Falls back to default kubeconfig (from KUBECONFIG env var or ~/.kube/config) for local development.
- * Provides CoreV1Api, VersionApi, AppsV1Api, PolicyV1Api, ApiextensionsV1Api, and RbacAuthorizationV1Api clients for cluster operations.
+ * Provides CoreV1Api, VersionApi, AppsV1Api, PolicyV1Api, AutoscalingV2Api,
+ * ApiextensionsV1Api, CustomObjectsApi, and RbacAuthorizationV1Api clients
+ * for cluster operations.
  */
 export class KubernetesClient {
   private kubeConfig: k8s.KubeConfig;
@@ -23,7 +25,9 @@ export class KubernetesClient {
   public readonly versionApi: k8s.VersionApi;
   public readonly appsApi: k8s.AppsV1Api;
   public readonly policyApi: k8s.PolicyV1Api;
+  public readonly autoscalingApi: k8s.AutoscalingV2Api;
   public readonly apiextensionsApi: k8s.ApiextensionsV1Api;
+  public readonly customObjectsApi: k8s.CustomObjectsApi;
   public readonly rbacApi: k8s.RbacAuthorizationV1Api;
 
   constructor() {
@@ -65,7 +69,9 @@ export class KubernetesClient {
       this.versionApi = this.kubeConfig.makeApiClient(k8s.VersionApi);
       this.appsApi = this.kubeConfig.makeApiClient(k8s.AppsV1Api);
       this.policyApi = this.kubeConfig.makeApiClient(k8s.PolicyV1Api);
+      this.autoscalingApi = this.kubeConfig.makeApiClient(k8s.AutoscalingV2Api);
       this.apiextensionsApi = this.kubeConfig.makeApiClient(k8s.ApiextensionsV1Api);
+      this.customObjectsApi = this.kubeConfig.makeApiClient(k8s.CustomObjectsApi);
       this.rbacApi = this.kubeConfig.makeApiClient(k8s.RbacAuthorizationV1Api);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
