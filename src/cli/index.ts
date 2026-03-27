@@ -12,6 +12,7 @@ import {
   assessSummary,
   assessHistory,
 } from './commands/assess.js';
+import { listVulnerabilities, summarizeVulnerabilities } from './commands/vulnerabilities.js';
 
 /**
  * Create the assess command structure
@@ -113,7 +114,31 @@ export function createQueryCommands(): Command {
     .description('Get single event by ID')
     .option('--format <format>', 'Output format (json|yaml|table)', 'json')
     .action(getEvent);
-  
+
+  const vulnerabilities = query
+    .command('vulnerabilities')
+    .description('Query stored image vulnerability findings (Trivy)');
+
+  vulnerabilities
+    .command('list')
+    .description('List vulnerabilities with optional filters')
+    .option('--severity <levels>', 'Comma-separated severities (e.g. critical,high)')
+    .option('--image-reference <ref>', 'Filter by scanned image reference')
+    .option('--vulnerability-id <id>', 'Filter by CVE/advisory id')
+    .option('--scan-id <id>', 'Filter by scan id')
+    .option('--completed-from <iso>', 'Completed on/after (ISO 8601)')
+    .option('--completed-to <iso>', 'Completed on/before (ISO 8601)')
+    .option('--limit <number>', 'Limit results', '100')
+    .option('--offset <number>', 'Offset', '0')
+    .option('--format <format>', 'Output format (json|yaml|table|compact)', 'json')
+    .action(listVulnerabilities);
+
+  vulnerabilities
+    .command('summary')
+    .description('Summary counts by severity from stored findings')
+    .option('--format <format>', 'Output format (json|yaml|table|compact)', 'json')
+    .action(summarizeVulnerabilities);
+
   return query;
 }
 

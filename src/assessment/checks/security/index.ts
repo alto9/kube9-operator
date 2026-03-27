@@ -10,3 +10,4 @@ export { rbacClusterAdminMisuseCheck } from './rbac-cluster-admin-misuse.js';
 export { secretsInConfigMapsCheck } from './secrets-in-configmaps.js';
 export { externalSecretsUsageCheck } from './external-secrets-usage.js';
 export { hardcodedSecretsCheck } from './hardcoded-secrets.js';
+export { storedVulnerabilityThresholdsCheck } from './stored-vulnerability-thresholds.js';

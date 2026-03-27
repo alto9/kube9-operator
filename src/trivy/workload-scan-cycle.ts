@@ -9,6 +9,12 @@ import { logger } from '../logging/logger.js';
 import { collectWorkloadImageReferences } from './collect-workload-images.js';
 import { scanContainerImageWhenDetected } from './scanner.js';
 import { DEFAULT_MAX_UNIQUE_WORKLOAD_IMAGES } from './workload-images.js';
+import { persistTrivyReportToDatabase, type PersistTrivyReportOptions } from './persist-scan-result.js';
+import {
+  recordImageScanDurationSeconds,
+  refreshVulnerabilityMetrics,
+  setScanningActiveGauge,
+} from './metrics.js';
 
 export interface WorkloadScanCycleOptions {
   kubernetesClient: KubernetesClient;
@@ -17,6 +23,8 @@ export interface WorkloadScanCycleOptions {
   maxUniqueImages?: number;
   /** Max scans to run per cycle (default: 100) */
   maxScansPerCycle?: number;
+  /** Override persistence (e.g. unit tests). Defaults to persistTrivyReportToDatabase. */
+  persistTrivyReport?: (options: PersistTrivyReportOptions) => string;
 }
 
 export interface WorkloadScanCycleResult {
@@ -45,15 +53,22 @@ function parseMaxScansPerCycle(): number {
 export async function runWorkloadImageScanCycle(
   options: WorkloadScanCycleOptions
 ): Promise<WorkloadScanCycleResult> {
+  const cycleStartMs = Date.now();
   const maxUnique = options.maxUniqueImages ?? DEFAULT_MAX_UNIQUE_WORKLOAD_IMAGES;
   const maxScans = options.maxScansPerCycle ?? parseMaxScansPerCycle();
+  const persist = options.persistTrivyReport ?? persistTrivyReportToDatabase;
 
   const { images, truncated } = await collectWorkloadImageReferences(options.kubernetesClient, {
     maxUniqueImages: maxUnique,
   });
 
   const status = options.getTrivyStatus();
+  setScanningActiveGauge(Boolean(status.detected && status.serverUrl));
+
   if (!status.detected || !status.serverUrl) {
+    const cycleSeconds = (Date.now() - cycleStartMs) / 1000;
+    recordImageScanDurationSeconds('skipped', cycleSeconds);
+    refreshVulnerabilityMetrics();
     logger.info('Workload images collected; skipping Trivy scans (integration not active)', {
       uniqueImagesCollected: images.length,
       truncated,
@@ -80,19 +95,25 @@ export async function runWorkloadImageScanCycle(
   let scansFailed = 0;
 
   for (const imageRef of toScan) {
+    const scanStart = Date.now();
     try {
-      await scanContainerImageWhenDetected(imageRef, {
+      const report = await scanContainerImageWhenDetected(imageRef, {
         getStatus: options.getTrivyStatus,
       });
+      persist({ imageRef, report });
       scansSucceeded++;
+      recordImageScanDurationSeconds('success', (Date.now() - scanStart) / 1000);
     } catch (err) {
       scansFailed++;
+      recordImageScanDurationSeconds('failed', (Date.now() - scanStart) / 1000);
       logger.warn('Trivy scan failed for workload image', {
         imageRef,
         error: err instanceof Error ? err.message : String(err),
       });
     }
   }
+
+  refreshVulnerabilityMetrics();
 
   if (truncated) {
     logger.warn('Workload image collection hit unique image cap', {

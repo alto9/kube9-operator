@@ -307,6 +307,31 @@ export class ImageScanRepository {
     return this.db.prepare(query).all(...params) as ImageVulnerabilityRow[];
   }
 
+  /**
+   * Count stored vulnerability rows grouped by normalized severity (lowercase).
+   * Only includes rows linked to completed parent scans.
+   */
+  public countVulnerabilitiesGroupedBySeverity(): Record<string, number> {
+    const rows = this.db
+      .prepare(
+        `
+      SELECT LOWER(TRIM(v.severity)) AS sev, COUNT(*) AS c
+      FROM image_vulnerabilities v
+      INNER JOIN image_scans s ON s.scan_id = v.scan_id
+      WHERE s.completed_at IS NOT NULL
+      GROUP BY LOWER(TRIM(v.severity))
+    `
+      )
+      .all() as Array<{ sev: string; c: number }>;
+    const out: Record<string, number> = {};
+    for (const r of rows) {
+      if (r.sev) {
+        out[r.sev] = r.c;
+      }
+    }
+    return out;
+  }
+
   public countVulnerabilities(filters: ImageVulnerabilityFilters = {}): number {
     const conditions: string[] = [];
     const params: string[] = [];
