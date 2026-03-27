@@ -30,7 +30,11 @@ describe('runWorkloadImageScanCycle', () => {
       lastChecked: new Date().toISOString(),
     });
 
-    const r = await runWorkloadImageScanCycle({ kubernetesClient: client, getTrivyStatus });
+    const r = await runWorkloadImageScanCycle({
+      kubernetesClient: client,
+      getTrivyStatus,
+      persistTrivyReport: () => 'noop',
+    });
     expect(r.scansSkippedDueToTrivy).toBe(true);
     expect(r.uniqueImagesCollected).toBe(1);
     expect(scanSpy).not.toHaveBeenCalled();
@@ -54,6 +58,7 @@ describe('runWorkloadImageScanCycle', () => {
       kubernetesClient: client,
       getTrivyStatus,
       maxScansPerCycle: 10,
+      persistTrivyReport: () => 'noop',
     });
 
     expect(r.scansSkippedDueToTrivy).toBe(false);
@@ -84,6 +89,7 @@ describe('runWorkloadImageScanCycle', () => {
       kubernetesClient: client,
       getTrivyStatus,
       maxScansPerCycle: 10,
+      persistTrivyReport: () => 'noop',
     });
 
     expect(r.scansFailed).toBe(1);

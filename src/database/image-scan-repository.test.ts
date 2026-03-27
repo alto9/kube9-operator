@@ -171,6 +171,45 @@ describe('ImageScanRepository', () => {
     expect(repo.getScanById('new')).not.toBeNull();
   });
 
+  it('counts vulnerabilities grouped by severity for completed scans', () => {
+    const repo = new ImageScanRepository();
+    repo.upsertScan({
+      scan_id: 's-group',
+      image_reference: 'img:1',
+      started_at: '2026-01-01T00:00:00.000Z',
+      completed_at: '2026-01-02T00:00:00.000Z',
+      state: 'completed',
+      scanner: 'trivy',
+    });
+    repo.replaceVulnerabilitiesForScan('s-group', [
+      {
+        id: 'v1',
+        scan_id: 's-group',
+        vulnerability_id: 'CVE-1',
+        severity: 'CRITICAL',
+        package_name: 'a',
+        installed_version: null,
+        fixed_version: null,
+        title: null,
+        raw_metadata: null,
+      },
+      {
+        id: 'v2',
+        scan_id: 's-group',
+        vulnerability_id: 'CVE-2',
+        severity: 'high',
+        package_name: 'b',
+        installed_version: null,
+        fixed_version: null,
+        title: null,
+        raw_metadata: null,
+      },
+    ]);
+    const g = repo.countVulnerabilitiesGroupedBySeverity();
+    expect(g.critical).toBe(1);
+    expect(g.high).toBe(1);
+  });
+
   it('empty repository returns no rows', () => {
     const repo = new ImageScanRepository();
     expect(repo.queryScans()).toEqual([]);
