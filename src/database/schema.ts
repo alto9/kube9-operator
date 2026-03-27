@@ -7,7 +7,7 @@ import Database from 'better-sqlite3';
 import { logger } from '../logging/logger.js';
 
 /** Latest schema version - bump when adding migrations */
-const LATEST_SCHEMA_VERSION = 2;
+const LATEST_SCHEMA_VERSION = 3;
 
 /**
  * SchemaManager handles database schema initialization and migrations
@@ -49,6 +49,10 @@ export class SchemaManager {
       {
         version: 2,
         apply: () => this.migrateToV2(),
+      },
+      {
+        version: 3,
+        apply: () => this.migrateToV3(),
       },
     ];
 
@@ -111,6 +115,47 @@ export class SchemaManager {
       CREATE INDEX IF NOT EXISTS idx_assessment_history_status ON assessment_history(status);
       CREATE INDEX IF NOT EXISTS idx_assessment_history_assessed_at ON assessment_history(assessed_at DESC);
       CREATE INDEX IF NOT EXISTS idx_assessment_history_run_pillar ON assessment_history(run_id, pillar);
+    `);
+  }
+
+  /**
+   * Migration v3: image vulnerability scan storage (M3 Security).
+   * Retention: child rows use ON DELETE CASCADE from image_scans; optional
+   * time-based pruning is left to application code (see ImageScanRepository.deleteScansCompletedBefore).
+   */
+  private migrateToV3(): void {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS image_scans (
+        scan_id TEXT PRIMARY KEY,
+        image_reference TEXT NOT NULL,
+        image_digest TEXT,
+        started_at TEXT NOT NULL,
+        completed_at TEXT,
+        state TEXT NOT NULL CHECK (state IN ('queued', 'running', 'completed', 'failed', 'skipped')),
+        scanner TEXT NOT NULL,
+        error_message TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_image_scans_image_reference ON image_scans(image_reference);
+      CREATE INDEX IF NOT EXISTS idx_image_scans_completed_at ON image_scans(completed_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_image_scans_state ON image_scans(state);
+
+      CREATE TABLE IF NOT EXISTS image_vulnerabilities (
+        id TEXT PRIMARY KEY,
+        scan_id TEXT NOT NULL,
+        vulnerability_id TEXT NOT NULL,
+        severity TEXT NOT NULL,
+        package_name TEXT,
+        installed_version TEXT,
+        fixed_version TEXT,
+        title TEXT,
+        raw_metadata TEXT,
+        FOREIGN KEY (scan_id) REFERENCES image_scans(scan_id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_image_vulnerabilities_scan_id ON image_vulnerabilities(scan_id);
+      CREATE INDEX IF NOT EXISTS idx_image_vulnerabilities_severity ON image_vulnerabilities(severity);
+      CREATE INDEX IF NOT EXISTS idx_image_vulnerabilities_vulnerability_id ON image_vulnerabilities(vulnerability_id);
     `);
   }
 

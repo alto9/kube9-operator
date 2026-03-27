@@ -134,7 +134,7 @@ Tracks database schema migrations.
 | applied_at | TEXT | NOT NULL | ISO 8601 timestamp when migration was applied |
 | description | TEXT | NULL | Migration description |
 
-### image_scans (planned, M3)
+### image_scans
 
 Records of vulnerability scan runs against a container image reference (digest or repo:tag as reported by the scanner).
 
@@ -149,9 +149,9 @@ Records of vulnerability scan runs against a container image reference (digest o
 | scanner | TEXT | NOT NULL | e.g. `trivy` |
 | error_message | TEXT | NULL | Populated when state is `failed` or scan was skipped due to missing scanner |
 
-**Indexes (planned):** `idx_image_scans_image_reference`, `idx_image_scans_completed_at DESC`, `idx_image_scans_state`.
+**Indexes:** `idx_image_scans_image_reference`, `idx_image_scans_completed_at DESC`, `idx_image_scans_state`.
 
-### image_vulnerabilities (planned, M3)
+### image_vulnerabilities
 
 Normalized vulnerability findings linked to a scan (and optionally to originating workload metadata via application logic).
 
@@ -167,6 +167,8 @@ Normalized vulnerability findings linked to a scan (and optionally to originatin
 | title | TEXT | NULL | Short title |
 | raw_metadata | TEXT | NULL | Optional JSON blob for scanner-specific fields |
 
-**Indexes (planned):** `idx_image_vulnerabilities_scan_id`, `idx_image_vulnerabilities_severity`, `idx_image_vulnerabilities_vulnerability_id`.
+**Indexes:** `idx_image_vulnerabilities_scan_id`, `idx_image_vulnerabilities_severity`, `idx_image_vulnerabilities_vulnerability_id`.
+
+**Retention:** Deleting a row in `image_scans` cascades to `image_vulnerabilities` (`ON DELETE CASCADE`). Optional time-based pruning is implemented in application code (`ImageScanRepository.deleteScansCompletedBefore`); there is no DB-level TTL trigger.
 
 **Note:** Collections and argocd_apps tables are planned for future milestones (M8/M9) but are not yet implemented in the current schema.
