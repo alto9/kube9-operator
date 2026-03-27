@@ -41,6 +41,13 @@ export interface Config {
   resourceConfigurationPatternsIntervalSeconds: number;
 
   /**
+   * Workload container image collection / scan cycle interval in seconds
+   * (collects from Pods, Deployments, StatefulSets; Trivy scans only when Trivy is active).
+   * Default: 86400 (24 hours), Minimum: 3600 (1 hour)
+   */
+  workloadImageScanIntervalSeconds: number;
+
+  /**
    * Event retention for info/warning severity (days)
    * Default: 7 days
    */

@@ -60,6 +60,8 @@ trivy:
   healthPath: "/healthz"
   detectionInterval: 6
   detectionTimeoutMs: 10000
+  # Cap on Trivy image scans per workload-image cycle (after collection)
+  maxScansPerCycle: 100
 
 # Collection interval configuration (for testing/debugging)
 # The operator enforces minimum intervals to prevent abuse
@@ -74,6 +76,9 @@ metrics:
     # Resource configuration patterns collection interval in seconds (default: 43200 = 12 hours)
     # Minimum: 3600 seconds (1 hour)
     resourceConfigurationPatterns: 43200
+    # Workload image collection + optional Trivy scan cycle (default: 86400 = 24 hours)
+    # Minimum: 3600 seconds (1 hour)
+    workloadImageScan: 86400
 
 # Event storage configuration
 events:

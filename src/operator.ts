@@ -23,6 +23,7 @@ import { ArgoCDDetectionManager } from './argocd/detection-manager.js';
 import { detectTrivyWithTimeout, type TrivyDetectionConfig } from './trivy/detection.js';
 import { trivyStatusTracker } from './trivy/state.js';
 import { TrivyDetectionManager } from './trivy/detection-manager.js';
+import { runWorkloadImageScanCycle } from './trivy/workload-scan-cycle.js';
 import { SchemaManager } from './database/schema.js';
 import { KubernetesEventWatcher } from './events/kubernetes-event-watcher.js';
 import { EventQueueWorker } from './events/queue-worker.js';
@@ -335,6 +336,31 @@ export async function startOperator() {
           recordCollection('resource-configuration-patterns', 'failed', durationSeconds);
           collectionStatsTracker.recordFailure('resource-configuration-patterns');
           // Don't throw - scheduler will retry on next interval
+        }
+      }
+    );
+
+    collectionScheduler.register(
+      'workload-image-scan',
+      config.workloadImageScanIntervalSeconds,
+      3600, // 1 hour minimum interval
+      3600, // 0-1 hour random offset range
+      async () => {
+        const startTime = Date.now();
+        try {
+          await runWorkloadImageScanCycle({
+            kubernetesClient,
+            getTrivyStatus: () => trivyStatusTracker.getStatus(),
+          });
+          const durationSeconds = (Date.now() - startTime) / 1000;
+          recordCollection('workload-image-scan', 'success', durationSeconds);
+          collectionStatsTracker.recordSuccess('workload-image-scan');
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error('Workload image collection or scan cycle failed', { error: errorMessage });
+          const durationSeconds = (Date.now() - startTime) / 1000;
+          recordCollection('workload-image-scan', 'failed', durationSeconds);
+          collectionStatsTracker.recordFailure('workload-image-scan');
         }
       }
     );
