@@ -22,7 +22,7 @@
     },
     {
       "title": "SQLite Storage",
-      "description": "better-sqlite3 at /data/kube9.db. Tables: assessments, assessment_history, events. argocd_apps and collections planned for M8/M9.",
+      "description": "better-sqlite3 at /data/kube9.db. Tables: assessments, assessment_history, events, image_scans, image_vulnerabilities. argocd_apps and collections planned for M8/M9.",
       "context_sources": [".forge/data/data_model.md", ".forge/data/persistence_abstractions.md"]
     },
     {
