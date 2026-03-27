@@ -53,6 +53,12 @@
               "description": "Resource configuration patterns collection interval in seconds. Default: 43200 (12 hours). Minimum: 3600 (1 hour). Configurable for testing/debugging purposes.",
               "minimum": 3600,
               "default": 43200
+            },
+            "workloadImageScan": {
+              "type": "integer",
+              "description": "Workload image collection and optional Trivy scan cycle interval in seconds. Default: 86400 (24 hours). Minimum: 3600 (1 hour).",
+              "minimum": 3600,
+              "default": 86400
             }
           },
           "additionalProperties": false
