@@ -86,6 +86,10 @@ spec:
           value: {{ .Values.trivy.detectionInterval | default 6 | quote }}
         - name: TRIVY_DETECTION_TIMEOUT_MS
           value: {{ .Values.trivy.detectionTimeoutMs | default 10000 | quote }}
+        - name: TRIVY_MAX_SCANS_PER_CYCLE
+          value: {{ .Values.trivy.maxScansPerCycle | default 100 | quote }}
+        - name: WORKLOAD_IMAGE_SCAN_INTERVAL_SECONDS
+          value: {{ .Values.metrics.intervals.workloadImageScan | default 86400 | quote }}
         # Event retention configuration
         - name: EVENT_RETENTION_INFO_WARNING_DAYS
           value: {{ .Values.events.retention.infoWarning | default 7 | quote }}

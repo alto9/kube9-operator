@@ -38,6 +38,7 @@ describe('calculateStatus', () => {
         clusterMetadataIntervalSeconds: 86400,
         resourceInventoryIntervalSeconds: 21600,
         resourceConfigurationPatternsIntervalSeconds: 43200,
+        workloadImageScanIntervalSeconds: 86400,
       } as any);
 
       const calculatorModule = await import('./calculator.js');
@@ -81,6 +82,7 @@ describe('calculateStatus', () => {
         clusterMetadataIntervalSeconds: 86400,
         resourceInventoryIntervalSeconds: 21600,
         resourceConfigurationPatternsIntervalSeconds: 43200,
+        workloadImageScanIntervalSeconds: 86400,
       } as any);
 
       const calculatorModule = await import('./calculator.js');
@@ -104,6 +106,7 @@ describe('calculateStatus', () => {
         clusterMetadataIntervalSeconds: 86400,
         resourceInventoryIntervalSeconds: 21600,
         resourceConfigurationPatternsIntervalSeconds: 43200,
+        workloadImageScanIntervalSeconds: 86400,
       } as any);
 
       const calculatorModule = await import('./calculator.js');
@@ -137,6 +140,7 @@ describe('calculateStatus', () => {
         clusterMetadataIntervalSeconds: 86400,
         resourceInventoryIntervalSeconds: 21600,
         resourceConfigurationPatternsIntervalSeconds: 43200,
+        workloadImageScanIntervalSeconds: 86400,
       } as any);
 
       const calculatorModule = await import('./calculator.js');
@@ -159,6 +163,7 @@ describe('calculateStatus', () => {
         clusterMetadataIntervalSeconds: 86400,
         resourceInventoryIntervalSeconds: 21600,
         resourceConfigurationPatternsIntervalSeconds: 43200,
+        workloadImageScanIntervalSeconds: 86400,
       } as any);
 
       const calculatorModule = await import('./calculator.js');
@@ -181,6 +186,7 @@ describe('calculateStatus', () => {
         clusterMetadataIntervalSeconds: 86400,
         resourceInventoryIntervalSeconds: 21600,
         resourceConfigurationPatternsIntervalSeconds: 43200,
+        workloadImageScanIntervalSeconds: 86400,
       } as any);
 
       const calculatorModule = await import('./calculator.js');
@@ -226,6 +232,7 @@ describe('calculateStatus', () => {
         clusterMetadataIntervalSeconds: 86400,
         resourceInventoryIntervalSeconds: 21600,
         resourceConfigurationPatternsIntervalSeconds: 43200,
+        workloadImageScanIntervalSeconds: 86400,
       } as any);
 
       const calculatorModule = await import('./calculator.js');
@@ -254,6 +261,7 @@ describe('calculateStatus', () => {
         clusterMetadataIntervalSeconds: 86400,
         resourceInventoryIntervalSeconds: 21600,
         resourceConfigurationPatternsIntervalSeconds: 43200,
+        workloadImageScanIntervalSeconds: 86400,
       } as any);
 
       const calculatorModule = await import('./calculator.js');
@@ -281,6 +289,7 @@ describe('calculateStatus', () => {
         clusterMetadataIntervalSeconds: 86400,
         resourceInventoryIntervalSeconds: 21600,
         resourceConfigurationPatternsIntervalSeconds: 43200,
+        workloadImageScanIntervalSeconds: 86400,
       } as any);
 
       const calculatorModule = await import('./calculator.js');
@@ -310,6 +319,7 @@ describe('calculateStatus', () => {
         clusterMetadataIntervalSeconds: 86400,
         resourceInventoryIntervalSeconds: 21600,
         resourceConfigurationPatternsIntervalSeconds: 43200,
+        workloadImageScanIntervalSeconds: 86400,
       } as any);
 
       const calculatorModule = await import('./calculator.js');
@@ -347,6 +357,7 @@ describe('calculateStatus', () => {
         clusterMetadataIntervalSeconds: 86400,
         resourceInventoryIntervalSeconds: 21600,
         resourceConfigurationPatternsIntervalSeconds: 43200,
+        workloadImageScanIntervalSeconds: 86400,
       } as any);
 
       const calculatorModule = await import('./calculator.js');
@@ -390,6 +401,7 @@ describe('calculateStatus', () => {
         clusterMetadataIntervalSeconds: 86400,
         resourceInventoryIntervalSeconds: 21600,
         resourceConfigurationPatternsIntervalSeconds: 43200,
+        workloadImageScanIntervalSeconds: 86400,
       } as any);
 
       const calculatorModule = await import('./calculator.js');
@@ -438,6 +450,7 @@ describe('calculateStatus', () => {
         clusterMetadataIntervalSeconds: 86400,
         resourceInventoryIntervalSeconds: 21600,
         resourceConfigurationPatternsIntervalSeconds: 43200,
+        workloadImageScanIntervalSeconds: 86400,
       } as any);
 
       const calculatorModule = await import('./calculator.js');
@@ -466,6 +479,7 @@ describe('calculateStatus', () => {
         clusterMetadataIntervalSeconds: 86400,
         resourceInventoryIntervalSeconds: 21600,
         resourceConfigurationPatternsIntervalSeconds: 43200,
+        workloadImageScanIntervalSeconds: 86400,
       } as any);
 
       const calculatorModule = await import('./calculator.js');
