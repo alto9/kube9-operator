@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import type { RegistrationState, CollectionStats, ArgoCDStatus } from './types.js';
+import type { RegistrationState, CollectionStats, ArgoCDStatus, TrivyStatus } from './types.js';
 
 describe('calculateStatus', () => {
   let originalPodNamespace: string | undefined;
@@ -64,6 +64,7 @@ describe('calculateStatus', () => {
       expect(status.lastUpdate).toBeDefined();
       expect(status.collectionStats).toBeDefined();
       expect(status.argocd).toBeDefined();
+      expect(status.trivy).toBeDefined();
     });
 
     it('should return operated mode regardless config inputs', async () => {
@@ -371,6 +372,54 @@ describe('calculateStatus', () => {
 
       expect(status.argocd).toEqual(argocdStatus);
       expect(status.namespace).toBe('kube9-system');
+    });
+  });
+
+  describe('trivy status', () => {
+    it('should include Trivy status in operator status', async () => {
+      delete process.env.POD_NAMESPACE;
+
+      vi.resetModules();
+      const configLoader = await import('../config/loader.js');
+      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
+        apiKey: null,
+        serverUrl: 'https://api.kube9.dev',
+        logLevel: 'info',
+        statusUpdateIntervalSeconds: 60,
+        reregistrationIntervalHours: 24,
+        clusterMetadataIntervalSeconds: 86400,
+        resourceInventoryIntervalSeconds: 21600,
+        resourceConfigurationPatternsIntervalSeconds: 43200,
+      } as any);
+
+      const calculatorModule = await import('./calculator.js');
+      const trivyStatus: TrivyStatus = {
+        detected: true,
+        serverUrl: 'http://trivy:4954',
+        version: '0.58.0',
+        lastChecked: '2025-01-01T00:00:00Z',
+      };
+
+      const status = calculatorModule.calculateStatus(
+        { isRegistered: false, consecutiveFailures: 0 },
+        null,
+        true,
+        {
+          totalSuccessCount: 0,
+          totalFailureCount: 0,
+          collectionsStoredCount: 0,
+          lastSuccessTime: null,
+        },
+        {
+          detected: false,
+          namespace: null,
+          version: null,
+          lastChecked: '2025-01-01T00:00:00Z',
+        },
+        trivyStatus
+      );
+
+      expect(status.trivy).toEqual(trivyStatus);
     });
   });
 

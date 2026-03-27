@@ -55,6 +55,31 @@ export interface ArgoCDStatus {
 }
 
 /**
+ * Optional Trivy server detection (remote HTTP health probe)
+ */
+export interface TrivyStatus {
+  /**
+   * Whether a Trivy server was reached at the configured URL
+   */
+  detected: boolean;
+
+  /**
+   * Base URL of the Trivy server when detected
+   */
+  serverUrl: string | null;
+
+  /**
+   * Server version when available (e.g. from /version)
+   */
+  version: string | null;
+
+  /**
+   * ISO 8601 timestamp of last detection check
+   */
+  lastChecked: string;
+}
+
+/**
  * Operator Status Model
  * Represents the current state and health of the kube9 operator
  */
@@ -130,6 +155,11 @@ export interface OperatorStatus {
    * Tracks whether ArgoCD is installed in the cluster
    */
   argocd: ArgoCDStatus;
+
+  /**
+   * Optional Trivy server awareness (does not install or manage Trivy)
+   */
+  trivy: TrivyStatus;
 }
 
 /**

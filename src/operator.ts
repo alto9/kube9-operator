@@ -20,6 +20,9 @@ import { logger } from './logging/logger.js';
 import { detectArgoCDWithTimeout, type ArgoCDDetectionConfig } from './argocd/detection.js';
 import { argocdStatusTracker } from './argocd/state.js';
 import { ArgoCDDetectionManager } from './argocd/detection-manager.js';
+import { detectTrivyWithTimeout, type TrivyDetectionConfig } from './trivy/detection.js';
+import { trivyStatusTracker } from './trivy/state.js';
+import { TrivyDetectionManager } from './trivy/detection-manager.js';
 import { SchemaManager } from './database/schema.js';
 import { KubernetesEventWatcher } from './events/kubernetes-event-watcher.js';
 import { EventQueueWorker } from './events/queue-worker.js';
@@ -29,6 +32,7 @@ import { registerEventWatcher } from './events/health.js';
 let statusWriterInstance: StatusWriter | null = null;
 let collectionSchedulerInstance: CollectionScheduler | null = null;
 let argoCDDetectionManagerInstance: ArgoCDDetectionManager | null = null;
+let trivyDetectionManagerInstance: TrivyDetectionManager | null = null;
 let eventWatcherInstance: KubernetesEventWatcher | null = null;
 let eventQueueWorkerInstance: EventQueueWorker | null = null;
 
@@ -87,6 +91,19 @@ function parseArgoCDConfig(): ArgoCDDetectionConfig {
   };
 }
 
+function parseTrivyConfig(): TrivyDetectionConfig {
+  const enabledEnv = process.env.TRIVY_ENABLED;
+  return {
+    autoDetect: process.env.TRIVY_AUTO_DETECT !== 'false',
+    enabled:
+      enabledEnv === 'true' ? true : enabledEnv === 'false' ? false : undefined,
+    serverUrl: process.env.TRIVY_SERVER_URL?.trim() || undefined,
+    healthPath: process.env.TRIVY_HEALTH_PATH || '/healthz',
+    detectionInterval: parseInt(process.env.TRIVY_DETECTION_INTERVAL || '6', 10),
+    detectionTimeoutMs: parseInt(process.env.TRIVY_DETECTION_TIMEOUT_MS || '10000', 10)
+  };
+}
+
 // Perform initial ArgoCD detection during startup
 async function performInitialArgoCDDetection(): Promise<void> {
   try {
@@ -110,6 +127,28 @@ async function performInitialArgoCDDetection(): Promise<void> {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.warn('ArgoCD detection failed during startup', { error: errorMessage });
     // Continue with default status (not detected)
+  }
+}
+
+async function performInitialTrivyDetection(): Promise<void> {
+  try {
+    logger.info('Performing initial Trivy detection');
+    const trivyConfig = parseTrivyConfig();
+    const trivyStatus = await detectTrivyWithTimeout(trivyConfig);
+    trivyStatusTracker.setStatus(trivyStatus);
+
+    if (trivyStatus.detected) {
+      logger.info('Trivy detection completed', {
+        detected: true,
+        serverUrl: trivyStatus.serverUrl,
+        version: trivyStatus.version
+      });
+    } else {
+      logger.info('Trivy detection completed', { detected: false });
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.warn('Trivy detection failed during startup', { error: errorMessage });
   }
 }
 
@@ -158,6 +197,14 @@ export async function startOperator() {
     const argoCDDetectionManager = new ArgoCDDetectionManager();
     argoCDDetectionManager.start(kubernetesClient, argoCDConfig, initialArgoCDStatus);
     argoCDDetectionManagerInstance = argoCDDetectionManager;
+
+    await performInitialTrivyDetection();
+
+    const trivyConfig = parseTrivyConfig();
+    const initialTrivyStatus = trivyStatusTracker.getStatus();
+    const trivyDetectionManager = new TrivyDetectionManager();
+    trivyDetectionManager.start(trivyConfig, initialTrivyStatus);
+    trivyDetectionManagerInstance = trivyDetectionManager;
     
     // Start status writer for periodic ConfigMap updates
     logger.info('Starting status writer...');
@@ -313,6 +360,7 @@ export async function startOperator() {
           null,
           collectionSchedulerInstance,
           argoCDDetectionManagerInstance,
+          trivyDetectionManagerInstance,
           eventWatcherInstance,
           eventQueueWorkerInstance
         ).catch((error) => {
@@ -330,6 +378,7 @@ export async function startOperator() {
           null,
           collectionSchedulerInstance,
           argoCDDetectionManagerInstance,
+          trivyDetectionManagerInstance,
           eventWatcherInstance,
           eventQueueWorkerInstance
         ).catch((error) => {

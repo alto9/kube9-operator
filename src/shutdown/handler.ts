@@ -2,6 +2,7 @@ import type { StatusWriter } from '../status/writer.js';
 import type { RegistrationManager } from '../registration/manager.js';
 import type { CollectionScheduler } from '../collection/scheduler.js';
 import type { ArgoCDDetectionManager } from '../argocd/detection-manager.js';
+import type { TrivyDetectionManager } from '../trivy/detection-manager.js';
 import type { KubernetesEventWatcher } from '../events/kubernetes-event-watcher.js';
 import type { EventQueueWorker } from '../events/queue-worker.js';
 import { stopHealthServer } from '../health/server.js';
@@ -9,6 +10,7 @@ import type { OperatorStatus } from '../status/types.js';
 import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
 import { argocdStatusTracker } from '../argocd/state.js';
+import { trivyStatusTracker } from '../trivy/state.js';
 
 /**
  * Operator version (semver)
@@ -40,6 +42,7 @@ let isShuttingDown = false;
  * @param registrationManager - Optional registration manager instance to stop
  * @param collectionScheduler - Optional collection scheduler instance to stop
  * @param argoCDDetectionManager - Optional ArgoCD detection manager instance to stop
+ * @param trivyDetectionManager - Optional Trivy detection manager instance to stop
  * @param eventWatcher - Optional event watcher instance to stop
  * @param eventQueueWorker - Optional event queue worker instance to stop
  */
@@ -48,6 +51,7 @@ export async function gracefulShutdown(
   registrationManager: RegistrationManager | null,
   collectionScheduler: CollectionScheduler | null,
   argoCDDetectionManager: ArgoCDDetectionManager | null,
+  trivyDetectionManager: TrivyDetectionManager | null,
   eventWatcher: KubernetesEventWatcher | null,
   eventQueueWorker: EventQueueWorker | null
 ): Promise<void> {
@@ -87,6 +91,10 @@ export async function gracefulShutdown(
       argoCDDetectionManager.stop();
     }
 
+    if (trivyDetectionManager) {
+      trivyDetectionManager.stop();
+    }
+
     // Stop status writer (clears interval)
     statusWriter.stop();
 
@@ -106,6 +114,7 @@ export async function gracefulShutdown(
     // Build final status indicating shutdown
     const collectionStats = collectionStatsTracker.getStats();
     const argocdStatus = argocdStatusTracker.getStatus();
+    const trivyStatus = trivyStatusTracker.getStatus();
     const finalStatus: OperatorStatus = {
       mode: "operated",
       tier: "free",
@@ -121,7 +130,8 @@ export async function gracefulShutdown(
         collectionsStoredCount: collectionStats.collectionsStoredCount,
         lastSuccessTime: collectionStats.lastSuccessTime
       },
-      argocd: argocdStatus
+      argocd: argocdStatus,
+      trivy: trivyStatus
     };
 
     // Include clusterId if registered
