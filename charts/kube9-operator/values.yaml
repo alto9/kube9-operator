@@ -53,6 +53,14 @@ argocd:
   # Detection check interval in hours (default: 6)
   detectionInterval: 6
 
+# Optional Trivy server detection (does not install Trivy; set serverUrl to probe)
+trivy:
+  autoDetect: true
+  # serverUrl: "http://trivy.trivy-system.svc.cluster.local:4954"
+  healthPath: "/healthz"
+  detectionInterval: 6
+  detectionTimeoutMs: 10000
+
 # Collection interval configuration (for testing/debugging)
 # The operator enforces minimum intervals to prevent abuse
 metrics:

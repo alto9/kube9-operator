@@ -69,6 +69,23 @@ spec:
         {{- end }}
         - name: ARGOCD_DETECTION_INTERVAL
           value: {{ .Values.argocd.detectionInterval | default 6 | quote }}
+        # Optional Trivy server detection
+        - name: TRIVY_AUTO_DETECT
+          value: {{ .Values.trivy.autoDetect | quote }}
+        {{- if kindIs "bool" .Values.trivy.enabled }}
+        - name: TRIVY_ENABLED
+          value: {{ .Values.trivy.enabled | quote }}
+        {{- end }}
+        {{- if .Values.trivy.serverUrl }}
+        - name: TRIVY_SERVER_URL
+          value: {{ .Values.trivy.serverUrl | quote }}
+        {{- end }}
+        - name: TRIVY_HEALTH_PATH
+          value: {{ .Values.trivy.healthPath | default "/healthz" | quote }}
+        - name: TRIVY_DETECTION_INTERVAL
+          value: {{ .Values.trivy.detectionInterval | default 6 | quote }}
+        - name: TRIVY_DETECTION_TIMEOUT_MS
+          value: {{ .Values.trivy.detectionTimeoutMs | default 10000 | quote }}
         # Event retention configuration
         - name: EVENT_RETENTION_INFO_WARNING_DAYS
           value: {{ .Values.events.retention.infoWarning | default 7 | quote }}

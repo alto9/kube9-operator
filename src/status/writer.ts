@@ -6,6 +6,7 @@ import type { RegistrationManager } from '../registration/manager.js';
 import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
 import { argocdStatusTracker } from '../argocd/state.js';
+import { trivyStatusTracker } from '../trivy/state.js';
 
 /**
  * Default registration state when registration manager is not available
@@ -195,13 +196,15 @@ export class StatusWriter {
       
       // Get current ArgoCD status
       const argocdStatus = argocdStatusTracker.getStatus();
+      const trivyStatus = trivyStatusTracker.getStatus();
       
       const status = calculateStatus(
         registrationState,
         this.lastWriteError,
         canWriteConfigMap,
         collectionStats,
-        argocdStatus
+        argocdStatus,
+        trivyStatus
       );
 
       // Convert status to JSON string
