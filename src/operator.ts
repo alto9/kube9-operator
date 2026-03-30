@@ -20,7 +20,8 @@ import { logger } from './logging/logger.js';
 import { detectArgoCDWithTimeout, type ArgoCDDetectionConfig } from './argocd/detection.js';
 import { argocdStatusTracker } from './argocd/state.js';
 import { ArgoCDDetectionManager } from './argocd/detection-manager.js';
-import { detectTrivyWithTimeout, type TrivyDetectionConfig } from './trivy/detection.js';
+import { detectTrivyWithTimeout } from './trivy/detection.js';
+import { parseTrivyDetectionConfigFromEnv } from './trivy/env-config.js';
 import { trivyStatusTracker } from './trivy/state.js';
 import { TrivyDetectionManager } from './trivy/detection-manager.js';
 import { runWorkloadImageScanCycle } from './trivy/workload-scan-cycle.js';
@@ -92,19 +93,6 @@ function parseArgoCDConfig(): ArgoCDDetectionConfig {
   };
 }
 
-function parseTrivyConfig(): TrivyDetectionConfig {
-  const enabledEnv = process.env.TRIVY_ENABLED;
-  return {
-    autoDetect: process.env.TRIVY_AUTO_DETECT !== 'false',
-    enabled:
-      enabledEnv === 'true' ? true : enabledEnv === 'false' ? false : undefined,
-    serverUrl: process.env.TRIVY_SERVER_URL?.trim() || undefined,
-    healthPath: process.env.TRIVY_HEALTH_PATH || '/healthz',
-    detectionInterval: parseInt(process.env.TRIVY_DETECTION_INTERVAL || '6', 10),
-    detectionTimeoutMs: parseInt(process.env.TRIVY_DETECTION_TIMEOUT_MS || '10000', 10)
-  };
-}
-
 // Perform initial ArgoCD detection during startup
 async function performInitialArgoCDDetection(): Promise<void> {
   try {
@@ -134,7 +122,7 @@ async function performInitialArgoCDDetection(): Promise<void> {
 async function performInitialTrivyDetection(): Promise<void> {
   try {
     logger.info('Performing initial Trivy detection');
-    const trivyConfig = parseTrivyConfig();
+    const trivyConfig = parseTrivyDetectionConfigFromEnv();
     const trivyStatus = await detectTrivyWithTimeout(trivyConfig);
     trivyStatusTracker.setStatus(trivyStatus);
 
@@ -201,7 +189,7 @@ export async function startOperator() {
 
     await performInitialTrivyDetection();
 
-    const trivyConfig = parseTrivyConfig();
+    const trivyConfig = parseTrivyDetectionConfigFromEnv();
     const initialTrivyStatus = trivyStatusTracker.getStatus();
     const trivyDetectionManager = new TrivyDetectionManager();
     trivyDetectionManager.start(trivyConfig, initialTrivyStatus);

@@ -60,8 +60,14 @@ trivy:
   healthPath: "/healthz"
   detectionInterval: 6
   detectionTimeoutMs: 10000
-  # Cap on Trivy image scans per workload-image cycle (after collection)
+  # Per-image scan timeout for the Trivy CLI (maps to TRIVY_SCAN_TIMEOUT_MS; default 600000 ms)
+  scanTimeoutMs: 600000
+  # Cap on Trivy image scans per workload-image cycle (sorted unique image refs; not full cluster in one cycle)
   maxScansPerCycle: 100
+  # Stored vulnerability assessment (maps to VULN_MAX_*). Default critical=0 fails on any critical finding.
+  vulnMaxCritical: 0
+  vulnMaxHigh: 1000000
+  vulnMaxMedium: 1000000
 
 # Collection interval configuration (for testing/debugging)
 # The operator enforces minimum intervals to prevent abuse

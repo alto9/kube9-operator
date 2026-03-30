@@ -66,6 +66,34 @@
       },
       "additionalProperties": false
     },
+    "trivy": {
+      "type": "object",
+      "description": "Optional Trivy server detection and scan tuning (see chart README)",
+      "properties": {
+        "autoDetect": { "type": "boolean", "default": true },
+        "enabled": { "type": "boolean" },
+        "serverUrl": { "type": "string" },
+        "healthPath": { "type": "string", "default": "/healthz" },
+        "detectionInterval": { "type": "integer", "minimum": 1, "maximum": 24, "default": 6 },
+        "detectionTimeoutMs": { "type": "integer", "minimum": 1000, "default": 10000 },
+        "scanTimeoutMs": {
+          "type": "integer",
+          "description": "TRIVY_SCAN_TIMEOUT_MS — per-image Trivy CLI scan timeout in milliseconds",
+          "minimum": 1000,
+          "default": 600000
+        },
+        "maxScansPerCycle": { "type": "integer", "minimum": 1, "default": 100 },
+        "vulnMaxCritical": {
+          "type": "integer",
+          "description": "VULN_MAX_CRITICAL — max stored critical findings (default 0 is strict)",
+          "minimum": 0,
+          "default": 0
+        },
+        "vulnMaxHigh": { "type": "integer", "minimum": 0, "default": 1000000 },
+        "vulnMaxMedium": { "type": "integer", "minimum": 0, "default": 1000000 }
+      },
+      "additionalProperties": false
+    },
     "events": {
       "type": "object",
       "description": "Event storage configuration",
