@@ -26,7 +26,8 @@
     "deploy:minikube": "./scripts/deploy-minikube.sh",
     "test:minikube": "echo 'Run integration tests against minikube cluster' && exit 1",
     "clean:minikube": "helm uninstall kube9-operator --namespace kube9-system 2>/dev/null || true",
-    "release": "semantic-release"
+    "release": "semantic-release",
+    "prepare": "husky"
   },
   "dependencies": {
     "@kubernetes/client-node": "^1.4.0",
