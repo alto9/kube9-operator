@@ -35,6 +35,8 @@ import {
 import type { Config } from '../config/types.js';
 import type { KubernetesClient } from '../kubernetes/client.js';
 import type { Logger } from 'winston';
+import type { TrivyStatus } from '../status/types.js';
+import type { ImageScanRepository } from '../database/image-scan-repository.js';
 
 /** Default per-check timeout in milliseconds */
 const DEFAULT_CHECK_TIMEOUT_MS = 30_000;
@@ -59,6 +61,8 @@ export interface AssessmentRunnerDeps {
   config: Config;
   logger: Logger;
   storage?: AssessmentRepository;
+  getTrivyStatus?: () => TrivyStatus;
+  imageScanRepository?: ImageScanRepository;
 }
 
 /**
@@ -207,6 +211,8 @@ export class AssessmentRunner {
       mode: input.mode,
       pillarFilter: input.pillarFilter,
       checkIdFilter: input.checkIdFilter,
+      getTrivyStatus: this.deps.getTrivyStatus,
+      imageScanRepository: this.deps.imageScanRepository,
     };
 
     // Initial record (queued -> running)

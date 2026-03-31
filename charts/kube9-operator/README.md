@@ -95,6 +95,17 @@ The following table lists the configurable parameters and their default values:
 | `argocd.namespace` | Custom namespace where ArgoCD is installed | `"argocd"` |
 | `argocd.selector` | Custom label selector for ArgoCD server deployment | `app.kubernetes.io/name=argocd-server` |
 | `argocd.detectionInterval` | Detection check interval in hours (valid range: 1–24) | `6` |
+| `trivy.autoDetect` | Probe `trivy.serverUrl` periodically for Trivy HTTP health | `true` |
+| `trivy.serverUrl` | Trivy server base URL (required for detection and scans) | (unset) |
+| `trivy.healthPath` | Health probe path (e.g. `/healthz`) | `"/healthz"` |
+| `trivy.detectionInterval` | Hours between Trivy re-detection attempts | `6` |
+| `trivy.detectionTimeoutMs` | Timeout for each Trivy health probe | `10000` |
+| `trivy.scanTimeoutMs` | `TRIVY_SCAN_TIMEOUT_MS` — per-image Trivy CLI scan timeout | `600000` |
+| `trivy.maxScansPerCycle` | Max distinct images scanned per workload cycle (sorted unique refs) | `100` |
+| `trivy.vulnMaxCritical` | `VULN_MAX_CRITICAL` — stored critical findings allowed (default `0` fails on any critical) | `0` |
+| `trivy.vulnMaxHigh` | `VULN_MAX_HIGH` | `1000000` |
+| `trivy.vulnMaxMedium` | `VULN_MAX_MEDIUM` | `1000000` |
+| `metrics.intervals.workloadImageScan` | Seconds between workload image collection / scan cycles | `86400` |
 
 ### Configuration Details
 

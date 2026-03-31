@@ -116,7 +116,7 @@ describe('SchemaManager', () => {
     
     expect(versions.length).toBeGreaterThanOrEqual(1);
     expect(versions[0]?.version).toBe(1);
-    expect(schema.getVersion()).toBeGreaterThanOrEqual(2);
+    expect(schema.getVersion()).toBeGreaterThanOrEqual(3);
   });
 
   it('schema version has correct fields', () => {
@@ -256,7 +256,33 @@ describe('SchemaManager', () => {
     const versionAfter = schema.getVersion();
     
     expect(versionBefore).toBe(versionAfter);
-    expect(versionAfter).toBeGreaterThanOrEqual(2);
+    expect(versionAfter).toBeGreaterThanOrEqual(3);
+  });
+
+  it('creates image_scans and image_vulnerabilities when migrating to v3', () => {
+    const schema = new SchemaManager();
+    schema.initialize();
+
+    const manager = DatabaseManager.getInstance();
+    const db = manager.getDatabase();
+
+    const scans = db
+      .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='image_scans'`)
+      .get() as { name: string } | undefined;
+    expect(scans?.name).toBe('image_scans');
+
+    const vulns = db
+      .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='image_vulnerabilities'`)
+      .get() as { name: string } | undefined;
+    expect(vulns?.name).toBe('image_vulnerabilities');
+
+    const fk = db.prepare(`PRAGMA foreign_key_list(image_vulnerabilities)`).all() as Array<{
+      table: string;
+      from: string;
+      to: string;
+    }>;
+    const scanFk = fk.find((x) => x.from === 'scan_id' && x.table === 'image_scans');
+    expect(scanFk?.to).toBe('scan_id');
   });
 
   it('migration runs cleanly on fresh database', () => {
@@ -264,7 +290,7 @@ describe('SchemaManager', () => {
     const schema = new SchemaManager();
     schema.initialize();
     
-    expect(schema.getVersion()).toBeGreaterThanOrEqual(1);
+    expect(schema.getVersion()).toBeGreaterThanOrEqual(3);
     
     const manager = DatabaseManager.getInstance();
     const db = manager.getDatabase();

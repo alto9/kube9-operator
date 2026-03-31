@@ -123,6 +123,12 @@ securityContext:
 - **Image Compliance**: Dockerfile ensures non-root user.
 - **Helm Chart**: Deployment template enforces security contexts.
 
+## Optional image vulnerability scanning (M3)
+
+- **Trivy is optional**: The operator integrates with Trivy only when it is already deployed in the cluster and discoverable per configuration. There is **no** requirement to install Trivy via the kube9-operator Helm chart.
+- **No Trivy lifecycle in-chart**: Installing, upgrading, or operating the Trivy Operator or Trivy server is out of scope for this repository; platform or cluster admins own that lifecycle.
+- **Safe degradation**: When Trivy is absent or fails, the operator continues running; vulnerability features report unavailable or degraded state rather than blocking core operation.
+
 ## Security Best Practices Summary
 
 1. **Zero Ingress**: No external attack surface

@@ -9,6 +9,8 @@
 import type { KubernetesClient } from '../kubernetes/client.js';
 import type { Config } from '../config/types.js';
 import type { Logger } from 'winston';
+import type { TrivyStatus } from '../status/types.js';
+import type { ImageScanRepository } from '../database/image-scan-repository.js';
 
 // ---------------------------------------------------------------------------
 // Pillar Taxonomy
@@ -161,6 +163,13 @@ export interface AssessmentRunContext {
   pillarFilter?: Pillar;
   /** Optional single check ID when mode is 'single-check' */
   checkIdFilter?: string;
+  /**
+   * When set (e.g. in-cluster operator), vulnerability checks skip if Trivy is not available.
+   * Omitted in standalone CLI runs that only read the local database.
+   */
+  getTrivyStatus?: () => TrivyStatus;
+  /** Optional repository for tests; defaults to the process SQLite database. */
+  imageScanRepository?: ImageScanRepository;
 }
 
 // ---------------------------------------------------------------------------

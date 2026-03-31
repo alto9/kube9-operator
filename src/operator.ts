@@ -20,6 +20,11 @@ import { logger } from './logging/logger.js';
 import { detectArgoCDWithTimeout, type ArgoCDDetectionConfig } from './argocd/detection.js';
 import { argocdStatusTracker } from './argocd/state.js';
 import { ArgoCDDetectionManager } from './argocd/detection-manager.js';
+import { detectTrivyWithTimeout } from './trivy/detection.js';
+import { parseTrivyDetectionConfigFromEnv } from './trivy/env-config.js';
+import { trivyStatusTracker } from './trivy/state.js';
+import { TrivyDetectionManager } from './trivy/detection-manager.js';
+import { runWorkloadImageScanCycle } from './trivy/workload-scan-cycle.js';
 import { SchemaManager } from './database/schema.js';
 import { KubernetesEventWatcher } from './events/kubernetes-event-watcher.js';
 import { EventQueueWorker } from './events/queue-worker.js';
@@ -29,6 +34,7 @@ import { registerEventWatcher } from './events/health.js';
 let statusWriterInstance: StatusWriter | null = null;
 let collectionSchedulerInstance: CollectionScheduler | null = null;
 let argoCDDetectionManagerInstance: ArgoCDDetectionManager | null = null;
+let trivyDetectionManagerInstance: TrivyDetectionManager | null = null;
 let eventWatcherInstance: KubernetesEventWatcher | null = null;
 let eventQueueWorkerInstance: EventQueueWorker | null = null;
 
@@ -113,6 +119,28 @@ async function performInitialArgoCDDetection(): Promise<void> {
   }
 }
 
+async function performInitialTrivyDetection(): Promise<void> {
+  try {
+    logger.info('Performing initial Trivy detection');
+    const trivyConfig = parseTrivyDetectionConfigFromEnv();
+    const trivyStatus = await detectTrivyWithTimeout(trivyConfig);
+    trivyStatusTracker.setStatus(trivyStatus);
+
+    if (trivyStatus.detected) {
+      logger.info('Trivy detection completed', {
+        detected: true,
+        serverUrl: trivyStatus.serverUrl,
+        version: trivyStatus.version
+      });
+    } else {
+      logger.info('Trivy detection completed', { detected: false });
+    }
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    logger.warn('Trivy detection failed during startup', { error: errorMessage });
+  }
+}
+
 /**
  * Start the operator control loop
  */
@@ -158,6 +186,14 @@ export async function startOperator() {
     const argoCDDetectionManager = new ArgoCDDetectionManager();
     argoCDDetectionManager.start(kubernetesClient, argoCDConfig, initialArgoCDStatus);
     argoCDDetectionManagerInstance = argoCDDetectionManager;
+
+    await performInitialTrivyDetection();
+
+    const trivyConfig = parseTrivyDetectionConfigFromEnv();
+    const initialTrivyStatus = trivyStatusTracker.getStatus();
+    const trivyDetectionManager = new TrivyDetectionManager();
+    trivyDetectionManager.start(trivyConfig, initialTrivyStatus);
+    trivyDetectionManagerInstance = trivyDetectionManager;
     
     // Start status writer for periodic ConfigMap updates
     logger.info('Starting status writer...');
@@ -291,6 +327,31 @@ export async function startOperator() {
         }
       }
     );
+
+    collectionScheduler.register(
+      'workload-image-scan',
+      config.workloadImageScanIntervalSeconds,
+      3600, // 1 hour minimum interval
+      3600, // 0-1 hour random offset range
+      async () => {
+        const startTime = Date.now();
+        try {
+          await runWorkloadImageScanCycle({
+            kubernetesClient,
+            getTrivyStatus: () => trivyStatusTracker.getStatus(),
+          });
+          const durationSeconds = (Date.now() - startTime) / 1000;
+          recordCollection('workload-image-scan', 'success', durationSeconds);
+          collectionStatsTracker.recordSuccess('workload-image-scan');
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error);
+          logger.error('Workload image collection or scan cycle failed', { error: errorMessage });
+          const durationSeconds = (Date.now() - startTime) / 1000;
+          recordCollection('workload-image-scan', 'failed', durationSeconds);
+          collectionStatsTracker.recordFailure('workload-image-scan');
+        }
+      }
+    );
     
       // Start scheduler
       collectionScheduler.start();
@@ -313,6 +374,7 @@ export async function startOperator() {
           null,
           collectionSchedulerInstance,
           argoCDDetectionManagerInstance,
+          trivyDetectionManagerInstance,
           eventWatcherInstance,
           eventQueueWorkerInstance
         ).catch((error) => {
@@ -330,6 +392,7 @@ export async function startOperator() {
           null,
           collectionSchedulerInstance,
           argoCDDetectionManagerInstance,
+          trivyDetectionManagerInstance,
           eventWatcherInstance,
           eventQueueWorkerInstance
         ).catch((error) => {

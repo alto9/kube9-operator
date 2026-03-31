@@ -15,6 +15,9 @@ import { AssessmentRunMode, Pillar, PILLAR_VALUES } from '../../assessment/types
 import { kubernetesClient } from '../../kubernetes/client.js';
 import { loadConfig, setConfig } from '../../config/loader.js';
 import { logger } from '../../logging/logger.js';
+import { detectTrivyWithTimeout } from '../../trivy/detection.js';
+import { parseTrivyDetectionConfigFromEnv } from '../../trivy/env-config.js';
+import { ImageScanRepository } from '../../database/image-scan-repository.js';
 
 const PILLAR_OPTIONS = PILLAR_VALUES.join(', ');
 
@@ -155,10 +158,16 @@ export async function assessRun(options: Record<string, unknown>) {
     const config = await loadConfig();
     setConfig(config);
 
+    const trivyStatusAtRunStart = await detectTrivyWithTimeout(
+      parseTrivyDetectionConfigFromEnv()
+    );
+
     const runner = new AssessmentRunner({
       kubernetes: kubernetesClient,
       config,
       logger,
+      getTrivyStatus: () => trivyStatusAtRunStart,
+      imageScanRepository: new ImageScanRepository(),
     });
 
     const mode = validated.mode as AssessmentRunMode;

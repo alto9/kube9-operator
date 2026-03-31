@@ -53,10 +53,44 @@
               "description": "Resource configuration patterns collection interval in seconds. Default: 43200 (12 hours). Minimum: 3600 (1 hour). Configurable for testing/debugging purposes.",
               "minimum": 3600,
               "default": 43200
+            },
+            "workloadImageScan": {
+              "type": "integer",
+              "description": "Workload image collection and optional Trivy scan cycle interval in seconds. Default: 86400 (24 hours). Minimum: 3600 (1 hour).",
+              "minimum": 3600,
+              "default": 86400
             }
           },
           "additionalProperties": false
         }
+      },
+      "additionalProperties": false
+    },
+    "trivy": {
+      "type": "object",
+      "description": "Optional Trivy server detection and scan tuning (see chart README)",
+      "properties": {
+        "autoDetect": { "type": "boolean", "default": true },
+        "enabled": { "type": "boolean" },
+        "serverUrl": { "type": "string" },
+        "healthPath": { "type": "string", "default": "/healthz" },
+        "detectionInterval": { "type": "integer", "minimum": 1, "maximum": 24, "default": 6 },
+        "detectionTimeoutMs": { "type": "integer", "minimum": 1000, "default": 10000 },
+        "scanTimeoutMs": {
+          "type": "integer",
+          "description": "TRIVY_SCAN_TIMEOUT_MS — per-image Trivy CLI scan timeout in milliseconds",
+          "minimum": 1000,
+          "default": 600000
+        },
+        "maxScansPerCycle": { "type": "integer", "minimum": 1, "default": 100 },
+        "vulnMaxCritical": {
+          "type": "integer",
+          "description": "VULN_MAX_CRITICAL — max stored critical findings (default 0 is strict)",
+          "minimum": 0,
+          "default": 0
+        },
+        "vulnMaxHigh": { "type": "integer", "minimum": 0, "default": 1000000 },
+        "vulnMaxMedium": { "type": "integer", "minimum": 0, "default": 1000000 }
       },
       "additionalProperties": false
     },
