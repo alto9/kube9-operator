@@ -1,3 +1,20 @@
+# [1.7.0](https://github.com/alto9/kube9-operator/compare/v1.6.0...v1.7.0) (2026-04-01)
+
+
+### Bug Fixes
+
+* **assessment:** wire assess run Trivy probe and Helm vuln/scan env ([a927b4d](https://github.com/alto9/kube9-operator/commit/a927b4d178b1fdf391a7b164ba5e1e6c480c50ae))
+* **deps:** add husky devDependency for prepare script ([#109](https://github.com/alto9/kube9-operator/issues/109)) ([513082b](https://github.com/alto9/kube9-operator/commit/513082ba2c3c40844425423c035fd4f2f6bd361f))
+* **helm:** allow workloadImageScan in values schema ([98bf3af](https://github.com/alto9/kube9-operator/commit/98bf3af229456c048a2f90a54ce78bce44fc3733))
+
+
+### Features
+
+* **database:** add image scan schema and repository for issue 98 ([b1da14b](https://github.com/alto9/kube9-operator/commit/b1da14bb5c04da2114536d3674bd522761e4fc18))
+* **security:** vulnerability thresholds, query CLI, and scan metrics ([7f169e7](https://github.com/alto9/kube9-operator/commit/7f169e7544344596a7e96b1a13764e39bd9d81c3)), closes [#99](https://github.com/alto9/kube9-operator/issues/99)
+* **trivy:** collect workload images and gate Trivy scans ([2e62f1b](https://github.com/alto9/kube9-operator/commit/2e62f1b551c1ef88e5a6baa47b1f6fb31190b66e)), closes [#97](https://github.com/alto9/kube9-operator/issues/97)
+* **trivy:** optional server detection and scanner client ([53756de](https://github.com/alto9/kube9-operator/commit/53756dec9039b0957b23a92a11a785f137ab90a1)), closes [#96](https://github.com/alto9/kube9-operator/issues/96)
+
 # [1.6.0](https://github.com/alto9/kube9-operator/compare/v1.5.0...v1.6.0) (2026-03-26)
 
 
