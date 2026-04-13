@@ -1,7 +1,7 @@
 # Operator image configuration
 image:
   repository: ghcr.io/alto9/kube9-operator
-  tag: "1.6.0"
+  tag: "1.7.0"
   pullPolicy: IfNotPresent
 
 # Operator resource requests and limits
@@ -53,6 +53,22 @@ argocd:
   # Detection check interval in hours (default: 6)
   detectionInterval: 6
 
+# Optional Trivy server detection (does not install Trivy; set serverUrl to probe)
+trivy:
+  autoDetect: true
+  # serverUrl: "http://trivy.trivy-system.svc.cluster.local:4954"
+  healthPath: "/healthz"
+  detectionInterval: 6
+  detectionTimeoutMs: 10000
+  # Per-image scan timeout for the Trivy CLI (maps to TRIVY_SCAN_TIMEOUT_MS; default 600000 ms)
+  scanTimeoutMs: 600000
+  # Cap on Trivy image scans per workload-image cycle (sorted unique image refs; not full cluster in one cycle)
+  maxScansPerCycle: 100
+  # Stored vulnerability assessment (maps to VULN_MAX_*). Default critical=0 fails on any critical finding.
+  vulnMaxCritical: 0
+  vulnMaxHigh: 1000000
+  vulnMaxMedium: 1000000
+
 # Collection interval configuration (for testing/debugging)
 # The operator enforces minimum intervals to prevent abuse
 metrics:
@@ -66,6 +82,9 @@ metrics:
     # Resource configuration patterns collection interval in seconds (default: 43200 = 12 hours)
     # Minimum: 3600 seconds (1 hour)
     resourceConfigurationPatterns: 43200
+    # Workload image collection + optional Trivy scan cycle (default: 86400 = 24 hours)
+    # Minimum: 3600 seconds (1 hour)
+    workloadImageScan: 86400
 
 # Event storage configuration
 events:

@@ -116,9 +116,18 @@ All metrics are exposed at `/metrics` endpoint and follow Prometheus naming conv
 - **Labels**:
   - `type`: Collection type
 
+### Vulnerability scanning metrics (planned, M3)
+
+Exposed only when Trivy-backed scanning is active; when Trivy is absent, these metrics should be zero or omitted per Prometheus registration rules (implementation detail), without failing scrapes.
+
+- **Counters**: vulnerability counts by normalized `severity` (and optionally `scanner` / `state`)
+- **Histograms**: scan duration seconds (labels for scan outcome such as `success`, `failed`, `skipped`)
+
+Exact metric names and label sets are defined at implementation time and registered alongside existing operator metrics.
+
 ### Metrics Registry
 - All metrics are registered in a single Prometheus registry
-- Metrics are collected from multiple modules (events, collection)
+- Metrics are collected from multiple modules (events, collection, vulnerability scanning when enabled)
 - Registry is exported for use by health server
 
 ## Health Check Logic

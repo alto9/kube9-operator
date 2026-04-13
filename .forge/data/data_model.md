@@ -134,4 +134,41 @@ Tracks database schema migrations.
 | applied_at | TEXT | NOT NULL | ISO 8601 timestamp when migration was applied |
 | description | TEXT | NULL | Migration description |
 
+### image_scans
+
+Records of vulnerability scan runs against a container image reference (digest or repo:tag as reported by the scanner).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| scan_id | TEXT | PRIMARY KEY | Unique scan identifier |
+| image_reference | TEXT | NOT NULL | Image reference as collected from workloads / passed to Trivy |
+| image_digest | TEXT | NULL | Digest when available |
+| started_at | TEXT | NOT NULL | ISO 8601 timestamp |
+| completed_at | TEXT | NULL | ISO 8601 timestamp when scan finished |
+| state | TEXT | NOT NULL | Lifecycle: e.g. `queued`, `running`, `completed`, `failed`, `skipped` |
+| scanner | TEXT | NOT NULL | e.g. `trivy` |
+| error_message | TEXT | NULL | Populated when state is `failed` or scan was skipped due to missing scanner |
+
+**Indexes:** `idx_image_scans_image_reference`, `idx_image_scans_completed_at DESC`, `idx_image_scans_state`.
+
+### image_vulnerabilities
+
+Normalized vulnerability findings linked to a scan (and optionally to originating workload metadata via application logic).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PRIMARY KEY | Unique row identifier |
+| scan_id | TEXT | NOT NULL, FOREIGN KEY → image_scans(scan_id) ON DELETE CASCADE | Parent scan |
+| vulnerability_id | TEXT | NOT NULL | Scanner vulnerability ID (e.g. CVE) |
+| severity | TEXT | NOT NULL | Normalized severity for filtering and metrics |
+| package_name | TEXT | NULL | Affected package if reported |
+| installed_version | TEXT | NULL | Installed version if reported |
+| fixed_version | TEXT | NULL | Fixed version if reported |
+| title | TEXT | NULL | Short title |
+| raw_metadata | TEXT | NULL | Optional JSON blob for scanner-specific fields |
+
+**Indexes:** `idx_image_vulnerabilities_scan_id`, `idx_image_vulnerabilities_severity`, `idx_image_vulnerabilities_vulnerability_id`.
+
+**Retention:** Deleting a row in `image_scans` cascades to `image_vulnerabilities` (`ON DELETE CASCADE`). Optional time-based pruning is implemented in application code (`ImageScanRepository.deleteScansCompletedBefore`); there is no DB-level TTL trigger.
+
 **Note:** Collections and argocd_apps tables are planned for future milestones (M8/M9) but are not yet implemented in the current schema.

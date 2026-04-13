@@ -76,6 +76,7 @@ const mockConfig = {
   clusterMetadataIntervalSeconds: 86400,
   resourceInventoryIntervalSeconds: 21600,
   resourceConfigurationPatternsIntervalSeconds: 43200,
+  workloadImageScanIntervalSeconds: 86400,
   eventRetentionInfoWarningDays: 7,
   eventRetentionErrorCriticalDays: 30,
 } as never;
@@ -206,7 +207,7 @@ describe('AssessmentRunner (integration)', () => {
       pillarFilter: Pillar.Security,
     });
 
-    expect(checks.length).toBeGreaterThanOrEqual(8);
+    expect(checks.length).toBeGreaterThanOrEqual(9);
     const ids = checks.map((c) => c.id).sort();
     expect(ids).toContain('security.run-as-non-root');
     expect(ids).toContain('security.privileged-containers');
@@ -216,6 +217,7 @@ describe('AssessmentRunner (integration)', () => {
     expect(ids).toContain('security.secrets-in-configmaps');
     expect(ids).toContain('security.external-secrets-usage');
     expect(ids).toContain('security.hardcoded-secrets');
+    expect(ids).toContain('security.stored-vulnerability-thresholds');
   });
 
   it('security checks run successfully with empty cluster (all pass)', async () => {
@@ -238,12 +240,12 @@ describe('AssessmentRunner (integration)', () => {
 
     expect(record.run_id).toBe('run-security-pillar');
     expect(record.state).toBe('completed');
-    expect(record.total_checks).toBe(8);
-    expect(record.passed_checks).toBe(8);
+    expect(record.total_checks).toBe(9);
+    expect(record.passed_checks).toBe(9);
     expect(record.failed_checks).toBe(0);
 
     const history = storage.queryHistory({ filters: { run_id: 'run-security-pillar' } });
-    expect(history).toHaveLength(8);
+    expect(history).toHaveLength(9);
     expect(history.every((h) => h.status === 'passing')).toBe(true);
   });
 

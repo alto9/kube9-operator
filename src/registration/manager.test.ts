@@ -21,6 +21,7 @@ function createMockConfig(): Config {
     clusterMetadataIntervalSeconds: 86400,
     resourceInventoryIntervalSeconds: 21600,
     resourceConfigurationPatternsIntervalSeconds: 43200,
+    workloadImageScanIntervalSeconds: 86400,
     eventRetentionInfoWarningDays: 7,
     eventRetentionErrorCriticalDays: 30,
   };

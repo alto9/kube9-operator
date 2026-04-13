@@ -16,6 +16,7 @@ import {
   secretsInConfigMapsCheck,
   externalSecretsUsageCheck,
   hardcodedSecretsCheck,
+  storedVulnerabilityThresholdsCheck,
 } from './checks/security/index.js';
 import {
   replicaCountsCheck,
@@ -47,6 +48,7 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   secretsInConfigMapsCheck,
   externalSecretsUsageCheck,
   hardcodedSecretsCheck,
+  storedVulnerabilityThresholdsCheck,
   replicaCountsCheck,
   spreadAntiAffinityCheck,
   podDisruptionBudgetsCheck,

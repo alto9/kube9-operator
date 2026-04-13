@@ -1,4 +1,10 @@
-import type { OperatorStatus, RegistrationState, CollectionStats, ArgoCDStatus } from './types.js';
+import type {
+  OperatorStatus,
+  RegistrationState,
+  CollectionStats,
+  ArgoCDStatus,
+  TrivyStatus,
+} from './types.js';
 
 /**
  * Operator version (semver)
@@ -37,6 +43,13 @@ const DEFAULT_ARGOCD_STATUS: ArgoCDStatus = {
   lastChecked: new Date().toISOString(),
 };
 
+const DEFAULT_TRIVY_STATUS: TrivyStatus = {
+  detected: false,
+  serverUrl: null,
+  version: null,
+  lastChecked: new Date().toISOString(),
+};
+
 /**
  * Calculate the current operator status based on configuration and system state
  * 
@@ -45,6 +58,7 @@ const DEFAULT_ARGOCD_STATUS: ArgoCDStatus = {
  * @param canWriteConfigMap - Whether the operator can write to ConfigMap (defaults to true)
  * @param collectionStats - Optional collection statistics (defaults to zero stats)
  * @param argocdStatus - Optional ArgoCD detection status (defaults to not detected)
+ * @param trivyStatus - Optional Trivy detection status (defaults to unavailable)
  * @returns OperatorStatus object with current operator state
  */
 export function calculateStatus(
@@ -57,7 +71,8 @@ export function calculateStatus(
     collectionsStoredCount: 0,
     lastSuccessTime: null
   },
-  argocdStatus: ArgoCDStatus = DEFAULT_ARGOCD_STATUS
+  argocdStatus: ArgoCDStatus = DEFAULT_ARGOCD_STATUS,
+  trivyStatus: TrivyStatus = DEFAULT_TRIVY_STATUS
 ): OperatorStatus {
   const { isRegistered, clusterId, consecutiveFailures = 0 } = registrationState;
   
@@ -112,7 +127,8 @@ export function calculateStatus(
       collectionsStoredCount: collectionStats.collectionsStoredCount,
       lastSuccessTime: collectionStats.lastSuccessTime
     },
-    argocd: argocdStatus
+    argocd: argocdStatus,
+    trivy: trivyStatus
   };
   
   // Include clusterId only when registered (pro tier)

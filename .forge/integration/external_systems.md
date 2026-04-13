@@ -67,6 +67,17 @@ Exposed in ConfigMap `kube9-operator-status` under `status.argocd`:
 - Application sync status tracking
 - Drift detection results
 
+## Trivy (optional, M3)
+
+**Scope boundary**: The kube9-operator Helm chart does **not** install, upgrade, or bundle Trivy or the Trivy Operator. Cluster operators (or platform UI that installs other components) may deploy Trivy separately. This integration is **optional**: if Trivy is not present or unreachable, the operator **must not** perform vulnerability scanning and must continue normal operation.
+
+**Behavior**:
+- **Detection**: Discover whether an in-cluster Trivy service (API and/or CLI invocation path) is available, using configuration similar in spirit to ArgoCD (env-driven endpoints, timeouts, periodic refresh). Exact discovery rules are implementation-defined but must default to “no Trivy” when nothing is configured or reachable.
+- **Scanning**: Run or request scans **only when** Trivy is detected and usable. No background scan loops that assume Trivy exists.
+- **Resilience**: Trivy errors, timeouts, or disappearance after detection must be handled gracefully (degraded scan status, structured logging, no crash loops).
+
+**Consumption**: Scan results feed SQLite persistence, security assessment checks, operator CLI query commands, and Prometheus metrics (see `.forge/data/data_model.md` and `.forge/operations/observability.md` as those contracts are extended for M3).
+
 ## Prometheus
 
 **Metrics Endpoint**:

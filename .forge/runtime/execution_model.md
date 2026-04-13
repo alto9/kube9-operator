@@ -45,6 +45,7 @@ The kube9-operator binary supports multiple execution modes via Commander.js CLI
   - `assess history` - Historical results for trending
 - **Behavior**:
   - Loads configuration and initializes assessment registry
+  - For `assess run`, performs a one-time Trivy HTTP probe using the same `TRIVY_*` env vars as `serve`, then constructs `AssessmentRunner` with `getTrivyStatus` (snapshot from that probe) and `imageScanRepository`, matching in-process assessment behavior for checks such as `security.stored-vulnerability-thresholds` (skip when Trivy is not configured or unreachable; evaluate stored SQLite counts when Trivy is detected)
   - Runs assessments using AssessmentRunner
   - Reads/writes assessment results to database
   - Outputs results in specified format

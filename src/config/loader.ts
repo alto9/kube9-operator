@@ -31,6 +31,10 @@ export async function loadConfig(): Promise<Config> {
     process.env.RESOURCE_CONFIGURATION_PATTERNS_INTERVAL_SECONDS || '43200',
     10
   );
+  const workloadImageScanIntervalSeconds = parseInt(
+    process.env.WORKLOAD_IMAGE_SCAN_INTERVAL_SECONDS || '86400',
+    10
+  );
   const eventRetentionInfoWarningDays = parseInt(
     process.env.EVENT_RETENTION_INFO_WARNING_DAYS || '7',
     10
@@ -53,6 +57,7 @@ export async function loadConfig(): Promise<Config> {
     clusterMetadataIntervalSeconds,
     resourceInventoryIntervalSeconds,
     resourceConfigurationPatternsIntervalSeconds,
+    workloadImageScanIntervalSeconds,
     eventRetentionInfoWarningDays,
     eventRetentionErrorCriticalDays,
   };
@@ -65,6 +70,8 @@ export async function loadConfig(): Promise<Config> {
     clusterMetadataOverridden: process.env.CLUSTER_METADATA_INTERVAL_SECONDS !== undefined,
     resourceInventoryOverridden: process.env.RESOURCE_INVENTORY_INTERVAL_SECONDS !== undefined,
     resourceConfigurationPatternsOverridden: process.env.RESOURCE_CONFIGURATION_PATTERNS_INTERVAL_SECONDS !== undefined,
+    workloadImageScanIntervalSeconds: config.workloadImageScanIntervalSeconds,
+    workloadImageScanOverridden: process.env.WORKLOAD_IMAGE_SCAN_INTERVAL_SECONDS !== undefined,
   });
 
   return config;
