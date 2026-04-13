@@ -288,4 +288,40 @@ describe('AssessmentRunner (integration)', () => {
     expect(history).toHaveLength(4);
     expect(history.map((h) => h.check_id).sort()).toEqual(ids);
   });
+
+  it('cost-optimization pillar check is discoverable and runnable', async () => {
+    resetRegistry();
+    bootstrapAssessmentRegistry();
+
+    const checks = resolveChecksForRun({
+      mode: AssessmentRunMode.Pillar,
+      pillarFilter: Pillar.CostOptimization,
+    });
+
+    expect(checks.length).toBe(1);
+    expect(checks[0].id).toBe('cost-optimization.resource-request-limit-ratios');
+
+    const storage = new AssessmentRepository();
+    const runner = new AssessmentRunner({
+      kubernetes: mockKubernetes,
+      config: mockConfig,
+      logger: mockLogger,
+      storage,
+    });
+
+    const record = await runner.run({
+      runId: 'run-cost-pillar',
+      mode: AssessmentRunMode.Pillar,
+      pillarFilter: Pillar.CostOptimization,
+    });
+
+    expect(record.run_id).toBe('run-cost-pillar');
+    expect(record.total_checks).toBe(1);
+    expect(record.completed_checks).toBe(1);
+    expect(record.passed_checks).toBe(1);
+
+    const history = storage.queryHistory({ filters: { run_id: 'run-cost-pillar' } });
+    expect(history).toHaveLength(1);
+    expect(history[0].check_id).toBe('cost-optimization.resource-request-limit-ratios');
+  });
 });

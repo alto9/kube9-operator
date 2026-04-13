@@ -32,6 +32,7 @@ import {
   namespaceResourceGovernanceCheck,
   nodeAffinityAndPlacementCheck,
 } from './checks/performance-efficiency/index.js';
+import { resourceRequestLimitRatiosCheck } from './checks/cost-optimization/index.js';
 
 /** Built-in checks to register at bootstrap (extend as checks are implemented) */
 const BUILT_IN_CHECKS: AssessmentCheck[] = [
@@ -54,6 +55,7 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   vpaConfigurationSanityCheck,
   namespaceResourceGovernanceCheck,
   nodeAffinityAndPlacementCheck,
+  resourceRequestLimitRatiosCheck,
 ];
 
 /**
