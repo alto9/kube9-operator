@@ -290,4 +290,41 @@ describe('AssessmentRunner (integration)', () => {
     expect(history).toHaveLength(4);
     expect(history.map((h) => h.check_id).sort()).toEqual(ids);
   });
+
+  it('cost-optimization pillar checks are discoverable and runnable', async () => {
+    resetRegistry();
+    bootstrapAssessmentRegistry();
+
+    const checks = resolveChecksForRun({
+      mode: AssessmentRunMode.Pillar,
+      pillarFilter: Pillar.CostOptimization,
+    });
+
+    expect(checks.length).toBe(1);
+    const ids = checks.map((c) => c.id).sort();
+    expect(ids).toEqual(['cost-optimization.spot-instance-usage']);
+
+    const storage = new AssessmentRepository();
+    const runner = new AssessmentRunner({
+      kubernetes: mockKubernetes,
+      config: mockConfig,
+      logger: mockLogger,
+      storage,
+    });
+
+    const record = await runner.run({
+      runId: 'run-cost-pillar',
+      mode: AssessmentRunMode.Pillar,
+      pillarFilter: Pillar.CostOptimization,
+    });
+
+    expect(record.run_id).toBe('run-cost-pillar');
+    expect(record.total_checks).toBe(1);
+    expect(record.completed_checks).toBe(1);
+    expect(record.failed_checks).toBe(0);
+
+    const history = storage.queryHistory({ filters: { run_id: 'run-cost-pillar' } });
+    expect(history).toHaveLength(1);
+    expect(history[0]?.check_id).toBe('cost-optimization.spot-instance-usage');
+  });
 });
