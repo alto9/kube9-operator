@@ -30,8 +30,10 @@ RUN apk add --no-cache python3 make g++
 # Copy package files
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm ci --omit=dev
+# Omit devDependencies (husky lives there). If package.json has a `prepare` script that
+# invokes `husky`, it would fail with "husky: not found" unless we skip lifecycle scripts.
+# better-sqlite3 needs a native build — rebuild it after install.
+RUN npm ci --omit=dev --ignore-scripts && npm rebuild better-sqlite3
 
 # Copy built dist folder from build stage
 COPY --from=builder /app/dist ./dist
