@@ -2,4 +2,5 @@
  * Cost optimization assessment checks
  */
 
-export { spotInstanceUsageCheck } from './spot-instance-usage.js';
+export { resourceRequestLimitRatiosCheck } from './resource-request-limit-ratios.js';
+export { overProvisioningDetectionCheck } from './over-provisioning-detection.js';
