@@ -39,7 +39,8 @@ RUN npm ci --omit=dev --ignore-scripts && npm rebuild better-sqlite3
 COPY --from=builder /app/dist ./dist
 
 # Link the binary globally (creates /usr/local/bin/kube9-operator)
-RUN npm link
+# Use --ignore-scripts so npm doesn't execute prepare hooks (e.g. husky) in production image builds.
+RUN npm link --ignore-scripts
 
 # Remove build dependencies to reduce image size
 RUN apk del python3 make g++
