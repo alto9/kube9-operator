@@ -38,8 +38,8 @@ RUN npm ci --omit=dev --ignore-scripts && npm rebuild better-sqlite3
 # Copy built dist folder from build stage
 COPY --from=builder /app/dist ./dist
 
-# Link the binary globally (creates /usr/local/bin/kube9-operator)
-RUN npm link --ignore-scripts
+# Expose the CLI binary on PATH without invoking npm lifecycle scripts.
+RUN ln -sf /app/dist/index.js /usr/local/bin/kube9-operator && chmod +x /app/dist/index.js
 
 # Remove build dependencies to reduce image size
 RUN apk del python3 make g++
