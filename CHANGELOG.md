@@ -1,3 +1,15 @@
+# [1.8.0](https://github.com/alto9/kube9-operator/compare/v1.7.0...v1.8.0) (2026-04-14)
+
+
+### Bug Fixes
+
+* update Dockerfile to install production dependencies correctly ([6f3b14b](https://github.com/alto9/kube9-operator/commit/6f3b14b5db30bc5acf5dd0bd3a33e53adfd3d176))
+
+
+### Features
+
+* add .env.example and update documentation for local development ([f9ddcd4](https://github.com/alto9/kube9-operator/commit/f9ddcd47418d724d92024f0f650cfada086fc40a))
+
 # [1.7.0](https://github.com/alto9/kube9-operator/compare/v1.6.0...v1.7.0) (2026-04-01)
 
 
