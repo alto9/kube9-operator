@@ -9,6 +9,9 @@ dist/
 .env.local
 .env.*.local
 
+# Local dev SQLite (npm run dev defaults DB_PATH here when unset)
+.kube9-data/
+
 # Logs
 logs
 *.log

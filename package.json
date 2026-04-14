@@ -13,8 +13,8 @@
   "scripts": {
     "build": "tsc",
     "lint": "tsc --noEmit",
-    "dev": "SERVER_URL=${SERVER_URL:-https://api.kube9.io} LOG_LEVEL=${LOG_LEVEL:-info} tsx src/index.ts",
-    "dev:watch": "SERVER_URL=${SERVER_URL:-https://api.kube9.io} LOG_LEVEL=${LOG_LEVEL:-info} nodemon --exec tsx src/index.ts",
+    "dev": "SERVER_URL=${SERVER_URL:-https://api.kube9.io} LOG_LEVEL=${LOG_LEVEL:-info} DB_PATH=${DB_PATH:-$PWD/.kube9-data} tsx src/index.ts",
+    "dev:watch": "SERVER_URL=${SERVER_URL:-https://api.kube9.io} LOG_LEVEL=${LOG_LEVEL:-info} DB_PATH=${DB_PATH:-$PWD/.kube9-data} nodemon --exec tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:unit": "vitest run --config vitest.config.ts",
