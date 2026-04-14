@@ -30,8 +30,11 @@ RUN apk add --no-cache python3 make g++
 # Copy package files
 COPY package*.json ./
 
-# Install only production dependencies
-RUN npm ci --omit=dev
+# Install production dependencies only. --ignore-scripts skips `prepare` (husky), which
+# is listed in package.json but husky is a devDependency and is not installed with
+# --omit=dev—running prepare would execute `husky` and fail with exit 127.
+# Rebuild native addons (e.g. better-sqlite3) after skipping install scripts.
+RUN npm ci --omit=dev --ignore-scripts && npm rebuild
 
 # Copy built dist folder from build stage
 COPY --from=builder /app/dist ./dist
