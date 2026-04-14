@@ -60,7 +60,9 @@ This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDU
    npm run dev
    ```
 
-The operator will connect to your minikube cluster via kubeconfig and run locally (not in a pod).
+The operator will connect to the cluster selected by your kubeconfig (`KUBECONFIG` or `~/.kube/config`) and run locally (not in a pod). For [kube9-localcluster](https://github.com/alto9/kube9-localcluster), keep `export KUBECONFIG=.../out/kubeconfig` in the same shell. For a remote or existing cluster, use any context whose API server you can reach (VPN, `kubectl proxy`, tunnel, or direct endpoint).
+
+**Local SQLite:** `npm run dev` / `dev:watch` default `DB_PATH` to `<repo>/.kube9-data` when unset so the host does not need `/data`. Override with `export DB_PATH=...` if needed. See [`.env.example`](.env.example).
 
 ## How to Contribute
 
@@ -196,19 +198,28 @@ npm run clean:minikube
 
 ### Environment Variables
 
-The operator uses environment variables for configuration:
+The operator uses environment variables for configuration. Templates and descriptions are in [`.env.example`](.env.example). The Node process does **not** load `.env` automatically; export variables in your shell or use a loader (for example direnv).
 
 ```bash
-# Required for Pro tier
+# Often required at runtime (npm dev scripts default SERVER_URL if unset)
 SERVER_URL=https://api.kube9.dev
 
 # Optional
 LOG_LEVEL=debug
 API_KEY=kdy_prod_...
 STATUS_UPDATE_INTERVAL_SECONDS=60
+
+# Local development: writable directory for SQLite (default in dev scripts: ./.kube9-data)
+# DB_PATH=/path/to/writable/dir
+
+# Namespace for status ConfigMaps (default kube9-system)
+# POD_NAMESPACE=kube9-system
+
+# Health/metrics HTTP port (default 8080)
+# HEALTH_PORT=8080
 ```
 
-Defaults are set in npm scripts. Override in shell or `.env` file.
+`npm run dev` and `npm run dev:watch` set defaults for `SERVER_URL`, `LOG_LEVEL`, and `DB_PATH` (see [README Development](README.md#development)).
 
 ## Code Style
 

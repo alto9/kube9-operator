@@ -20,6 +20,11 @@
   - Default: `/data`
   - Database file stored at `{DB_PATH}/kube9.db`
   - Used for SQLite database persistence (events, assessments, collections)
+  - Host development: `npm run dev` / `npm run dev:watch` default to `<repo>/.kube9-data` when `DB_PATH` is unset
+
+- **HEALTH_PORT**: HTTP port for `/healthz`, `/readyz`, and `/metrics`
+  - Default: `8080`
+  - Set when another process already uses port 8080 on the developer machine
 
 - **STATUS_UPDATE_INTERVAL_SECONDS**: Status ConfigMap update frequency
   - Default: `60` (1 minute)

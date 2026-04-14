@@ -304,21 +304,42 @@ The operator will:
 1. **Cluster**: [kube9-localcluster](https://github.com/alto9/kube9-localcluster) `scripts/start.sh` (or any cluster you trust)
 2. **`export KUBECONFIG=.../kube9-localcluster/out/kubeconfig`** (or equivalent)
 3. **`kubectl config current-context`** should match the cluster you intend (e.g. `kube9-demo` when using the localcluster profile)
-4. **Environment variables**: Defaults are set in npm scripts. Override `SERVER_URL`, `LOG_LEVEL`, etc. in your shell or `.env` (see `.env.example`)
+4. **Environment variables**: Defaults are set in npm scripts. Override `SERVER_URL`, `LOG_LEVEL`, `DB_PATH`, `POD_NAMESPACE`, `HEALTH_PORT`, etc. in your shell. See [`.env.example`](.env.example) for a template. This process does **not** load `.env` files automatically; export variables in your shell, use [direnv](https://direnv.net/), or another loader so they are present before `npm run dev`.
+
+#### Local data directory (`DB_PATH`)
+
+The SQLite database defaults to `{DB_PATH}/kube9.db`. In production, `DB_PATH` is typically `/data`. On a developer host, `/data` may be missing or not writable.
+
+- **`npm run dev` / `npm run dev:watch`** set `DB_PATH` to **`<repo>/.kube9-data`** when unset, so SQLite lands in a gitignored directory under the project.
+- Override explicitly if needed: `export DB_PATH="$HOME/.kube9-dev"` (directory is created automatically).
+
+#### Remote or existing clusters
+
+You can run the operator on your machine against **any** cluster your kubeconfig can reach: managed cloud (EKS, GKE, AKS), on-prem, or minikube from kube9-localcluster.
+
+- **API access**: The operator uses the same mechanism as `kubectl` (`KUBECONFIG` or `~/.kube/config`). If the API is reached via **`kubectl proxy`**, an SSH tunnel to `localhost:6443`, or a VPN, ensure your **current context** points at that endpoint (merge kubeconfig as needed).
+- **RBAC**: Local runs use **your kubeconfig identity**, not the in-cluster Helm `ServiceAccount`. You need permission to list/watch resources and to create/update ConfigMaps in the target namespace. For a shared remote cluster, prefer a dedicated dev user or service account kubeconfig rather than personal admin credentials when possible.
+- **`POD_NAMESPACE`**: Status and health ConfigMaps are written in this namespace (default `kube9-system`). Set `POD_NAMESPACE` to match where you want status published, consistent with how you use the VS Code extension or other consumers.
 
 #### Environment Variables
 
-The operator requires `SERVER_URL` to be set. The npm scripts provide defaults, but you can override:
+The operator requires `SERVER_URL` to be set. The npm scripts provide defaults for `SERVER_URL`, `LOG_LEVEL`, and (for dev scripts only) `DB_PATH`, but you can override:
 
 ```bash
 # Set in your shell
 export SERVER_URL=https://api.kube9.dev
 export LOG_LEVEL=debug
+export DB_PATH="$PWD/.kube9-data"
+export POD_NAMESPACE=kube9-system
+export HEALTH_PORT=8080
 
-# Or create a .env file (see .env.example)
+# Template for copy-paste (see .env.example); load into the environment yourself
 cp .env.example .env
-# Edit .env with your values
+# Edit .env, then export (example with bash):
+# set -a && source .env && set +a
 ```
+
+**`HEALTH_PORT`**: Port for `/healthz`, `/readyz`, and `/metrics` (default `8080`). Increase or change if another process already binds `8080` on your machine.
 
 #### Development Workflow
 
@@ -351,7 +372,7 @@ Use the same `KUBECONFIG` and `MINIKUBE_PROFILE` for both.
 
 | Script | Description |
 |--------|-------------|
-| `npm run dev` | Run operator locally once (connects to minikube) |
+| `npm run dev` | Run operator locally once (uses `KUBECONFIG`; defaults `DB_PATH` to `./.kube9-data`) |
 | `npm run dev:watch` | Run operator locally with auto-reload on file changes |
 | `npm run docker:build` | Build Docker image locally |
 | `npm run docker:load:minikube` | Build and load image into minikube (`MINIKUBE_PROFILE`, default `kube9-demo`) |
@@ -364,6 +385,13 @@ Use the same `KUBECONFIG` and `MINIKUBE_PROFILE` for both.
 - **`scripts/test-helm-chart.sh`**: Lint/template/package the chart; if [kind](https://kind.sigs.k8s.io/) is installed, creates a disposable cluster (`kube9-test`), installs/upgrades/uninstalls the operator, then deletes the cluster
 
 #### Troubleshooting
+
+**Port 8080 already in use (health/metrics):**
+
+```bash
+export HEALTH_PORT=18080
+npm run dev:watch
+```
 
 **Operator can't connect to the cluster:**
 ```bash

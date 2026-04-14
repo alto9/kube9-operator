@@ -6,8 +6,9 @@ WORKDIR /app
 # Install build dependencies for native modules
 RUN apk add --no-cache python3 make g++
 
-# Copy package files
+# Copy package files and prepare script (prepare runs during npm ci)
 COPY package*.json ./
+COPY scripts/prepare-husky.cjs scripts/prepare-husky.cjs
 
 # Install all dependencies (including dev dependencies for TypeScript build)
 RUN npm ci
@@ -27,17 +28,22 @@ WORKDIR /app
 # Install build dependencies for native modules
 RUN apk add --no-cache python3 make g++
 
-# Copy package files
+# Copy package files and prepare script so any npm lifecycle (e.g. npm link) can run
+# prepare safely: it no-ops when husky is not installed (production / --omit=dev).
 COPY package*.json ./
+COPY scripts/prepare-husky.cjs scripts/prepare-husky.cjs
 
-# Install only production dependencies
-RUN npm ci --omit=dev
+# Install production dependencies only. Rebuild native addons after skipping install scripts
+# (better-sqlite3). prepare is skipped here via --ignore-scripts for speed; prepare-husky.cjs
+# still protects `npm link` and other commands if scripts run.
+RUN npm ci --omit=dev --ignore-scripts && npm rebuild
 
 # Copy built dist folder from build stage
 COPY --from=builder /app/dist ./dist
 
-# Link the binary globally (creates /usr/local/bin/kube9-operator)
-RUN npm link
+# Link the binary globally (creates /usr/local/bin/kube9-operator).
+# --ignore-scripts avoids re-running lifecycle hooks that assume devDependencies (husky).
+RUN npm link --ignore-scripts
 
 # Remove build dependencies to reduce image size
 RUN apk del python3 make g++

@@ -38,6 +38,19 @@ let trivyDetectionManagerInstance: TrivyDetectionManager | null = null;
 let eventWatcherInstance: KubernetesEventWatcher | null = null;
 let eventQueueWorkerInstance: EventQueueWorker | null = null;
 
+/** HTTP port for health/metrics server (default 8080). */
+function resolveHealthPort(): number {
+  const raw = process.env.HEALTH_PORT;
+  if (raw === undefined || raw === '') {
+    return 8080;
+  }
+  const port = parseInt(raw, 10);
+  if (Number.isNaN(port) || port < 1 || port > 65535) {
+    throw new Error(`Invalid HEALTH_PORT: ${raw} (expected integer 1-65535)`);
+  }
+  return port;
+}
+
 // Load configuration
 async function initializeConfig(): Promise<Config> {
   try {
@@ -152,7 +165,7 @@ export async function startOperator() {
     const config = await initializeConfig();
     
     // Start health server early so probes are available during initialization
-    startHealthServer(8080);
+    startHealthServer(resolveHealthPort());
     
     // Initialize database schema for events
     logger.info('Initializing database schema...');
