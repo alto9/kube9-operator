@@ -6,8 +6,9 @@ WORKDIR /app
 # Install build dependencies for native modules
 RUN apk add --no-cache python3 make g++
 
-# Copy package files
+# Copy package files and prepare script (prepare runs during npm ci)
 COPY package*.json ./
+COPY scripts/prepare-husky.cjs scripts/prepare-husky.cjs
 
 # Install all dependencies (including dev dependencies for TypeScript build)
 RUN npm ci
@@ -27,8 +28,10 @@ WORKDIR /app
 # Install build dependencies for native modules
 RUN apk add --no-cache python3 make g++
 
-# Copy package files
+# Copy package files and prepare script so any npm lifecycle (e.g. npm link) can run
+# prepare safely: it no-ops when husky is not installed (production / --omit=dev).
 COPY package*.json ./
+COPY scripts/prepare-husky.cjs scripts/prepare-husky.cjs
 
 # Omit devDependencies (husky lives there). If package.json has a `prepare` script that
 # invokes `husky`, it would fail with "husky: not found" unless we skip lifecycle scripts.
@@ -38,8 +41,9 @@ RUN npm ci --omit=dev --ignore-scripts && npm rebuild better-sqlite3
 # Copy built dist folder from build stage
 COPY --from=builder /app/dist ./dist
 
-# Expose the CLI binary on PATH without invoking npm lifecycle scripts.
-RUN ln -sf /app/dist/index.js /usr/local/bin/kube9-operator && chmod +x /app/dist/index.js
+# Link the binary globally (creates /usr/local/bin/kube9-operator).
+# --ignore-scripts avoids re-running lifecycle hooks that assume devDependencies (husky).
+RUN npm link --ignore-scripts
 
 # Remove build dependencies to reduce image size
 RUN apk del python3 make g++
