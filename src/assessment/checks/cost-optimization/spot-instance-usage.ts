@@ -1,7 +1,7 @@
 import * as k8s from '@kubernetes/client-node';
 import type { AssessmentCheck, AssessmentCheckResult, AssessmentRunContext } from '../../types.js';
 import { Pillar, CheckStatus, Severity } from '../../types.js';
-import { isNamespaceExcluded } from '../reliability/heuristics.js';
+import { isResourceCheckRelevant, type WorkloadMetadata } from '../reliability/heuristics.js';
 
 const CHECK_ID = 'cost-optimization.spot-instance-usage';
 const CHECK_NAME = 'Spot/Preemptible Capacity Usage';
@@ -14,6 +14,15 @@ interface WorkloadRef {
   kind: 'Deployment' | 'StatefulSet';
 }
 
+function toWorkloadMeta(meta: k8s.V1ObjectMeta | undefined, kind: string): WorkloadMetadata {
+  return {
+    namespace: meta?.namespace ?? '',
+    name: meta?.name ?? 'unknown',
+    kind,
+    labels: meta?.labels as Record<string, string> | undefined,
+  };
+}
+
 const SPOT_LABEL_RULES: Array<{ key: string; values?: string[] }> = [
   { key: 'eks.amazonaws.com/capacityType', values: ['SPOT'] },
   { key: 'kubernetes.azure.com/scalesetpriority', values: ['spot'] },
@@ -24,10 +33,6 @@ const SPOT_LABEL_RULES: Array<{ key: string; values?: string[] }> = [
 ];
 
 const SPOT_HINTS = ['spot', 'preempt', 'interruptible', 'lifecycle=spot'];
-
-function isInScopeNamespace(namespace: string | undefined): namespace is string {
-  return typeof namespace === 'string' && namespace.length > 0 && !isNamespaceExcluded(namespace);
-}
 
 function hasSpotLikeText(value: string | undefined): boolean {
   if (!value) return false;
@@ -108,7 +113,7 @@ export const spotInstanceUsageCheck: AssessmentCheck = {
   name: CHECK_NAME,
   pillar: Pillar.CostOptimization,
   description:
-    'Detects whether clusters with spot/preemptible capacity have workload scheduling intent configured to use that lower-cost node pool.',
+    'Detects whether clusters with spot/preemptible capacity have workload scheduling intent configured to use that lower-cost node pool. Uses the same in-scope rules as other cost checks (system namespaces excluded; workloads labeled kube9.io/resource-exempt are skipped). Evaluates Deployments and StatefulSets only — DaemonSets are omitted because node/system agents are often intentionally not scheduled for spot placement.',
   defaultSeverity: Severity.Medium,
 
   async run(ctx: AssessmentRunContext): Promise<AssessmentCheckResult> {
@@ -138,20 +143,20 @@ export const spotInstanceUsageCheck: AssessmentCheck = {
     const inScopeWorkloads: WorkloadRef[] = [];
 
     for (const deployment of deploymentsRes.items ?? []) {
-      const namespace = deployment.metadata?.namespace;
       const name = deployment.metadata?.name;
-      if (!isInScopeNamespace(namespace) || !name) continue;
-      const workload: WorkloadRef = { namespace, name, kind: 'Deployment' };
+      const meta = toWorkloadMeta(deployment.metadata, 'Deployment');
+      if (!name || !isResourceCheckRelevant(meta)) continue;
+      const workload: WorkloadRef = { namespace: meta.namespace, name, kind: 'Deployment' };
       inScopeWorkloads.push(workload);
       if (workloadTargetsSpot(deployment.spec?.template?.spec)) targeted.push(workload);
       else unconfigured.push(workload);
     }
 
     for (const statefulSet of statefulSetsRes.items ?? []) {
-      const namespace = statefulSet.metadata?.namespace;
       const name = statefulSet.metadata?.name;
-      if (!isInScopeNamespace(namespace) || !name) continue;
-      const workload: WorkloadRef = { namespace, name, kind: 'StatefulSet' };
+      const meta = toWorkloadMeta(statefulSet.metadata, 'StatefulSet');
+      if (!name || !isResourceCheckRelevant(meta)) continue;
+      const workload: WorkloadRef = { namespace: meta.namespace, name, kind: 'StatefulSet' };
       inScopeWorkloads.push(workload);
       if (workloadTargetsSpot(statefulSet.spec?.template?.spec)) targeted.push(workload);
       else unconfigured.push(workload);

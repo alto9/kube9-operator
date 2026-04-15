@@ -63,6 +63,28 @@ describe('spotInstanceUsageCheck', () => {
     expect(result.message).toContain('none of 2 in-scope workloads');
   });
 
+  it('skips workloads labeled kube9.io/resource-exempt like other cost checks', async () => {
+    const result = await spotInstanceUsageCheck.run(
+      createMockCtx({
+        deployments: [
+          {
+            metadata: {
+              namespace: 'default',
+              name: 'exempt',
+              labels: { 'kube9.io/resource-exempt': 'true' },
+            },
+            spec: { template: { spec: {} } },
+          },
+          { metadata: { namespace: 'default', name: 'api' }, spec: { template: { spec: {} } } },
+        ],
+        nodes: [{ metadata: { name: 'spot-a', labels: { 'eks.amazonaws.com/capacityType': 'SPOT' } } }],
+      }),
+    );
+
+    expect(result.status).toBe(CheckStatus.Failing);
+    expect(result.message).toContain('none of 1 in-scope workloads');
+  });
+
   it('warns when only some workloads are spot-aware', async () => {
     const result = await spotInstanceUsageCheck.run(
       createMockCtx({

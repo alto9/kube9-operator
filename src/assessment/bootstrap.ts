@@ -36,6 +36,7 @@ import {
 import {
   resourceRequestLimitRatiosCheck,
   overProvisioningDetectionCheck,
+  spotInstanceUsageCheck,
 } from './checks/cost-optimization/index.js';
 
 /** Built-in checks to register at bootstrap (extend as checks are implemented) */
@@ -62,6 +63,7 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   nodeAffinityAndPlacementCheck,
   resourceRequestLimitRatiosCheck,
   overProvisioningDetectionCheck,
+  spotInstanceUsageCheck,
 ];
 
 /**

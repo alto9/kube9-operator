@@ -300,10 +300,11 @@ describe('AssessmentRunner (integration)', () => {
       pillarFilter: Pillar.CostOptimization,
     });
 
-    expect(checks.length).toBe(2);
+    expect(checks.length).toBe(3);
     expect(checks.map((c) => c.id).sort()).toEqual([
       'cost-optimization.over-provisioning-detection',
       'cost-optimization.resource-request-limit-ratios',
+      'cost-optimization.spot-instance-usage',
     ]);
 
     const storage = new AssessmentRepository();
@@ -321,15 +322,16 @@ describe('AssessmentRunner (integration)', () => {
     });
 
     expect(record.run_id).toBe('run-cost-pillar');
-    expect(record.total_checks).toBe(2);
-    expect(record.completed_checks).toBe(2);
-    expect(record.passed_checks).toBe(2);
+    expect(record.total_checks).toBe(3);
+    expect(record.completed_checks).toBe(3);
+    expect(record.passed_checks).toBe(3);
 
     const history = storage.queryHistory({ filters: { run_id: 'run-cost-pillar' } });
-    expect(history).toHaveLength(2);
+    expect(history).toHaveLength(3);
     expect(history.map((h) => h.check_id).sort()).toEqual([
       'cost-optimization.over-provisioning-detection',
       'cost-optimization.resource-request-limit-ratios',
+      'cost-optimization.spot-instance-usage',
     ]);
   });
 });
