@@ -1,3 +1,19 @@
+# [1.9.0](https://github.com/alto9/kube9-operator/compare/v1.8.0...v1.9.0) (2026-04-15)
+
+
+### Bug Fixes
+
+* **assessment:** wire spot cost check into registry and align scope ([16bcc53](https://github.com/alto9/kube9-operator/commit/16bcc53cd93d60d404d5a248c20a0cf46071a1e9))
+* **ci:** prevent husky hooks from breaking Docker builds ([09b30da](https://github.com/alto9/kube9-operator/commit/09b30da028ecaf33744cb35adedb3ea612dc63e4))
+
+
+### Features
+
+* add .env.example and update documentation for local development ([96e4d13](https://github.com/alto9/kube9-operator/commit/96e4d13a91ac44b772f5b537570fc4109b4d04d2))
+* **assessment:** add cost-optimization resource request/limit ratio check ([8e9fe54](https://github.com/alto9/kube9-operator/commit/8e9fe54567b312a979c6f3818898b9b7a6a7224f))
+* **assessment:** add over-provisioning detection cost check ([f35c1d3](https://github.com/alto9/kube9-operator/commit/f35c1d3f9aa5a073e63b85244e9fad5e318cfe0f))
+* **assessment:** add spot capacity cost-optimization check ([63708aa](https://github.com/alto9/kube9-operator/commit/63708aa5a3f9792c5c7b99749ac572fd7d2c04de))
+
 # [1.8.0](https://github.com/alto9/kube9-operator/compare/v1.7.0...v1.8.0) (2026-04-14)
 
 
