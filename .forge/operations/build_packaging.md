@@ -66,7 +66,7 @@ The Helm chart supports comprehensive configuration through `values.yaml`:
 
 ### Image Details
 - **Registry**: `ghcr.io/alto9/kube9-operator`
-- **Build Process**: Multi-stage build via GitHub Actions on release
+- **Build Process**: Multi-stage build via GitHub Actions when a version is released (image workflows run on GitHub Release / `v*` tags after the manual **Release** workflow publishes semantic-release output)
 - **Base Image**: `node:22-alpine` (Node.js 22 on Alpine Linux)
 
 ### Build Stages
