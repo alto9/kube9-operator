@@ -7,3 +7,4 @@ export { kube9OperatorMetricsExposureCheck } from './kube9-operator-metrics-expo
 export { kube9OperatorLoggingConfigurationCheck } from './kube9-operator-logging-configuration.js';
 export { kube9OperatorAuditSignalsCheck } from './kube9-operator-audit-signals.js';
 export { kube9OperatorDeploymentStrategyCheck } from './kube9-operator-deployment-strategy.js';
+export { gitopsDeliverySignalsCheck } from './gitops-delivery-signals.js';
