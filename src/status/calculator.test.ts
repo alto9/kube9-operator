@@ -5,44 +5,26 @@ describe('calculateStatus', () => {
   let originalPodNamespace: string | undefined;
 
   beforeEach(() => {
-    // Save original POD_NAMESPACE
     originalPodNamespace = process.env.POD_NAMESPACE;
   });
 
   afterEach(() => {
-    // Restore POD_NAMESPACE
     if (originalPodNamespace !== undefined) {
       process.env.POD_NAMESPACE = originalPodNamespace;
     } else {
       delete process.env.POD_NAMESPACE;
     }
-    
-    // Restore mocks and reset modules
-    vi.restoreAllMocks();
+
     vi.resetModules();
   });
 
   describe('basic status calculation', () => {
     it('should return status with all required fields including namespace', async () => {
       delete process.env.POD_NAMESPACE;
-      
-      // Reset modules and set up mocks
-      vi.resetModules();
-      const configLoader = await import('../config/loader.js');
-      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
-        apiKey: null,
-        serverUrl: 'https://api.kube9.dev',
-        logLevel: 'info',
-        statusUpdateIntervalSeconds: 60,
-        reregistrationIntervalHours: 24,
-        clusterMetadataIntervalSeconds: 86400,
-        resourceInventoryIntervalSeconds: 21600,
-        resourceConfigurationPatternsIntervalSeconds: 43200,
-        workloadImageScanIntervalSeconds: 86400,
-      } as any);
 
-      const calculatorModule = await import('./calculator.js');
-      const status = calculatorModule.calculateStatus();
+      vi.resetModules();
+      const { calculateStatus } = await import('./calculator.js');
+      const status = calculateStatus();
 
       expect(status).toMatchObject({
         mode: 'operated',
@@ -53,8 +35,7 @@ describe('calculateStatus', () => {
         error: null,
         namespace: 'kube9-system',
       });
-      
-      // Verify all required fields are present
+
       expect(status.mode).toBe('operated');
       expect(status.tier).toBe('free');
       expect(status.version).toBe('1.0.0');
@@ -68,55 +49,18 @@ describe('calculateStatus', () => {
       expect(status.trivy).toBeDefined();
     });
 
-    it('should return operated mode regardless config inputs', async () => {
+    it('should return free tier when registered', async () => {
       delete process.env.POD_NAMESPACE;
-      
+
       vi.resetModules();
-      const configLoader = await import('../config/loader.js');
-      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
-        apiKey: 'kdy_prod_test123',
-        serverUrl: 'https://api.kube9.dev',
-        logLevel: 'info',
-        statusUpdateIntervalSeconds: 60,
-        reregistrationIntervalHours: 24,
-        clusterMetadataIntervalSeconds: 86400,
-        resourceInventoryIntervalSeconds: 21600,
-        resourceConfigurationPatternsIntervalSeconds: 43200,
-        workloadImageScanIntervalSeconds: 86400,
-      } as any);
-
-      const calculatorModule = await import('./calculator.js');
-      const status = calculatorModule.calculateStatus();
-
-      expect(status.mode).toBe('operated');
-      expect(status.namespace).toBe('kube9-system');
-    });
-
-    it('should return free tier even when registered', async () => {
-      delete process.env.POD_NAMESPACE;
-      
-      vi.resetModules();
-      const configLoader = await import('../config/loader.js');
-      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
-        apiKey: 'kdy_prod_test123',
-        serverUrl: 'https://api.kube9.dev',
-        logLevel: 'info',
-        statusUpdateIntervalSeconds: 60,
-        reregistrationIntervalHours: 24,
-        clusterMetadataIntervalSeconds: 86400,
-        resourceInventoryIntervalSeconds: 21600,
-        resourceConfigurationPatternsIntervalSeconds: 43200,
-        workloadImageScanIntervalSeconds: 86400,
-      } as any);
-
-      const calculatorModule = await import('./calculator.js');
+      const { calculateStatus } = await import('./calculator.js');
       const registrationState: RegistrationState = {
         isRegistered: true,
         clusterId: 'cls_test123',
         consecutiveFailures: 0,
       };
 
-      const status = calculatorModule.calculateStatus(registrationState);
+      const status = calculateStatus(registrationState);
 
       expect(status.tier).toBe('free');
       expect(status.registered).toBe(true);
@@ -128,85 +72,44 @@ describe('calculateStatus', () => {
   describe('namespace field', () => {
     it('should use POD_NAMESPACE environment variable when set', async () => {
       process.env.POD_NAMESPACE = 'custom-namespace';
-      
-      vi.resetModules();
-      const configLoader = await import('../config/loader.js');
-      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
-        apiKey: null,
-        serverUrl: 'https://api.kube9.dev',
-        logLevel: 'info',
-        statusUpdateIntervalSeconds: 60,
-        reregistrationIntervalHours: 24,
-        clusterMetadataIntervalSeconds: 86400,
-        resourceInventoryIntervalSeconds: 21600,
-        resourceConfigurationPatternsIntervalSeconds: 43200,
-        workloadImageScanIntervalSeconds: 86400,
-      } as any);
 
-      const calculatorModule = await import('./calculator.js');
-      const status = calculatorModule.calculateStatus();
+      vi.resetModules();
+      const { calculateStatus } = await import('./calculator.js');
+      const status = calculateStatus();
 
       expect(status.namespace).toBe('custom-namespace');
     });
 
     it('should fallback to kube9-system when POD_NAMESPACE not set', async () => {
       delete process.env.POD_NAMESPACE;
-      
-      vi.resetModules();
-      const configLoader = await import('../config/loader.js');
-      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
-        apiKey: null,
-        serverUrl: 'https://api.kube9.dev',
-        logLevel: 'info',
-        statusUpdateIntervalSeconds: 60,
-        reregistrationIntervalHours: 24,
-        clusterMetadataIntervalSeconds: 86400,
-        resourceInventoryIntervalSeconds: 21600,
-        resourceConfigurationPatternsIntervalSeconds: 43200,
-        workloadImageScanIntervalSeconds: 86400,
-      } as any);
 
-      const calculatorModule = await import('./calculator.js');
-      const status = calculatorModule.calculateStatus();
+      vi.resetModules();
+      const { calculateStatus } = await import('./calculator.js');
+      const status = calculateStatus();
 
       expect(status.namespace).toBe('kube9-system');
     });
 
     it('should use POD_NAMESPACE in all status scenarios', async () => {
       process.env.POD_NAMESPACE = 'test-namespace';
-      
+
       vi.resetModules();
-      const configLoader = await import('../config/loader.js');
-      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
-        apiKey: 'kdy_prod_test123',
-        serverUrl: 'https://api.kube9.dev',
-        logLevel: 'info',
-        statusUpdateIntervalSeconds: 60,
-        reregistrationIntervalHours: 24,
-        clusterMetadataIntervalSeconds: 86400,
-        resourceInventoryIntervalSeconds: 21600,
-        resourceConfigurationPatternsIntervalSeconds: 43200,
-        workloadImageScanIntervalSeconds: 86400,
-      } as any);
+      const { calculateStatus } = await import('./calculator.js');
 
-      const calculatorModule = await import('./calculator.js');
-
-      // Test with different registration states
-      const unregisteredStatus = calculatorModule.calculateStatus({
+      const unregisteredStatus = calculateStatus({
         isRegistered: false,
         consecutiveFailures: 0,
       });
       expect(unregisteredStatus.namespace).toBe('test-namespace');
 
-      const registeredStatus = calculatorModule.calculateStatus({
+      const registeredStatus = calculateStatus({
         isRegistered: true,
         clusterId: 'cls_test123',
         consecutiveFailures: 0,
       });
       expect(registeredStatus.namespace).toBe('test-namespace');
 
-      // Test with errors
-      const errorStatus = calculatorModule.calculateStatus(
+      const errorStatus = calculateStatus(
         {
           isRegistered: false,
           consecutiveFailures: 0,
@@ -220,26 +123,13 @@ describe('calculateStatus', () => {
   describe('health calculation', () => {
     it('should return unhealthy when cannot write ConfigMap', async () => {
       delete process.env.POD_NAMESPACE;
-      
-      vi.resetModules();
-      const configLoader = await import('../config/loader.js');
-      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
-        apiKey: null,
-        serverUrl: 'https://api.kube9.dev',
-        logLevel: 'info',
-        statusUpdateIntervalSeconds: 60,
-        reregistrationIntervalHours: 24,
-        clusterMetadataIntervalSeconds: 86400,
-        resourceInventoryIntervalSeconds: 21600,
-        resourceConfigurationPatternsIntervalSeconds: 43200,
-        workloadImageScanIntervalSeconds: 86400,
-      } as any);
 
-      const calculatorModule = await import('./calculator.js');
-      const status = calculatorModule.calculateStatus(
+      vi.resetModules();
+      const { calculateStatus } = await import('./calculator.js');
+      const status = calculateStatus(
         { isRegistered: false, consecutiveFailures: 0 },
         null,
-        false // cannot write ConfigMap
+        false
       );
 
       expect(status.health).toBe('unhealthy');
@@ -249,23 +139,10 @@ describe('calculateStatus', () => {
 
     it('should return healthy when there are no write or registration failures', async () => {
       delete process.env.POD_NAMESPACE;
-      
-      vi.resetModules();
-      const configLoader = await import('../config/loader.js');
-      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
-        apiKey: 'kdy_prod_test123',
-        serverUrl: 'https://api.kube9.dev',
-        logLevel: 'info',
-        statusUpdateIntervalSeconds: 60,
-        reregistrationIntervalHours: 24,
-        clusterMetadataIntervalSeconds: 86400,
-        resourceInventoryIntervalSeconds: 21600,
-        resourceConfigurationPatternsIntervalSeconds: 43200,
-        workloadImageScanIntervalSeconds: 86400,
-      } as any);
 
-      const calculatorModule = await import('./calculator.js');
-      const status = calculatorModule.calculateStatus({
+      vi.resetModules();
+      const { calculateStatus } = await import('./calculator.js');
+      const status = calculateStatus({
         isRegistered: false,
         consecutiveFailures: 0,
       });
@@ -277,23 +154,10 @@ describe('calculateStatus', () => {
 
     it('should return degraded when consecutive failures exceed threshold', async () => {
       delete process.env.POD_NAMESPACE;
-      
-      vi.resetModules();
-      const configLoader = await import('../config/loader.js');
-      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
-        apiKey: null, // No API key, so consecutive failures error takes precedence
-        serverUrl: 'https://api.kube9.dev',
-        logLevel: 'info',
-        statusUpdateIntervalSeconds: 60,
-        reregistrationIntervalHours: 24,
-        clusterMetadataIntervalSeconds: 86400,
-        resourceInventoryIntervalSeconds: 21600,
-        resourceConfigurationPatternsIntervalSeconds: 43200,
-        workloadImageScanIntervalSeconds: 86400,
-      } as any);
 
-      const calculatorModule = await import('./calculator.js');
-      const status = calculatorModule.calculateStatus({
+      vi.resetModules();
+      const { calculateStatus } = await import('./calculator.js');
+      const status = calculateStatus({
         isRegistered: false,
         consecutiveFailures: 5,
       });
@@ -307,22 +171,9 @@ describe('calculateStatus', () => {
   describe('collection stats', () => {
     it('should include collection stats in status', async () => {
       delete process.env.POD_NAMESPACE;
-      
-      vi.resetModules();
-      const configLoader = await import('../config/loader.js');
-      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
-        apiKey: null,
-        serverUrl: 'https://api.kube9.dev',
-        logLevel: 'info',
-        statusUpdateIntervalSeconds: 60,
-        reregistrationIntervalHours: 24,
-        clusterMetadataIntervalSeconds: 86400,
-        resourceInventoryIntervalSeconds: 21600,
-        resourceConfigurationPatternsIntervalSeconds: 43200,
-        workloadImageScanIntervalSeconds: 86400,
-      } as any);
 
-      const calculatorModule = await import('./calculator.js');
+      vi.resetModules();
+      const { calculateStatus } = await import('./calculator.js');
       const collectionStats: CollectionStats = {
         totalSuccessCount: 10,
         totalFailureCount: 2,
@@ -330,7 +181,7 @@ describe('calculateStatus', () => {
         lastSuccessTime: '2025-01-01T00:00:00Z',
       };
 
-      const status = calculatorModule.calculateStatus(
+      const status = calculateStatus(
         { isRegistered: false, consecutiveFailures: 0 },
         null,
         true,
@@ -345,22 +196,9 @@ describe('calculateStatus', () => {
   describe('argocd status', () => {
     it('should include ArgoCD status in operator status', async () => {
       delete process.env.POD_NAMESPACE;
-      
-      vi.resetModules();
-      const configLoader = await import('../config/loader.js');
-      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
-        apiKey: null,
-        serverUrl: 'https://api.kube9.dev',
-        logLevel: 'info',
-        statusUpdateIntervalSeconds: 60,
-        reregistrationIntervalHours: 24,
-        clusterMetadataIntervalSeconds: 86400,
-        resourceInventoryIntervalSeconds: 21600,
-        resourceConfigurationPatternsIntervalSeconds: 43200,
-        workloadImageScanIntervalSeconds: 86400,
-      } as any);
 
-      const calculatorModule = await import('./calculator.js');
+      vi.resetModules();
+      const { calculateStatus } = await import('./calculator.js');
       const argocdStatus: ArgoCDStatus = {
         detected: true,
         namespace: 'argocd',
@@ -368,7 +206,7 @@ describe('calculateStatus', () => {
         lastChecked: '2025-01-01T00:00:00Z',
       };
 
-      const status = calculatorModule.calculateStatus(
+      const status = calculateStatus(
         { isRegistered: false, consecutiveFailures: 0 },
         null,
         true,
@@ -391,20 +229,7 @@ describe('calculateStatus', () => {
       delete process.env.POD_NAMESPACE;
 
       vi.resetModules();
-      const configLoader = await import('../config/loader.js');
-      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
-        apiKey: null,
-        serverUrl: 'https://api.kube9.dev',
-        logLevel: 'info',
-        statusUpdateIntervalSeconds: 60,
-        reregistrationIntervalHours: 24,
-        clusterMetadataIntervalSeconds: 86400,
-        resourceInventoryIntervalSeconds: 21600,
-        resourceConfigurationPatternsIntervalSeconds: 43200,
-        workloadImageScanIntervalSeconds: 86400,
-      } as any);
-
-      const calculatorModule = await import('./calculator.js');
+      const { calculateStatus } = await import('./calculator.js');
       const trivyStatus: TrivyStatus = {
         detected: true,
         serverUrl: 'http://trivy:4954',
@@ -412,7 +237,7 @@ describe('calculateStatus', () => {
         lastChecked: '2025-01-01T00:00:00Z',
       };
 
-      const status = calculatorModule.calculateStatus(
+      const status = calculateStatus(
         { isRegistered: false, consecutiveFailures: 0 },
         null,
         true,
@@ -438,26 +263,13 @@ describe('calculateStatus', () => {
   describe('error handling', () => {
     it('should include namespace even when error is present', async () => {
       process.env.POD_NAMESPACE = 'error-namespace';
-      
-      vi.resetModules();
-      const configLoader = await import('../config/loader.js');
-      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
-        apiKey: null,
-        serverUrl: 'https://api.kube9.dev',
-        logLevel: 'info',
-        statusUpdateIntervalSeconds: 60,
-        reregistrationIntervalHours: 24,
-        clusterMetadataIntervalSeconds: 86400,
-        resourceInventoryIntervalSeconds: 21600,
-        resourceConfigurationPatternsIntervalSeconds: 43200,
-        workloadImageScanIntervalSeconds: 86400,
-      } as any);
 
-      const calculatorModule = await import('./calculator.js');
-      const status = calculatorModule.calculateStatus(
+      vi.resetModules();
+      const { calculateStatus } = await import('./calculator.js');
+      const status = calculateStatus(
         { isRegistered: false, consecutiveFailures: 0 },
         'Test error message',
-        false // cannot write ConfigMap
+        false
       );
 
       expect(status.error).toBe('Test error message');
@@ -467,24 +279,11 @@ describe('calculateStatus', () => {
 
     it('should truncate long error messages but preserve namespace', async () => {
       delete process.env.POD_NAMESPACE;
-      
-      vi.resetModules();
-      const configLoader = await import('../config/loader.js');
-      vi.spyOn(configLoader, 'getConfig').mockReturnValue({
-        apiKey: null,
-        serverUrl: 'https://api.kube9.dev',
-        logLevel: 'info',
-        statusUpdateIntervalSeconds: 60,
-        reregistrationIntervalHours: 24,
-        clusterMetadataIntervalSeconds: 86400,
-        resourceInventoryIntervalSeconds: 21600,
-        resourceConfigurationPatternsIntervalSeconds: 43200,
-        workloadImageScanIntervalSeconds: 86400,
-      } as any);
 
-      const calculatorModule = await import('./calculator.js');
+      vi.resetModules();
+      const { calculateStatus } = await import('./calculator.js');
       const longError = 'a'.repeat(600);
-      const status = calculatorModule.calculateStatus(
+      const status = calculateStatus(
         { isRegistered: false, consecutiveFailures: 0 },
         longError,
         false
@@ -497,4 +296,3 @@ describe('calculateStatus', () => {
     });
   });
 });
-
