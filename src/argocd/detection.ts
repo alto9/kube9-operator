@@ -48,6 +48,21 @@ export interface ArgoCDDetectionConfig {
 }
 
 /**
+ * Parse ArgoCD detection settings from process.env (operator and assessment checks).
+ */
+export function parseArgoCDConfigFromEnv(): ArgoCDDetectionConfig {
+  const enabledEnv = process.env.ARGOCD_ENABLED;
+  return {
+    autoDetect: process.env.ARGOCD_AUTO_DETECT !== 'false',
+    enabled:
+      enabledEnv === 'true' ? true : enabledEnv === 'false' ? false : undefined,
+    namespace: process.env.ARGOCD_NAMESPACE || 'argocd',
+    selector: process.env.ARGOCD_SELECTOR || 'app.kubernetes.io/name=argocd-server',
+    detectionInterval: parseInt(process.env.ARGOCD_DETECTION_INTERVAL || '6', 10),
+  };
+}
+
+/**
  * Check if ArgoCD Application CRD exists in the cluster
  * 
  * @param k8sClient - Kubernetes client for API access

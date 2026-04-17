@@ -38,6 +38,14 @@ import {
   overProvisioningDetectionCheck,
   spotInstanceUsageCheck,
 } from './checks/cost-optimization/index.js';
+import {
+  kube9OperatorHealthProbesCheck,
+  kube9OperatorMetricsExposureCheck,
+  kube9OperatorLoggingConfigurationCheck,
+  kube9OperatorAuditSignalsCheck,
+  kube9OperatorDeploymentStrategyCheck,
+  gitopsDeliverySignalsCheck,
+} from './checks/operational-excellence/index.js';
 
 /** Built-in checks to register at bootstrap (extend as checks are implemented) */
 const BUILT_IN_CHECKS: AssessmentCheck[] = [
@@ -64,6 +72,12 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   resourceRequestLimitRatiosCheck,
   overProvisioningDetectionCheck,
   spotInstanceUsageCheck,
+  kube9OperatorHealthProbesCheck,
+  kube9OperatorMetricsExposureCheck,
+  kube9OperatorLoggingConfigurationCheck,
+  kube9OperatorAuditSignalsCheck,
+  kube9OperatorDeploymentStrategyCheck,
+  gitopsDeliverySignalsCheck,
 ];
 
 /**

@@ -17,7 +17,7 @@ import { LocalStorage } from './collection/storage.js';
 import { recordCollection } from './collection/metrics.js';
 import { collectionStatsTracker } from './collection/stats-tracker.js';
 import { logger } from './logging/logger.js';
-import { detectArgoCDWithTimeout, type ArgoCDDetectionConfig } from './argocd/detection.js';
+import { detectArgoCDWithTimeout, parseArgoCDConfigFromEnv } from './argocd/detection.js';
 import { argocdStatusTracker } from './argocd/state.js';
 import { ArgoCDDetectionManager } from './argocd/detection-manager.js';
 import { detectTrivyWithTimeout } from './trivy/detection.js';
@@ -95,22 +95,11 @@ async function testKubernetesClient() {
   }
 }
 
-// Parse ArgoCD configuration from environment variables
-function parseArgoCDConfig(): ArgoCDDetectionConfig {
-  return {
-    autoDetect: process.env.ARGOCD_AUTO_DETECT !== 'false',
-    enabled: process.env.ARGOCD_ENABLED === 'true' ? true : undefined,
-    namespace: process.env.ARGOCD_NAMESPACE || 'argocd',
-    selector: process.env.ARGOCD_SELECTOR || 'app.kubernetes.io/name=argocd-server',
-    detectionInterval: parseInt(process.env.ARGOCD_DETECTION_INTERVAL || '6', 10)
-  };
-}
-
 // Perform initial ArgoCD detection during startup
 async function performInitialArgoCDDetection(): Promise<void> {
   try {
     logger.info('Performing initial ArgoCD detection');
-    const argoCDConfig = parseArgoCDConfig();
+    const argoCDConfig = parseArgoCDConfigFromEnv();
     const argoCDStatus = await detectArgoCDWithTimeout(kubernetesClient, argoCDConfig);
     argocdStatusTracker.setStatus(argoCDStatus);
     
@@ -194,7 +183,7 @@ export async function startOperator() {
     await performInitialArgoCDDetection();
     
     // Start periodic ArgoCD detection manager
-    const argoCDConfig = parseArgoCDConfig();
+    const argoCDConfig = parseArgoCDConfigFromEnv();
     const initialArgoCDStatus = argocdStatusTracker.getStatus();
     const argoCDDetectionManager = new ArgoCDDetectionManager();
     argoCDDetectionManager.start(kubernetesClient, argoCDConfig, initialArgoCDStatus);
