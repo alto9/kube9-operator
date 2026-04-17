@@ -116,7 +116,7 @@ The operator detects its namespace via the downward API and advertises it in the
    grep -E 'kind: Secret|API_KEY' /tmp/rendered.yaml && echo 'Unexpected Secret or API_KEY' && exit 1 || true
    ```
 
-3. **Test with custom values.yaml:**
+3. **Test with custom values.yaml (no apiKey):**
    ```bash
    cat > /tmp/test-values.yaml <<EOF
    logLevel: debug
@@ -164,7 +164,7 @@ The operator detects its namespace via the downward API and advertises it in the
    helm package charts/kube9-operator
    ```
 
-2. **Verify .tgz file is created:**
+2. **Verify package artifact:**
    ```bash
    ls -lh kube9-operator-*.tgz
    ```
@@ -185,21 +185,21 @@ The operator detects its namespace via the downward API and advertises it in the
 
 ### Phase 4: Cleanup
 
-1. **Delete Kind cluster:**
-   ```bash
-   kind delete cluster --name kube9-test
-   ```
+```bash
+kind delete cluster --name kube9-test
+```
 
 ## Expected results summary
 
-- No chart-managed Secret named `kube9-operator-config`
-- No `API_KEY` environment variable in rendered manifests for default values
-- Status ConfigMap reports `mode="operated"` and `tier="free"` for default install
+- No chart-managed Secret named `kube9-operator-config` and no `API_KEY` environment variable in rendered manifests for default values
+- Status ConfigMap reports `mode="operated"` and `tier="free"` for default install when healthy
 - Pod reaches Ready without crash loops
+- `helm lint` passes; upgrade with `--reuse-values` preserves prior values
 
 ## Troubleshooting
 
 ### Operator pod not starting
+
 - Check logs: `kubectl logs -n kube9-system deployment/kube9-operator`
 - Verify RBAC: `kubectl get role,rolebinding,clusterrole,clusterrolebinding -n kube9-system`
 - Check image: `kubectl describe pod -n kube9-system -l app.kubernetes.io/name=kube9-operator`
@@ -214,7 +214,7 @@ The operator detects its namespace via the downward API and advertises it in the
 - [ ] Default installation works
 - [ ] `helm lint` passes with no errors
 - [ ] `helm template` renders with no operator credential Secret and no `API_KEY` env var for default values
-- [ ] Upgrade works correctly
+- [ ] Upgrade with `--reuse-values` works correctly
 - [ ] Uninstall removes chart-owned workload objects
 - [ ] Package created successfully
 - [ ] Package install works correctly

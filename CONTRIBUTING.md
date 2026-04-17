@@ -206,7 +206,6 @@ SERVER_URL=https://api.kube9.dev
 
 # Optional
 LOG_LEVEL=debug
-API_KEY=kdy_prod_...
 STATUS_UPDATE_INTERVAL_SECONDS=60
 
 # Local development: writable directory for SQLite (default in dev scripts: ./.kube9-data)

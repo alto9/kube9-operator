@@ -15,7 +15,7 @@ The operator works with the kube9 VS Code extension and optional Helm-based UI c
 - **Basic mode** (no operator) — VS Code extension provides kubectl-focused workflows
 - **Operated mode** (operator installed) — The operator runs Well-Architected Framework checks on a schedule, persists findings and events in-cluster, and publishes status to a ConfigMap for the extension and other consumers
 
-The operator is installed via Helm and requires no ingress. It is **fully open source and self-contained**: assessments, storage, and status run inside the cluster without credentials or remote sign-in configured through this chart.
+The operator is installed via Helm and requires no ingress. It is **fully open source and self-contained**: assessments, storage, and status run inside the cluster without credentials or remote sign-in configured through this chart. Optional outbound use of `serverUrl` and related behavior are runtime concerns, not Helm-managed API keys.
 
 ## Features
 
@@ -131,6 +131,7 @@ kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.
 | `resources.limits.memory` | Memory limit | `256Mi` |
 | `logLevel` | Log level (debug, info, warn, error) | `info` |
 | `statusUpdateIntervalSeconds` | Status update frequency | `60` |
+| `serverUrl` | kube9-server API base URL (outbound; not a Helm credential surface) | `https://api.kube9.io` |
 | `argocd.autoDetect` | Enable automatic ArgoCD detection | `true` |
 | `argocd.enabled` | Explicitly enable or disable ArgoCD integration (optional override) | - |
 | `argocd.namespace` | Custom namespace where ArgoCD is installed | `"argocd"` |
@@ -473,6 +474,10 @@ kubectl get role,rolebinding -n kube9-system
 
 ```bash
 kubectl logs -n kube9-system deployment/kube9-operator
+
+# Optional: registration-related messages
+kubectl logs -n kube9-system deployment/kube9-operator | grep -i registration || true
+
 kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.status}' | jq .
 ```
 

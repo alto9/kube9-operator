@@ -55,7 +55,6 @@ jobs:
         run: |
           helm template kube9-operator charts/kube9-operator \
             --namespace kube9-system \
-            --set apiKey=test123 \
             --debug
 
   docker-build:

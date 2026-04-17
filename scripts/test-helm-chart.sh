@@ -1,6 +1,6 @@
 #!/bin/bash
 # Helm Chart Testing Script
-# This script tests the kube9-operator Helm chart with both free and pro tier configurations
+# This script tests the kube9-operator Helm chart (default install; no Helm apiKey surface)
 
 set -e
 
@@ -8,7 +8,6 @@ CHART_DIR="charts/kube9-operator"
 RELEASE_NAME="kube9-operator"
 NAMESPACE="kube9-system"
 KIND_CLUSTER="kube9-test"
-TEST_API_KEY="kdy_test_12345"
 
 echo "=========================================="
 echo "kube9-operator Helm Chart Testing"
@@ -83,58 +82,28 @@ echo ""
 echo "Phase 2: Helm Template Validation"
 echo "----------------------------------"
 
-echo "Testing free tier (no API key)..."
-FREE_TIER_OUTPUT=$(helm template "$RELEASE_NAME" "$CHART_DIR" \
-    --namespace "$NAMESPACE" \
-    --set apiKey="")
+echo "Testing default install (no API key Secret, no API_KEY env)..."
+TEMPLATE_OUTPUT=$(helm template "$RELEASE_NAME" "$CHART_DIR" \
+    --namespace "$NAMESPACE")
 
-if echo "$FREE_TIER_OUTPUT" | grep -q "kind: Secret"; then
-    error "Secret should NOT be created in free tier"
+if echo "$TEMPLATE_OUTPUT" | grep -q "kind: Secret"; then
+    error "Chart must not render a Secret for API keys"
     exit 1
 else
-    success "Secret correctly NOT created in free tier"
+    success "No Secret rendered for default install"
 fi
 
-if echo "$FREE_TIER_OUTPUT" | grep -q "API_KEY"; then
-    error "API_KEY env var should NOT be set in free tier"
+if echo "$TEMPLATE_OUTPUT" | grep -q "API_KEY"; then
+    error "API_KEY env var must not appear in rendered manifests"
     exit 1
 else
-    success "API_KEY env var correctly NOT set in free tier"
+    success "API_KEY env var correctly absent"
 fi
 
-if echo "$FREE_TIER_OUTPUT" | grep -q "kind: Deployment"; then
+if echo "$TEMPLATE_OUTPUT" | grep -q "kind: Deployment"; then
     success "Deployment template renders correctly"
 else
     error "Deployment template failed to render"
-    exit 1
-fi
-
-echo ""
-echo "Testing pro tier (with API key)..."
-PRO_TIER_OUTPUT=$(helm template "$RELEASE_NAME" "$CHART_DIR" \
-    --namespace "$NAMESPACE" \
-    --set apiKey="$TEST_API_KEY")
-
-if echo "$PRO_TIER_OUTPUT" | grep -q "kind: Secret"; then
-    success "Secret correctly created in pro tier"
-else
-    error "Secret should be created in pro tier"
-    exit 1
-fi
-
-if echo "$PRO_TIER_OUTPUT" | grep -q "API_KEY"; then
-    success "API_KEY env var correctly set in pro tier"
-else
-    error "API_KEY env var should be set in pro tier"
-    exit 1
-fi
-
-# Verify Secret name
-SECRET_NAME=$(echo "$PRO_TIER_OUTPUT" | grep -A 5 "kind: Secret" | grep "name:" | awk '{print $2}')
-if [ "$SECRET_NAME" = "${RELEASE_NAME}-config" ]; then
-    success "Secret name is correct: $SECRET_NAME"
-else
-    error "Secret name mismatch. Expected: ${RELEASE_NAME}-config, Got: $SECRET_NAME"
     exit 1
 fi
 
@@ -144,11 +113,7 @@ echo ""
 echo "Phase 3: NOTES.txt Validation"
 echo "------------------------------"
 
-FREE_NOTES=$(helm template "$RELEASE_NAME" "$CHART_DIR" --namespace "$NAMESPACE" | grep -A 20 "NOTES.txt" || echo "")
-PRO_NOTES=$(helm template "$RELEASE_NAME" "$CHART_DIR" --namespace "$NAMESPACE" --set apiKey="$TEST_API_KEY" | grep -A 20 "NOTES.txt" || echo "")
-
-# Check NOTES.txt content (this is tricky since NOTES.txt is rendered separately)
-info "NOTES.txt will be validated during actual installation"
+info "NOTES.txt output is validated on helm install (helm get notes)"
 echo ""
 
 # Phase 4: Package Creation
@@ -257,60 +222,6 @@ if [ "$SKIP_CLUSTER" = false ]; then
     kubectl logs -n "$NAMESPACE" deployment/"$RELEASE_NAME" --tail=20 || true
     
     echo ""
-    echo "Testing Pro Tier Upgrade..."
-    echo "---------------------------"
-    
-    helm upgrade "$RELEASE_NAME" "$CHART_DIR" \
-        --namespace "$NAMESPACE" \
-        --set apiKey="$TEST_API_KEY" \
-        --reuse-values \
-        --wait \
-        --timeout 5m
-    
-    success "Pro tier upgrade completed"
-    
-    # Verify Secret IS created
-    if kubectl get secret "${RELEASE_NAME}-config" -n "$NAMESPACE" &>/dev/null; then
-        success "Secret correctly exists in pro tier"
-    else
-        error "Secret should exist in pro tier"
-        exit 1
-    fi
-    
-    # Wait for pod restart
-    echo "Waiting for operator pod to restart..."
-    sleep 15
-    kubectl wait --for=condition=ready pod \
-        -l app.kubernetes.io/name=kube9-operator \
-        -n "$NAMESPACE" \
-        --timeout=120s
-    success "Operator pod restarted and ready"
-    
-    # Verify status shows enabled mode
-    echo "Checking updated status..."
-    sleep 10
-    
-    STATUS_MODE=$(kubectl get configmap kube9-operator-status -n "$NAMESPACE" -o jsonpath='{.data.status}' | jq -r '.mode' 2>/dev/null || echo "")
-    STATUS_REGISTERED=$(kubectl get configmap kube9-operator-status -n "$NAMESPACE" -o jsonpath='{.data.status}' | jq -r '.registered' 2>/dev/null || echo "")
-    
-    if [ "$STATUS_MODE" = "enabled" ]; then
-        success "Status mode is correct: $STATUS_MODE"
-    else
-        error "Status mode incorrect. Expected: enabled, Got: $STATUS_MODE"
-    fi
-    
-    if [ "$STATUS_REGISTERED" = "false" ]; then
-        success "Status registered is correct: $STATUS_REGISTERED (test key will fail)"
-    else
-        warning "Status registered: $STATUS_REGISTERED (may have succeeded unexpectedly)"
-    fi
-    
-    # Check operator logs for registration attempt
-    echo ""
-    echo "Operator logs after upgrade (last 30 lines):"
-    kubectl logs -n "$NAMESPACE" deployment/"$RELEASE_NAME" --tail=30 || true
-    
-    echo ""
     echo "Testing Uninstall..."
     echo "-------------------"
     
@@ -348,7 +259,7 @@ echo "=========================================="
 echo ""
 echo "Summary:"
 echo "  ✓ Helm lint passed"
-echo "  ✓ Template rendering validated (free & pro tier)"
+echo "  ✓ Template rendering validated (default install)"
 echo "  ✓ Package created and validated"
 if [ "$SKIP_CLUSTER" = false ]; then
     echo "  ✓ Cluster testing completed"

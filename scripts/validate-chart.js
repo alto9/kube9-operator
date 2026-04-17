@@ -33,10 +33,6 @@ function warning(msg) {
   console.log(`${YELLOW}⚠${RESET} ${msg}`);
 }
 
-function info(msg) {
-  console.log(`ℹ  ${msg}`);
-}
-
 let hasErrors = false;
 
 console.log('Helm Chart Structure Validation');
@@ -53,7 +49,7 @@ if (fs.existsSync(chartYaml)) {
     error('Chart.yaml does not use apiVersion: v2');
     hasErrors = true;
   }
-  
+
   if (content.includes('name: kube9-operator')) {
     success('Chart name is correct');
   } else {
@@ -71,10 +67,15 @@ const valuesYaml = path.join(CHART_DIR, 'values.yaml');
 if (fs.existsSync(valuesYaml)) {
   const content = fs.readFileSync(valuesYaml, 'utf8');
   success('values.yaml exists');
-  
-  // Check for required values
+
+  if (/\bapiKey\b/i.test(content) || content.includes('API_KEY')) {
+    error('values.yaml must not define apiKey / API_KEY Helm surface');
+    hasErrors = true;
+  } else {
+    success('values.yaml has no apiKey / API_KEY keys');
+  }
+
   const requiredValues = [
-    'apiKey:',
     'image:',
     'resources:',
     'serviceAccount:',
@@ -83,7 +84,7 @@ if (fs.existsSync(valuesYaml)) {
     'statusUpdateIntervalSeconds:',
     'serverUrl:'
   ];
-  
+
   for (const value of requiredValues) {
     if (content.includes(value)) {
       success(`  Contains: ${value}`);
@@ -113,7 +114,7 @@ const requiredTemplates = [
   'rolebinding.yaml',
   'clusterrole.yaml',
   'clusterrolebinding.yaml',
-  'secret.yaml',
+  'persistentvolumeclaim.yaml',
   'NOTES.txt'
 ];
 
@@ -128,64 +129,40 @@ for (const template of requiredTemplates) {
   }
 }
 
-// Validate secret.yaml conditional logic
-console.log('\nValidating secret.yaml conditional logic...');
-const secretYaml = path.join(TEMPLATES_DIR, 'secret.yaml');
-if (fs.existsSync(secretYaml)) {
-  const content = fs.readFileSync(secretYaml, 'utf8');
-  
-  if (content.includes('{{- if .Values.apiKey }}')) {
-    success('Secret template uses conditional: {{- if .Values.apiKey }}');
-  } else {
-    error('Secret template missing conditional check');
-    hasErrors = true;
-  }
-  
-  if (content.includes('{{- end }}')) {
-    success('Secret template properly closes conditional');
-  } else {
-    error('Secret template missing closing {{- end }}');
-    hasErrors = true;
-  }
-  
-  if (content.includes('kube9-operator.fullname')) {
-    success('Secret uses fullname helper');
-  } else {
-    warning('Secret may not use fullname helper');
-  }
-} else {
-  error('secret.yaml not found');
+if (existingTemplates.includes('secret.yaml')) {
+  error('secret.yaml must not exist (chart does not ship an API key Secret)');
   hasErrors = true;
+} else {
+  success('No secret.yaml template (expected)');
 }
 
-// Validate deployment.yaml conditional logic
-console.log('\nValidating deployment.yaml conditional logic...');
+// Validate deployment.yaml
+console.log('\nValidating deployment.yaml...');
 const deploymentYaml = path.join(TEMPLATES_DIR, 'deployment.yaml');
 if (fs.existsSync(deploymentYaml)) {
   const content = fs.readFileSync(deploymentYaml, 'utf8');
-  
-  if (content.includes('{{- if .Values.apiKey }}')) {
-    success('Deployment template uses conditional for API_KEY env');
-  } else {
-    error('Deployment template missing conditional for API_KEY');
-    hasErrors = true;
-  }
-  
+
   if (content.includes('API_KEY')) {
-    success('Deployment template includes API_KEY environment variable');
-  } else {
-    error('Deployment template missing API_KEY environment variable');
+    error('Deployment must not reference API_KEY');
     hasErrors = true;
+  } else {
+    success('Deployment has no API_KEY environment variable');
   }
-  
+
+  if (content.includes('apiKey') || content.includes('.Values.apiKey')) {
+    error('Deployment must not reference apiKey values');
+    hasErrors = true;
+  } else {
+    success('Deployment has no apiKey / .Values.apiKey references');
+  }
+
   if (content.includes('secretKeyRef')) {
-    success('Deployment uses secretKeyRef for API_KEY');
-  } else {
-    error('Deployment missing secretKeyRef for API_KEY');
+    error('Deployment must not use secretKeyRef for credentials from this chart');
     hasErrors = true;
+  } else {
+    success('Deployment has no secretKeyRef');
   }
-  
-  // Check health probes
+
   if (content.includes('/healthz') && content.includes('/readyz')) {
     success('Deployment includes health probes');
   } else {
@@ -197,24 +174,24 @@ if (fs.existsSync(deploymentYaml)) {
   hasErrors = true;
 }
 
-// Validate NOTES.txt conditional logic
-console.log('\nValidating NOTES.txt conditional logic...');
+// Validate NOTES.txt
+console.log('\nValidating NOTES.txt...');
 const notesTxt = path.join(TEMPLATES_DIR, 'NOTES.txt');
 if (fs.existsSync(notesTxt)) {
   const content = fs.readFileSync(notesTxt, 'utf8');
-  
-  if (content.includes('{{- if .Values.apiKey }}')) {
-    success('NOTES.txt uses conditional for pro tier message');
-  } else {
-    error('NOTES.txt missing conditional check');
+  const lower = content.toLowerCase();
+
+  if (lower.includes('apikey') || content.includes('API_KEY')) {
+    error('NOTES.txt must not reference apiKey / API_KEY');
     hasErrors = true;
+  } else {
+    success('NOTES.txt has no apiKey / API_KEY references');
   }
-  
-  if (content.includes('{{- else }}')) {
-    success('NOTES.txt includes else clause for free tier');
+
+  if (content.includes('{{ .Chart.Name }}') || content.includes('{{ .Release.Name }}')) {
+    success('NOTES.txt includes standard Helm placeholders');
   } else {
-    error('NOTES.txt missing else clause');
-    hasErrors = true;
+    warning('NOTES.txt may be missing expected Helm placeholders');
   }
 } else {
   error('NOTES.txt not found');
@@ -226,7 +203,7 @@ console.log('\nValidating helper templates...');
 const helpersTpl = path.join(TEMPLATES_DIR, '_helpers.tpl');
 if (fs.existsSync(helpersTpl)) {
   const content = fs.readFileSync(helpersTpl, 'utf8');
-  
+
   const requiredHelpers = [
     'kube9-operator.name',
     'kube9-operator.fullname',
@@ -234,9 +211,9 @@ if (fs.existsSync(helpersTpl)) {
     'kube9-operator.selectorLabels',
     'kube9-operator.serviceAccountName'
   ];
-  
+
   for (const helper of requiredHelpers) {
-    if (content.includes(`"${helper}"`)) {
+    if (content.includes(helper)) {
       success(`Helper exists: ${helper}`);
     } else {
       error(`Helper missing: ${helper}`);
@@ -261,4 +238,3 @@ if (hasErrors) {
   console.log('  3. Run: ./scripts/test-helm-chart.sh');
   process.exit(0);
 }
-
