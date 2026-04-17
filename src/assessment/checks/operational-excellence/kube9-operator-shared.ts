@@ -36,6 +36,27 @@ export function probeHttpPortValue(port: k8s.V1HTTPGetAction['port']): number | 
 }
 
 /** Whether the container declares a port matching the probe target (number or name). */
+export function getContainerEnv(container: k8s.V1Container, name: string): k8s.V1EnvVar | undefined {
+  return container.env?.find((e) => e.name === name);
+}
+
+/** Valid LOG_LEVEL values for src/logging/logger.ts (Winston). */
+export const VALID_LOG_LEVELS = new Set(['error', 'warn', 'info', 'debug']);
+
+export function normalizedLogLevel(value: string | undefined): string | undefined {
+  if (value === undefined || value === '') return undefined;
+  return value.trim().toLowerCase();
+}
+
+/**
+ * Whether the env var injects the pod namespace via the standard downward API
+ * (required for correlating structured logs with Kubernetes metadata).
+ */
+export function isPodNamespaceFieldRef(envVar: k8s.V1EnvVar | undefined): boolean {
+  if (!envVar?.valueFrom?.fieldRef) return false;
+  return envVar.valueFrom.fieldRef.fieldPath === 'metadata.namespace';
+}
+
 export function containerDeclaresProbePort(
   httpGet: k8s.V1HTTPGetAction | undefined,
   container: k8s.V1Container

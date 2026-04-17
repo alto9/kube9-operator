@@ -41,6 +41,8 @@ import {
 import {
   kube9OperatorHealthProbesCheck,
   kube9OperatorMetricsExposureCheck,
+  kube9OperatorLoggingConfigurationCheck,
+  kube9OperatorAuditSignalsCheck,
 } from './checks/operational-excellence/index.js';
 
 /** Built-in checks to register at bootstrap (extend as checks are implemented) */
@@ -70,6 +72,8 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   spotInstanceUsageCheck,
   kube9OperatorHealthProbesCheck,
   kube9OperatorMetricsExposureCheck,
+  kube9OperatorLoggingConfigurationCheck,
+  kube9OperatorAuditSignalsCheck,
 ];
 
 /**
