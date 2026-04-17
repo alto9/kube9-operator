@@ -51,7 +51,8 @@ const DEFAULT_TRIVY_STATUS: TrivyStatus = {
 };
 
 /**
- * Calculate the current operator status based on configuration and system state
+ * Calculate the current operator status from registration and runtime signals.
+ * `mode` and `tier` are fixed product constants (not derived from config or secrets).
  * 
  * @param registrationState - Optional registration state (defaults to unregistered)
  * @param lastError - Optional error message from last operation
@@ -76,7 +77,7 @@ export function calculateStatus(
 ): OperatorStatus {
   const { isRegistered, clusterId, consecutiveFailures = 0 } = registrationState;
   
-  // API key and registration dependencies have been removed.
+  // Published status uses fixed mode/tier; this function does not read config or credentials.
   const mode: "operated" | "enabled" = "operated";
   const tier: "free" | "pro" = "free";
   
@@ -131,7 +132,7 @@ export function calculateStatus(
     trivy: trivyStatus
   };
   
-  // Include clusterId only when registered (pro tier)
+  // Include clusterId when registration reports an id
   if (isRegistered && clusterId) {
     status.clusterId = clusterId;
   }
