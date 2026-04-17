@@ -43,6 +43,7 @@ import {
   kube9OperatorMetricsExposureCheck,
   kube9OperatorLoggingConfigurationCheck,
   kube9OperatorAuditSignalsCheck,
+  kube9OperatorDeploymentStrategyCheck,
 } from './checks/operational-excellence/index.js';
 
 /** Built-in checks to register at bootstrap (extend as checks are implemented) */
@@ -74,6 +75,7 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   kube9OperatorMetricsExposureCheck,
   kube9OperatorLoggingConfigurationCheck,
   kube9OperatorAuditSignalsCheck,
+  kube9OperatorDeploymentStrategyCheck,
 ];
 
 /**
