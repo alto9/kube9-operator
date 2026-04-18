@@ -164,7 +164,7 @@ if [ "$SKIP_CLUSTER" = false ]; then
     success "Cluster is ready"
     
     echo ""
-    echo "Testing Free Tier Installation..."
+    echo "Testing Default Install..."
     echo "----------------------------------"
     
     helm install "$RELEASE_NAME" "$CHART_DIR" \
@@ -173,7 +173,7 @@ if [ "$SKIP_CLUSTER" = false ]; then
         --wait \
         --timeout 5m
     
-    success "Free tier installation completed"
+    success "Default install completed"
     
     # Verify operator pod
     echo "Waiting for operator pod to be ready..."
@@ -185,10 +185,10 @@ if [ "$SKIP_CLUSTER" = false ]; then
     
     # Verify Secret is NOT created
     if kubectl get secret "${RELEASE_NAME}-config" -n "$NAMESPACE" &>/dev/null; then
-        error "Secret should NOT exist in free tier"
+        error "Secret should NOT exist for default install"
         exit 1
     else
-        success "Secret correctly does NOT exist in free tier"
+        success "Secret correctly does NOT exist for default install"
     fi
     
     # Verify status ConfigMap
