@@ -1,3 +1,13 @@
+# [Unreleased]
+
+### BREAKING CHANGES (documentation)
+
+Documentation for installing and configuring the operator no longer describes API keys, Pro-tier registration, or centralized server communication as part of the default Helm chart path. Users who followed older guides should treat the operator as **fully open source and in-cluster**: follow the current [README](README.md) and [charts/kube9-operator/README.md](charts/kube9-operator/README.md) for supported configuration.
+
+### Documentation
+
+* **docs:** remove API key and remote-server install flows from README and Helm chart guide; align status and troubleshooting with self-contained operation ([#28](https://github.com/alto9/kube9-operator/issues/28))
+
 # [1.9.0](https://github.com/alto9/kube9-operator/compare/v1.8.0...v1.9.0) (2026-04-15)
 
 

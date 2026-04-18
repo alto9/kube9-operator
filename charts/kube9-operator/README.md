@@ -1,16 +1,15 @@
 # kube9-operator Helm Chart
 
-This Helm chart installs the kube9-operator, a Kubernetes operator that enables enhanced features in the [kube9 VS Code extension](https://github.com/alto9/kube9-vscode). The operator provides tier detection, status reporting, and optional Pro tier features with AI-powered insights.
+This Helm chart installs the kube9-operator, a Kubernetes operator that powers Well-Architected Framework validation and in-cluster status for the [kube9 VS Code extension](https://github.com/alto9/kube9-vscode) and other tooling.
 
 ## Overview
 
-The kube9-operator runs in your Kubernetes cluster and bridges your cluster with the kube9 VS Code extension. It enables the extension to determine whether your cluster is in:
+The kube9-operator runs in your Kubernetes cluster and publishes status and assessment-related data locally. The VS Code extension uses this to determine whether your cluster is in:
 
-- **Basic mode** (no operator) - kubectl-only operations
-- **Free tier** (operated mode) - Local webviews and basic resource management
-- **Pro tier** (enabled mode) - AI-powered insights, advanced dashboards, and rich UIs
+- **Basic mode** (no operator) — kubectl-focused workflows
+- **Operated mode** (operator installed) — scheduled assessments, local persistence, and ConfigMap status for the extension
 
-The operator is installed via Helm and requires no ingress - all communication is outbound to kube9-server for Pro tier features.
+The operator is installed via Helm and requires no ingress for the control plane path this chart installs. The chart does not configure API keys, credentials, or remote product sign-in.
 
 ### What This Chart Installs
 
@@ -79,8 +78,6 @@ The following table lists the configurable parameters and their default values:
 | `rbac.create` | Create RBAC resources (ClusterRole and ClusterRoleBinding) | `true` |
 | `logLevel` | Log level for the operator. Options: `debug`, `info`, `warn`, `error` | `"info"` |
 | `statusUpdateIntervalSeconds` | How often the operator updates the status ConfigMap (in seconds) | `60` |
-| `reregistrationIntervalHours` | How often the operator re-registers with kube9-server (in hours, Pro tier only) | `24` |
-| `serverUrl` | URL of the kube9-server API | `"https://api.kube9.io"` |
 | `metrics.intervals.clusterMetadata` | Cluster metadata collection interval (seconds). Default 86400 (24h), minimum 3600 (1h) | `86400` |
 | `metrics.intervals.resourceInventory` | Resource inventory collection interval (seconds). Default 21600 (6h), minimum 1800 (30m) | `21600` |
 | `metrics.intervals.resourceConfigurationPatterns` | Resource configuration patterns collection interval (seconds). Default 43200 (12h), minimum 3600 (1h) | `43200` |
@@ -143,11 +140,9 @@ The operator uses Guaranteed QoS for stable performance:
 - **warn**: Only warnings and errors
 - **error**: Only errors
 
-#### Status Intervals and Server URL
+#### Status interval
 
 - **statusUpdateIntervalSeconds**: How frequently the operator writes status to the ConfigMap (default: 60 seconds). Lower values provide more real-time status but increase API calls; higher values reduce API load but status may be slightly stale.
-- **reregistrationIntervalHours**: How often to re-register with kube9-server (default: 24 hours)
-- **serverUrl**: The kube9-server API endpoint (default: https://api.kube9.io)
 
 #### Metrics Collection Intervals (`metrics.intervals`)
 
@@ -484,28 +479,18 @@ kubectl get role,rolebinding -n kube9-system | grep kube9-operator
 - Check operator logs for permission errors
 - Reinstall with `rbac.create: true` if needed
 
-### Registration Failing
+### Operator reports unhealthy or errors in status
 
-**Symptoms**: Status shows `registered: false` or `mode: degraded`
+**Symptoms**: Status ConfigMap `health` is not `healthy`, or `error` is set
 
 **Diagnosis**:
 
 ```bash
-# Check registration status in logs
-kubectl logs -n kube9-system deployment/kube9-operator | grep -i registration
-
-# View status ConfigMap with error details
+kubectl logs -n kube9-system deployment/kube9-operator
 kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.status}' | jq .
 ```
 
-**Common Causes**:
-- Network connectivity: Cluster cannot reach the kube9-server API
-- Server URL incorrect: Wrong `serverUrl` value
-
-**Solutions**:
-- Test connectivity: `kubectl run -it --rm debug --image=curlimages/curl --restart=Never -- curl -v https://api.kube9.io/health`
-- Verify `serverUrl` is set to `https://api.kube9.io`
-- Review operator logs for specific error messages
+**Common causes**: RBAC preventing ConfigMap writes, insufficient CPU/memory, optional integrations (for example Trivy) timing out.
 
 ### RBAC Permission Issues
 
@@ -553,8 +538,6 @@ Complete reference of all configurable values:
 | `rbac.create` | Create RBAC resources (ClusterRole and ClusterRoleBinding) | `true` |
 | `logLevel` | Log level (`debug`, `info`, `warn`, `error`) | `"info"` |
 | `statusUpdateIntervalSeconds` | Status ConfigMap update interval (seconds) | `60` |
-| `reregistrationIntervalHours` | Re-registration interval with kube9-server (hours, Pro tier) | `24` |
-| `serverUrl` | kube9-server API URL | `"https://api.kube9.io"` |
 | `metrics.intervals.clusterMetadata` | Cluster metadata collection interval (seconds). Default 86400 (24h), minimum 3600 (1h) | `86400` |
 | `metrics.intervals.resourceInventory` | Resource inventory collection interval (seconds). Default 21600 (6h), minimum 1800 (30m) | `21600` |
 | `metrics.intervals.resourceConfigurationPatterns` | Resource configuration patterns collection interval (seconds). Default 43200 (12h), minimum 3600 (1h) | `43200` |
@@ -581,5 +564,4 @@ Complete reference of all configurable values:
 
 - **Issues**: https://github.com/alto9/kube9-operator/issues
 - **Discussions**: https://github.com/alto9/kube9/discussions
-- **Portal Support**: https://portal.kube9.dev/support
 

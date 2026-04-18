@@ -19,14 +19,14 @@ Run the automated test script:
 
 ## Manual Testing Steps
 
-### Phase 1: Free Tier Testing
+### Phase 1: Default install
 
 1. **Start a local Kind cluster:**
    ```bash
    kind create cluster --name kube9-test
    ```
 
-2. **Install chart without API key:**
+2. **Install chart:**
    ```bash
    helm install kube9-operator charts/kube9-operator \
      --namespace kube9-system \
@@ -43,23 +43,20 @@ Run the automated test script:
 
 4. **Verify status ConfigMap is created with mode="operated":**
    ```bash
-   # Wait a few seconds for operator to create ConfigMap
    sleep 10
-   
+
    kubectl get configmap kube9-operator-status -n kube9-system -o yaml
-   
-   # Verify mode
+
    kubectl get configmap kube9-operator-status -n kube9-system \
      -o jsonpath='{.data.status}' | jq -r '.mode'
    # Expected: "operated"
-   
-   # Verify tier
+
    kubectl get configmap kube9-operator-status -n kube9-system \
      -o jsonpath='{.data.status}' | jq -r '.tier'
    # Expected: "free"
    ```
 
-5. **Verify Secret is NOT created:**
+5. **Verify no chart-managed operator credential Secret:**
    ```bash
    kubectl get secret kube9-operator-config -n kube9-system
    # Expected: Error: secrets "kube9-operator-config" not found
@@ -68,19 +65,16 @@ Run the automated test script:
 6. **Check operator logs for any errors:**
    ```bash
    kubectl logs -n kube9-system deployment/kube9-operator
-   # Should see: "Configuration loaded" with tier: "free"
-   # Should see: "Secret not found - running in free tier mode"
    ```
 
-7. **Verify NOTES.txt displays correctly:**
+7. **Verify post-install notes:**
    ```bash
    helm get notes kube9-operator -n kube9-system
-   # Should show free tier message with upgrade instructions
    ```
 
-### Testing Custom Namespace Installation
+### Testing custom namespace installation
 
-You can test the operator in any namespace. The operator automatically detects its namespace and advertises it in the status ConfigMap:
+The operator detects its namespace via the downward API and advertises it in the status ConfigMap:
 
 1. **Install in custom namespace:**
    ```bash
@@ -91,18 +85,15 @@ You can test the operator in any namespace. The operator automatically detects i
 
 2. **Verify namespace detection:**
    ```bash
-   # Wait for operator to create ConfigMap
    sleep 10
-   
-   # Verify namespace field in status
+
    kubectl get configmap kube9-operator-status -n test-operator -o json | \
      jq -r '.data.status' | jq '.namespace'
    # Should output: "test-operator"
-   
-   # Verify operator is working correctly
+
    kubectl get configmap kube9-operator-status -n test-operator \
      -o jsonpath='{.data.status}' | jq -r '.mode'
-   # Expected: "operated" (for free tier)
+   # Expected: "operated"
    ```
 
 3. **Clean up custom namespace installation:**
@@ -110,139 +101,67 @@ You can test the operator in any namespace. The operator automatically detects i
    helm uninstall kube9-operator --namespace test-operator
    ```
 
-**Note:** All test phases (Free Tier, Pro Tier, Helm Commands, etc.) can be run in custom namespaces by replacing `kube9-system` with your chosen namespace in the commands. The operator will automatically detect and use the namespace where it's deployed.
-
-### Phase 2: Pro Tier Testing
-
-1. **Upgrade with test API key:**
-   ```bash
-   helm upgrade kube9-operator charts/kube9-operator \
-     --set apiKey=kdy_test_12345 \
-     --namespace kube9-system \
-     --reuse-values
-   ```
-
-2. **Verify Secret is created:**
-   ```bash
-   kubectl get secret kube9-operator-config -n kube9-system -o yaml
-   # Should exist and contain apiKey
-   ```
-
-3. **Wait for pod restart and verify operator attempts registration:**
-   ```bash
-   kubectl wait --for=condition=ready pod \
-     -l app.kubernetes.io/name=kube9-operator \
-     -n kube9-system \
-     --timeout=120s
-   
-   sleep 10  # Give operator time to attempt registration
-   
-   kubectl logs -n kube9-system deployment/kube9-operator --tail=50
-   # Should see registration attempts (will fail with test key)
-   ```
-
-4. **Verify status shows mode="enabled" but registered=false:**
-   ```bash
-   kubectl get configmap kube9-operator-status -n kube9-system \
-     -o jsonpath='{.data.status}' | jq '.'
-   
-   # Expected values:
-   # - mode: "enabled"
-   # - tier: "free" (not registered yet)
-   # - registered: false
-   # - health: "degraded" (API key present but not registered)
-   ```
-
-5. **Check error handling is graceful:**
-   ```bash
-   kubectl get pods -n kube9-system
-   # Pod should be running (not crashing)
-   
-   kubectl get configmap kube9-operator-status -n kube9-system \
-     -o jsonpath='{.data.status}' | jq -r '.error'
-   # Should show error about registration failure (not null)
-   ```
-
-### Phase 3: Helm Commands Testing
+### Phase 2: Helm commands
 
 1. **Run helm lint:**
    ```bash
    helm lint charts/kube9-operator
-   # Should pass with no errors
    ```
 
-2. **Run helm template:**
+2. **Run helm template (no operator credential Secret, no `API_KEY` env):**
    ```bash
-   # Free tier
    helm template kube9-operator charts/kube9-operator \
-     --namespace kube9-system > /tmp/free-tier.yaml
-   
-   # Pro tier
-   helm template kube9-operator charts/kube9-operator \
-     --namespace kube9-system \
-     --set apiKey=kdy_test_12345 > /tmp/pro-tier.yaml
-   
-   # Verify differences
-   diff <(grep -A 5 "kind: Secret" /tmp/free-tier.yaml || echo "No Secret") \
-        <(grep -A 5 "kind: Secret" /tmp/pro-tier.yaml)
-   # Free tier should have no Secret, pro tier should have Secret
+     --namespace kube9-system > /tmp/rendered.yaml
+
+   grep -E 'kind: Secret|API_KEY' /tmp/rendered.yaml && echo 'Unexpected Secret or API_KEY' && exit 1 || true
    ```
 
 3. **Test with custom values.yaml:**
    ```bash
    cat > /tmp/test-values.yaml <<EOF
-   apiKey: kdy_test_12345
    logLevel: debug
    statusUpdateIntervalSeconds: 30
    EOF
-   
+
    helm template kube9-operator charts/kube9-operator \
      --namespace kube9-system \
      -f /tmp/test-values.yaml
-   # Verify custom values are applied
    ```
 
 4. **Test upgrade preserves configuration:**
    ```bash
-   # Install with custom values
    helm install kube9-operator charts/kube9-operator \
      --namespace kube9-system \
      --create-namespace \
      --set logLevel=debug
-   
-   # Upgrade with only apiKey
+
    helm upgrade kube9-operator charts/kube9-operator \
      --namespace kube9-system \
-     --set apiKey=kdy_test_12345 \
      --reuse-values
-   
-   # Verify logLevel is still debug
+
    kubectl get deployment kube9-operator -n kube9-system \
      -o jsonpath='{.spec.template.spec.containers[0].env[?(@.name=="LOG_LEVEL")].value}'
    # Expected: "debug"
    ```
 
-5. **Test uninstall removes all resources:**
+5. **Test uninstall removes chart-owned resources:**
    ```bash
    helm uninstall kube9-operator --namespace kube9-system
-   
-   # Verify resources are gone
+
    kubectl get deployment kube9-operator -n kube9-system
    # Expected: Error: deployments.apps "kube9-operator" not found
-   
+
    kubectl get secret kube9-operator-config -n kube9-system
    # Expected: Error: secrets "kube9-operator-config" not found
-   
-   kubectl get configmap kube9-operator-status -n kube9-system
-   # Expected: Error: configmaps "kube9-operator-status" not found
    ```
 
-### Phase 4: Packaging
+   The status ConfigMap may remain until deleted manually (created by the operator).
+
+### Phase 3: Packaging
 
 1. **Package the chart:**
    ```bash
    helm package charts/kube9-operator
-   # Should create: kube9-operator-1.0.0.tgz
    ```
 
 2. **Verify .tgz file is created:**
@@ -252,40 +171,31 @@ You can test the operator in any namespace. The operator automatically detects i
 
 3. **Test installing from package:**
    ```bash
-   helm install kube9-operator kube9-operator-1.0.0.tgz \
+   helm install kube9-operator kube9-operator-*.tgz \
      --namespace kube9-system \
      --create-namespace
-   
-   # Verify it works the same as direct install
+
    kubectl wait --for=condition=ready pod \
      -l app.kubernetes.io/name=kube9-operator \
      -n kube9-system \
      --timeout=120s
-   
+
    helm uninstall kube9-operator --namespace kube9-system
    ```
 
-### Phase 5: Cleanup
+### Phase 4: Cleanup
 
 1. **Delete Kind cluster:**
    ```bash
    kind delete cluster --name kube9-test
    ```
 
-## Expected Results Summary
+## Expected results summary
 
-### Free Tier (No API Key)
-- ✅ Secret: **NOT created**
-- ✅ Deployment: **Created** with no API_KEY env var
-- ✅ Status ConfigMap: **mode="operated"**, **tier="free"**, **health="healthy"**
-- ✅ NOTES.txt: **Shows free tier message** with upgrade instructions
-
-### Pro Tier (With API Key)
-- ✅ Secret: **Created** with apiKey
-- ✅ Deployment: **Created** with API_KEY env var from Secret
-- ✅ Status ConfigMap: **mode="enabled"**, **tier="free"** (until registered), **registered=false**, **health="degraded"**
-- ✅ NOTES.txt: **Shows pro tier message**
-- ✅ Registration: **Attempts registration** (fails gracefully with test key)
+- No chart-managed Secret named `kube9-operator-config`
+- No `API_KEY` environment variable in rendered manifests for default values
+- Status ConfigMap reports `mode="operated"` and `tier="free"` for default install
+- Pod reaches Ready without crash loops
 
 ## Troubleshooting
 
@@ -295,23 +205,16 @@ You can test the operator in any namespace. The operator automatically detects i
 - Check image: `kubectl describe pod -n kube9-system -l app.kubernetes.io/name=kube9-operator`
 
 ### Status ConfigMap not created
-- Wait longer (operator updates every 60 seconds by default)
+- Wait longer (operator updates on the configured interval)
 - Check operator logs for errors
-- Verify RBAC permissions allow ConfigMap creation
+- Verify RBAC permissions allow ConfigMap creation in the release namespace
 
-### Registration failing
-- Expected with test API key (`kdy_test_12345`)
-- Check logs for registration attempts
-- Verify SERVER_URL is correct (default: https://api.kube9.dev)
+## Completion checklist
 
-## Completion Checklist
-
-- [ ] Free tier installation works
-- [ ] Pro tier installation works
-- [ ] helm lint passes with no errors
-- [ ] helm template renders correctly
+- [ ] Default installation works
+- [ ] `helm lint` passes with no errors
+- [ ] `helm template` renders with no operator credential Secret and no `API_KEY` env var for default values
 - [ ] Upgrade works correctly
-- [ ] Uninstall removes all resources
+- [ ] Uninstall removes chart-owned workload objects
 - [ ] Package created successfully
 - [ ] Package install works correctly
-

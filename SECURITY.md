@@ -45,57 +45,41 @@ When deploying kube9-operator:
 ### Installation
 - **Review RBAC**: Check ClusterRole and Role permissions before installation
 - **Minimal permissions**: Operator uses least-privilege RBAC
-- **Namespace isolation**: Operator runs in `kube9-system` namespace
+- **Namespace isolation**: Install into a dedicated namespace (for example `kube9-system`)
 - **Non-root**: Operator runs as non-root user
 
 ### Configuration
-- **API key storage**: Store API keys in Kubernetes Secrets (never in ConfigMaps)
-- **Secret management**: Use proper secret management (Sealed Secrets, External Secrets, etc.)
-- **Network policies**: Consider NetworkPolicy to restrict operator egress
-- **Resource limits**: Set appropriate CPU/memory limits
+- **Secret management**: Store any cluster credentials you manage (for example kubeconfigs, cloud tokens) using your platform’s secret tooling—never commit them to the repository
+- **Helm values**: Treat values files like configuration; avoid embedding long-lived secrets in plain text where your policy requires encryption
+- **Network policies**: Consider NetworkPolicy if you need to restrict pod egress
+- **Resource limits**: Set appropriate CPU and memory limits for your environment
 
-### Pro Tier
-- **HTTPS only**: All communication with kube9-server uses HTTPS
-- **API key validation**: Server validates API keys before accepting data
-- **Data sanitization**: Operator sanitizes data before transmission
-- **No sensitive data**: Operator never collects secrets, credentials, or sensitive information
-
-### Free Tier
-- **No external communication**: Operator makes no outbound connections
-- **Local only**: Status exposed via ConfigMap only
-- **No data collection**: No metrics or data collected
+### Runtime
+- **Kubernetes API**: The operator talks to the Kubernetes API like other controllers; protect API access and rotate credentials per your organization’s standards
+- **Optional integrations**: When you enable optional probes (for example Trivy), scope URLs and RBAC to the minimum required
 
 ## Known Security Considerations
 
 ### RBAC Permissions
 The operator requires:
-- **Read-only cluster metadata** (ClusterRole)
-- **ConfigMap write** in kube9-system namespace (Role)
-- **Secret read** in kube9-system namespace (Role, Pro tier only)
+- **Read-only cluster metadata** (ClusterRole) for discovery and assessments
+- **ConfigMap write** in the release namespace (Role) for status
 
 Review the RBAC manifests in `charts/kube9-operator/templates/` before installation.
 
-### Data Collection (Pro Tier)
-- Operator collects sanitized metrics only
-- No secrets, credentials, or sensitive data
-- Resource names are obfuscated before transmission
-- User controls what operator can access via RBAC
+### Data collection and storage
+- Assessment and event data are stored **in-cluster** (for example SQLite on a PVC or emptyDir depending on values)
+- Follow your retention and backup policies for volumes that hold operator data
 
-### Network Security
-- **Egress-only**: Operator initiates all external connections
-- **No ingress**: No cluster ingress required
-- **HTTPS**: All external communication uses TLS
-- **Certificate validation**: Validates server certificates
-
-### Container Security
-- **Non-root**: Runs as non-root user (UID 1000)
-- **Read-only filesystem**: Container filesystem is read-only
-- **Minimal base image**: Uses minimal Node.js base image
+### Container security
+- **Non-root**: Runs as non-root user (UID 1000) where configured
+- **Read-only filesystem**: Container filesystem is read-only where configured
+- **Minimal base image**: Uses a minimal Node.js base image
 - **No shell**: No shell access in production image
 
 ## Security Audit
 
-We welcome security audits and reviews. If you're planning a security audit:
+We welcome security audits and reviews. If you are planning a security audit:
 
 1. Email security@alto9.com to coordinate
 2. We can provide:
@@ -115,7 +99,7 @@ We currently do not have a formal bug bounty program, but we greatly appreciate 
 ## Security Updates
 
 Security updates will be:
-- Released as patch versions (e.g., 1.0.1)
+- Released as patch versions (for example 1.0.1)
 - Documented in CHANGELOG.md
 - Announced via GitHub releases
 - Tagged with security label
@@ -132,4 +116,3 @@ For vulnerabilities, always use: **security@alto9.com**
 ---
 
 **Thank you for helping keep kube9-operator secure!**
-
