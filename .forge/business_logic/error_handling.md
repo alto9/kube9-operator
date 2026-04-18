@@ -16,7 +16,7 @@
 ### External Endpoint Failures
 - **Prometheus unreachable**: Log warning, skip optional checks that depend on Prometheus
 - **ArgoCD endpoint unreachable**: Detection returns not detected, operator continues
-- **kube9-server unreachable** (pro tier): Transmission failures logged, collections stored locally
+- **Trivy server unreachable**: Detection returns not detected; workload scans are skipped until a server is configured
 
 **Implementation**: All external dependencies wrapped with try-catch, errors logged but never thrown to operator main loop.
 
@@ -53,20 +53,6 @@
 **Implementation**: `AssessmentRunner.run()` in `src/assessment/runner.ts` handles run-level errors and computes final state via `computeFinalState()`.
 
 ## Retry Mechanisms
-
-### Collection Transmission (Pro Tier)
-- **Max retries**: 3 attempts
-- **Backoff delays**: Exponential (1s, 2s, 4s)
-- **Retry conditions**: Network errors, timeouts, server errors (5xx)
-- **Final failure**: Logged, graceful degradation (collections stored locally)
-- **Implementation**: `TransmissionClient.transmit()` in `src/collection/transmission.ts`
-
-### Registration (Pro Tier)
-- **Max retries**: 3 attempts
-- **Backoff delays**: Exponential (1s, 2s, 4s)
-- **Retry conditions**: Network errors, server errors, timeouts
-- **State tracking**: Consecutive failures tracked, health degrades after 3+ failures
-- **Implementation**: `RegistrationManager.handleRegistrationError()` in `src/registration/manager.ts`
 
 ### Collection Scheduling
 - **Retry behavior**: Failed collections retry on next scheduled interval (no immediate retry)

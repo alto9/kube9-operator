@@ -23,10 +23,8 @@ import type {
 } from '../types.js';
 import { validateResourceConfigurationPatterns } from '../validation.js';
 import { LocalStorage } from '../storage.js';
-import { TransmissionClient } from '../transmission.js';
 import { KubernetesClient } from '../../kubernetes/client.js';
 import { generateClusterIdForCollection } from '../../cluster/identifier.js';
-import type { Config } from '../../config/types.js';
 import { logger } from '../../logging/logger.js';
 
 /**
@@ -528,32 +526,21 @@ export function processServiceType(
 
 /**
  * ResourceConfigurationPatternsCollector collects resource configuration patterns
- * and processes them through validation, storage (free tier), or transmission (pro tier).
+ * and processes them through validation and local storage.
  */
 export class ResourceConfigurationPatternsCollector {
   private readonly kubernetesClient: KubernetesClient;
   private readonly localStorage: LocalStorage;
-  private readonly transmissionClient: TransmissionClient | null;
-  private readonly config: Config;
 
   /**
    * Creates a new ResourceConfigurationPatternsCollector instance
-   * 
+   *
    * @param kubernetesClient - Kubernetes client for API access
-   * @param localStorage - Local storage for free tier
-   * @param transmissionClient - Transmission client for pro tier (null if free tier)
-   * @param config - Configuration to determine tier
+   * @param localStorage - Local storage for collection payloads
    */
-  constructor(
-    kubernetesClient: KubernetesClient,
-    localStorage: LocalStorage,
-    transmissionClient: TransmissionClient | null,
-    config: Config
-  ) {
+  constructor(kubernetesClient: KubernetesClient, localStorage: LocalStorage) {
     this.kubernetesClient = kubernetesClient;
     this.localStorage = localStorage;
-    this.transmissionClient = transmissionClient;
-    this.config = config;
   }
 
   /**
@@ -644,7 +631,7 @@ export class ResourceConfigurationPatternsCollector {
   }
 
   /**
-   * Processes collected data: validates, wraps in payload, and stores/transmits
+   * Processes collected data: validates, wraps in payload, and stores locally
    * 
    * @param data - Collected resource configuration patterns data
    * @returns Promise that resolves when processing is complete
@@ -665,21 +652,13 @@ export class ResourceConfigurationPatternsCollector {
         },
       };
 
-      if (this.transmissionClient) {
-        logger.info('Transmitting resource configuration patterns collection', {
-          collectionId: validatedData.collectionId,
-        });
-        await this.transmissionClient.transmit(payload);
-      } else {
-        logger.info('Storing resource configuration patterns collection locally', {
-          collectionId: validatedData.collectionId,
-        });
-        await this.localStorage.store(payload);
-      }
+      logger.info('Storing resource configuration patterns collection locally', {
+        collectionId: validatedData.collectionId,
+      });
+      await this.localStorage.store(payload);
 
       logger.info('Resource configuration patterns collection processed successfully', {
         collectionId: validatedData.collectionId,
-        transmitted: this.transmissionClient !== null,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

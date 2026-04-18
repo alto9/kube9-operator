@@ -6,15 +6,13 @@ The operator follows a strict initialization sequence defined in `src/operator.t
 
 ### 1. Load Configuration
 - Loads configuration from environment variables via `loadConfig()`
-- Validates required variables (e.g., `SERVER_URL`)
 - Sets defaults for optional variables
 - Logs configuration (excluding sensitive data)
 - Sets global config singleton via `setConfig()`
 
 **Configuration loaded:**
-- `serverUrl`, `logLevel`, `statusUpdateIntervalSeconds`
-- `reregistrationIntervalHours`
-- Collection intervals (`clusterMetadataIntervalSeconds`, `resourceInventoryIntervalSeconds`, `resourceConfigurationPatternsIntervalSeconds`)
+- `logLevel`, `statusUpdateIntervalSeconds`
+- Collection intervals (`clusterMetadataIntervalSeconds`, `resourceInventoryIntervalSeconds`, `resourceConfigurationPatternsIntervalSeconds`, `workloadImageScanIntervalSeconds`)
 - Event retention policies (`eventRetentionInfoWarningDays`, `eventRetentionErrorCriticalDays`)
 
 ### 2. Start Health Server
@@ -71,7 +69,7 @@ The operator follows a strict initialization sequence defined in `src/operator.t
 - Creates `StatusWriter` instance with Kubernetes client and update interval
 - Starts periodic status update loop
 - Updates ConfigMap with operator status every `statusUpdateIntervalSeconds` (default: 60s)
-- Status includes: mode, tier, version, health, registration state, collection stats, ArgoCD status
+- Status includes: mode, tier, version, health, collection stats, ArgoCD status, Trivy detection status
 
 ### 9. Initialize Collection Scheduler
 - Creates `CollectionScheduler` instance

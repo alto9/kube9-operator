@@ -10,40 +10,27 @@ import * as k8s from '@kubernetes/client-node';
 import type { ClusterMetadata, CollectionPayload } from '../types.js';
 import { validateClusterMetadata } from '../validation.js';
 import { LocalStorage } from '../storage.js';
-import { TransmissionClient } from '../transmission.js';
 import { KubernetesClient } from '../../kubernetes/client.js';
 import { generateClusterIdForCollection } from '../../cluster/identifier.js';
-import type { Config } from '../../config/types.js';
 import { logger } from '../../logging/logger.js';
 
 /**
  * ClusterMetadataCollector collects cluster metadata and processes it
- * through validation, local storage, or optional transmission.
+ * through validation and local storage.
  */
 export class ClusterMetadataCollector {
   private readonly kubernetesClient: KubernetesClient;
   private readonly localStorage: LocalStorage;
-  private readonly transmissionClient: TransmissionClient | null;
-  private readonly config: Config;
 
   /**
    * Creates a new ClusterMetadataCollector instance
-   * 
+   *
    * @param kubernetesClient - Kubernetes client for API access
-   * @param localStorage - Local storage for free tier
-   * @param transmissionClient - Transmission client for pro tier (null if free tier)
-   * @param config - Configuration to determine tier
+   * @param localStorage - Local storage for collection payloads
    */
-  constructor(
-    kubernetesClient: KubernetesClient,
-    localStorage: LocalStorage,
-    transmissionClient: TransmissionClient | null,
-    config: Config
-  ) {
+  constructor(kubernetesClient: KubernetesClient, localStorage: LocalStorage) {
     this.kubernetesClient = kubernetesClient;
     this.localStorage = localStorage;
-    this.transmissionClient = transmissionClient;
-    this.config = config;
   }
 
   /**
@@ -111,7 +98,7 @@ export class ClusterMetadataCollector {
   }
 
   /**
-   * Processes collected metadata: validates, wraps in payload, and stores/transmits
+   * Processes collected metadata: validates, wraps in payload, and stores locally
    * 
    * @param metadata - Collected cluster metadata
    * @returns Promise that resolves when processing is complete
@@ -132,21 +119,13 @@ export class ClusterMetadataCollector {
         },
       };
 
-      if (this.transmissionClient) {
-        logger.info('Transmitting cluster metadata collection', {
-          collectionId: validatedMetadata.collectionId,
-        });
-        await this.transmissionClient.transmit(payload);
-      } else {
-        logger.info('Storing cluster metadata collection locally', {
-          collectionId: validatedMetadata.collectionId,
-        });
-        await this.localStorage.store(payload);
-      }
+      logger.info('Storing cluster metadata collection locally', {
+        collectionId: validatedMetadata.collectionId,
+      });
+      await this.localStorage.store(payload);
 
       logger.info('Cluster metadata collection processed successfully', {
         collectionId: validatedMetadata.collectionId,
-        transmitted: this.transmissionClient !== null,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

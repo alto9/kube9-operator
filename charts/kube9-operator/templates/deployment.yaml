@@ -46,10 +46,6 @@ spec:
           value: {{ .Values.logLevel | quote }}
         - name: STATUS_UPDATE_INTERVAL_SECONDS
           value: {{ .Values.statusUpdateIntervalSeconds | quote }}
-        - name: SERVER_URL
-          value: {{ .Values.serverUrl | quote }}
-        - name: REREGISTRATION_INTERVAL_HOURS
-          value: {{ .Values.reregistrationIntervalHours | default 24 | quote }}
         - name: CLUSTER_METADATA_INTERVAL_SECONDS
           value: {{ .Values.metrics.intervals.clusterMetadata | default 86400 | quote }}
         - name: RESOURCE_INVENTORY_INTERVAL_SECONDS

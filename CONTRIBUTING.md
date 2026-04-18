@@ -149,7 +149,6 @@ kube9-operator/
 │   ├── config/           # Configuration loader
 │   ├── health/            # Health endpoints
 │   ├── kubernetes/        # Kubernetes client
-│   ├── registration/      # Server registration
 │   ├── status/            # Status calculator & writer
 │   └── collection/        # Data collection system
 ├── charts/                # Helm chart
@@ -201,9 +200,6 @@ npm run clean:minikube
 The operator uses environment variables for configuration. Templates and descriptions are in [`.env.example`](.env.example). The Node process does **not** load `.env` automatically; export variables in your shell or use a loader (for example direnv).
 
 ```bash
-# Often required at runtime (npm dev scripts default SERVER_URL if unset)
-SERVER_URL=https://api.kube9.dev
-
 # Optional
 LOG_LEVEL=debug
 STATUS_UPDATE_INTERVAL_SECONDS=60
@@ -218,7 +214,7 @@ STATUS_UPDATE_INTERVAL_SECONDS=60
 # HEALTH_PORT=8080
 ```
 
-`npm run dev` and `npm run dev:watch` set defaults for `SERVER_URL`, `LOG_LEVEL`, and `DB_PATH` (see [README Development](README.md#development)).
+`npm run dev` and `npm run dev:watch` set defaults for `LOG_LEVEL` and `DB_PATH` (see [README Development](README.md#development)).
 
 ## Code Style
 
@@ -250,14 +246,11 @@ STATUS_UPDATE_INTERVAL_SECONDS=60
 
 ```typescript
 /**
- * Calculates operator status based on current state.
- * @param registrationState - Current registration state
- * @param healthState - Current health state
- * @returns Calculated operator status
+ * Calculates operator status from runtime signals (collections, ArgoCD, Trivy, last write error).
  */
 export function calculateStatus(
-  registrationState: RegistrationState,
-  healthState: HealthState
+  lastError: string | null = null,
+  canWriteConfigMap: boolean = true
 ): OperatorStatus {
   // Implementation
 }

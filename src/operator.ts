@@ -64,10 +64,8 @@ async function initializeConfig(): Promise<Config> {
     
     // Log config loaded (without sensitive data)
     logger.info('Configuration loaded', {
-      serverUrl: config.serverUrl,
       logLevel: config.logLevel,
       statusUpdateIntervalSeconds: config.statusUpdateIntervalSeconds,
-      reregistrationIntervalHours: config.reregistrationIntervalHours,
       tier: 'free',
     });
     
@@ -221,15 +219,9 @@ export async function startOperator() {
 
       // Initialize collection infrastructure
       const localStorage = new LocalStorage();
-      const transmissionClient = null;
 
       // Initialize cluster metadata collector
-      const clusterMetadataCollector = new ClusterMetadataCollector(
-        kubernetesClient,
-        localStorage,
-        transmissionClient,
-        config
-      );
+      const clusterMetadataCollector = new ClusterMetadataCollector(kubernetesClient, localStorage);
     
     // Register cluster metadata collection task
     collectionScheduler.register(
@@ -261,12 +253,7 @@ export async function startOperator() {
     );
     
     // Initialize resource inventory collector
-    const resourceInventoryCollector = new ResourceInventoryCollector(
-      kubernetesClient,
-      localStorage,
-      transmissionClient,
-      config
-    );
+    const resourceInventoryCollector = new ResourceInventoryCollector(kubernetesClient, localStorage);
     
     // Register resource inventory collection task
     collectionScheduler.register(
@@ -300,9 +287,7 @@ export async function startOperator() {
     // Initialize resource configuration patterns collector
     const resourceConfigurationPatternsCollector = new ResourceConfigurationPatternsCollector(
       kubernetesClient,
-      localStorage,
-      transmissionClient,
-      config
+      localStorage
     );
     
     // Register resource configuration patterns collection task
@@ -416,7 +401,6 @@ export async function startOperator() {
       if (statusWriterInstance) {
         gracefulShutdown(
           statusWriterInstance,
-          null,
           collectionSchedulerInstance,
           argoCDDetectionManagerInstance,
           trivyDetectionManagerInstance,
@@ -434,7 +418,6 @@ export async function startOperator() {
       if (statusWriterInstance) {
         gracefulShutdown(
           statusWriterInstance,
-          null,
           collectionSchedulerInstance,
           argoCDDetectionManagerInstance,
           trivyDetectionManagerInstance,

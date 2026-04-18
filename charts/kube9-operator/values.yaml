@@ -33,11 +33,8 @@ logLevel: "info"
 # Status update interval in seconds
 statusUpdateIntervalSeconds: 60
 
-# Re-registration interval (hours)
-reregistrationIntervalHours: 24
-
-# Default SERVER_URL string injected into the pod (chart default; open-source path is in-cluster)
-serverUrl: "https://api.kube9.io"
+# Optional API key for Pro-tier ecosystem features (chart may expose as Secret / env when supported)
+# apiKey: ""
 
 # ArgoCD integration configuration
 argocd:

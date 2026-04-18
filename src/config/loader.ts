@@ -39,18 +39,11 @@ function parseAssessmentMode(raw: string | undefined): AssessmentMode {
  * Load configuration from environment variables
  *
  * @returns Promise resolving to Config object
- * @throws Error if required environment variables are missing
  */
 export async function loadConfig(): Promise<Config> {
-  // Read environment variables with defaults
   const logLevel = process.env.LOG_LEVEL || 'info';
-  const serverUrl = process.env.SERVER_URL;
   const statusUpdateIntervalSeconds = parseInt(
     process.env.STATUS_UPDATE_INTERVAL_SECONDS || '60',
-    10
-  );
-  const reregistrationIntervalHours = parseInt(
-    process.env.REREGISTRATION_INTERVAL_HOURS || '24',
     10
   );
   const clusterMetadataIntervalSeconds = parseInt(
@@ -98,11 +91,6 @@ export async function loadConfig(): Promise<Config> {
     }
   }
 
-  // Validate required environment variables
-  if (!serverUrl) {
-    throw new Error('SERVER_URL environment variable is required');
-  }
-
   if (
     Number.isNaN(assessmentIntervalSeconds) ||
     assessmentIntervalSeconds < ASSESSMENT_INTERVAL_MIN_SECONDS
@@ -135,10 +123,8 @@ export async function loadConfig(): Promise<Config> {
   }
 
   const config: Config = {
-    serverUrl,
     logLevel,
     statusUpdateIntervalSeconds,
-    reregistrationIntervalHours,
     clusterMetadataIntervalSeconds,
     resourceInventoryIntervalSeconds,
     resourceConfigurationPatternsIntervalSeconds,
@@ -154,7 +140,6 @@ export async function loadConfig(): Promise<Config> {
       : {}),
   };
 
-  // Log configured intervals (and any overrides)
   logger.info('Collection intervals configured', {
     clusterMetadataIntervalSeconds: config.clusterMetadataIntervalSeconds,
     resourceInventoryIntervalSeconds: config.resourceInventoryIntervalSeconds,
@@ -190,7 +175,7 @@ let configInstance: Config | null = null;
 
 /**
  * Get the loaded configuration singleton
- * 
+ *
  * @returns Config instance
  * @throws Error if config has not been loaded yet
  */
@@ -203,10 +188,9 @@ export function getConfig(): Config {
 
 /**
  * Set the config instance (used after loading)
- * 
+ *
  * @param config - The loaded configuration
  */
 export function setConfig(config: Config): void {
   configInstance = config;
 }
-

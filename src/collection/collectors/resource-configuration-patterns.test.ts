@@ -962,16 +962,9 @@ it('ResourceConfigurationPatternsCollector - collect() generates valid collectio
     store: async () => {},
   };
 
-  // Mock Config
-  const mockConfig = {
-    apiKey: undefined,
-  };
-
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any,
-    null,
-    mockConfig as any
+    mockLocalStorage as any
   );
 
   const data = await collector.collect();
@@ -996,13 +989,10 @@ it('ResourceConfigurationPatternsCollector - collect() includes timestamp', asyn
   };
 
   const mockLocalStorage = { store: async () => {} };
-  const mockConfig = { apiKey: undefined };
 
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any,
-    null,
-    mockConfig as any
+    mockLocalStorage as any
   );
 
   const data = await collector.collect();
@@ -1046,13 +1036,10 @@ it('ResourceConfigurationPatternsCollector - collect() processes pods', async ()
   };
 
   const mockLocalStorage = { store: async () => {} };
-  const mockConfig = { apiKey: undefined };
 
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any,
-    null,
-    mockConfig as any
+    mockLocalStorage as any
   );
 
   const data = await collector.collect();
@@ -1090,13 +1077,10 @@ it('ResourceConfigurationPatternsCollector - collect() processes deployments', a
   };
 
   const mockLocalStorage = { store: async () => {} };
-  const mockConfig = { apiKey: undefined };
 
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any,
-    null,
-    mockConfig as any
+    mockLocalStorage as any
   );
 
   const data = await collector.collect();
@@ -1132,13 +1116,10 @@ it('ResourceConfigurationPatternsCollector - collect() processes services', asyn
   };
 
   const mockLocalStorage = { store: async () => {} };
-  const mockConfig = { apiKey: undefined };
 
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any,
-    null,
-    mockConfig as any
+    mockLocalStorage as any
   );
 
   const data = await collector.collect();
@@ -1150,7 +1131,7 @@ it('ResourceConfigurationPatternsCollector - collect() processes services', asyn
     expect(data.services.portsPerService).toEqual([1, 2]);
 });
 
-it('ResourceConfigurationPatternsCollector - processCollection() stores data locally for free tier', async () => {
+it('ResourceConfigurationPatternsCollector - processCollection() stores data locally', async () => {
   let storedPayload: any = null;
 
   const mockKubernetesClient = {
@@ -1171,13 +1152,9 @@ it('ResourceConfigurationPatternsCollector - processCollection() stores data loc
     },
   };
 
-  const mockConfig = { apiKey: undefined }; // Free tier
-
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any,
-    null,
-    mockConfig as any
+    mockLocalStorage as any
   );
 
   const data = await collector.collect();
@@ -1188,50 +1165,6 @@ it('ResourceConfigurationPatternsCollector - processCollection() stores data loc
   expect(storedPayload.version).toBe('v1.0.0');
   expect(storedPayload.type).toBe('resource-configuration-patterns');
     expect(storedPayload.sanitization.rulesApplied).toEqual(['no-resource-names', 'aggregated-configuration-data']);
-});
-
-it('ResourceConfigurationPatternsCollector - processCollection() transmits data for pro tier', async () => {
-  let transmittedPayload: any = null;
-
-  const mockKubernetesClient = {
-    coreApi: {
-      listPodForAllNamespaces: async () => ({ body: { items: [] } }),
-      listServiceForAllNamespaces: async () => ({ body: { items: [] } }),
-    },
-    appsApi: {
-      listDeploymentForAllNamespaces: async () => ({ body: { items: [] } }),
-      listStatefulSetForAllNamespaces: async () => ({ body: { items: [] } }),
-      listDaemonSetForAllNamespaces: async () => ({ body: { items: [] } }),
-    },
-  };
-
-  const mockLocalStorage = {
-    store: async () => {
-      throw new Error('Should not store locally for pro tier');
-    },
-  };
-
-  const mockTransmissionClient = {
-    transmit: async (payload: any) => {
-      transmittedPayload = payload;
-    },
-  };
-
-  const mockConfig = { apiKey: 'test-api-key' }; // Pro tier
-
-  const collector = new ResourceConfigurationPatternsCollector(
-    mockKubernetesClient as any,
-    mockLocalStorage as any,
-    mockTransmissionClient as any,
-    mockConfig as any
-  );
-
-  const data = await collector.collect();
-  await collector.processCollection(data);
-
-  // Verify data was transmitted
-  expect(transmittedPayload, 'Payload should be transmitted');
-  expect(transmittedPayload.type).toBe('resource-configuration-patterns');
 });
 
 it('ResourceConfigurationPatternsCollector - processCollection() handles errors gracefully', async () => {
@@ -1253,13 +1186,9 @@ it('ResourceConfigurationPatternsCollector - processCollection() handles errors 
     },
   };
 
-  const mockConfig = { apiKey: undefined };
-
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any,
-    null,
-    mockConfig as any
+    mockLocalStorage as any
   );
 
   const data = await collector.collect();

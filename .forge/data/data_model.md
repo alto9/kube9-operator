@@ -11,12 +11,11 @@ Exposed via ConfigMap `kube9-operator-status` in operator namespace.
 | version | string | Semantic version (e.g., "1.0.0") |
 | health | `healthy` \| `degraded` \| `unhealthy` | Current health status |
 | lastUpdate | string | ISO 8601 timestamp |
-| registered | boolean | Whether operator is registered with kube9-server |
 | error | string \| null | Error message if health is degraded or unhealthy |
 | namespace | string | Operator deployment namespace (e.g., "kube9-system") |
-| clusterId | string \| undefined | Server-assigned cluster ID (only when tier="pro" and registered=true) |
 | collectionStats | object | Collection statistics (see CollectionStats below) |
 | argocd | object | ArgoCD awareness information (see ArgoCDStatus below) |
+| trivy | object | Trivy server detection status (`detected`, `serverUrl`, `version`, `lastChecked`) |
 
 ### CollectionStats
 

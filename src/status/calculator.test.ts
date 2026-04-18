@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import type {
-  RegistrationState,
   CollectionStats,
   ArgoCDStatus,
   TrivyStatus,
@@ -38,7 +37,6 @@ describe('calculateStatus', () => {
         tier: 'free',
         version: '1.0.0',
         health: 'healthy',
-        registered: false,
         error: null,
         namespace: 'kube9-system',
       });
@@ -47,7 +45,6 @@ describe('calculateStatus', () => {
       expect(status.tier).toBe('free');
       expect(status.version).toBe('1.0.0');
       expect(status.health).toBe('healthy');
-      expect(status.registered).toBe(false);
       expect(status.error).toBe(null);
       expect(status.namespace).toBe('kube9-system');
       expect(status.lastUpdate).toBeDefined();
@@ -58,25 +55,6 @@ describe('calculateStatus', () => {
         ...DEFAULT_ASSESSMENT_STATUS_SUMMARY,
         lastScheduledTotals: { ...DEFAULT_ASSESSMENT_STATUS_SUMMARY.lastScheduledTotals },
       });
-    });
-
-    it('should return free tier when registered', async () => {
-      delete process.env.POD_NAMESPACE;
-
-      vi.resetModules();
-      const { calculateStatus } = await import('./calculator.js');
-      const registrationState: RegistrationState = {
-        isRegistered: true,
-        clusterId: 'cls_test123',
-        consecutiveFailures: 0,
-      };
-
-      const status = calculateStatus(registrationState);
-
-      expect(status.tier).toBe('free');
-      expect(status.registered).toBe(true);
-      expect(status.clusterId).toBe('cls_test123');
-      expect(status.namespace).toBe('kube9-system');
     });
   });
 
@@ -101,32 +79,16 @@ describe('calculateStatus', () => {
       expect(status.namespace).toBe('kube9-system');
     });
 
-    it('should use POD_NAMESPACE in all status scenarios', async () => {
+    it('should use POD_NAMESPACE in status scenarios with errors', async () => {
       process.env.POD_NAMESPACE = 'test-namespace';
 
       vi.resetModules();
       const { calculateStatus } = await import('./calculator.js');
 
-      const unregisteredStatus = calculateStatus({
-        isRegistered: false,
-        consecutiveFailures: 0,
-      });
-      expect(unregisteredStatus.namespace).toBe('test-namespace');
+      const okStatus = calculateStatus();
+      expect(okStatus.namespace).toBe('test-namespace');
 
-      const registeredStatus = calculateStatus({
-        isRegistered: true,
-        clusterId: 'cls_test123',
-        consecutiveFailures: 0,
-      });
-      expect(registeredStatus.namespace).toBe('test-namespace');
-
-      const errorStatus = calculateStatus(
-        {
-          isRegistered: false,
-          consecutiveFailures: 0,
-        },
-        'Test error'
-      );
+      const errorStatus = calculateStatus('Test error', true);
       expect(errorStatus.namespace).toBe('test-namespace');
     });
   });
@@ -137,44 +99,22 @@ describe('calculateStatus', () => {
 
       vi.resetModules();
       const { calculateStatus } = await import('./calculator.js');
-      const status = calculateStatus(
-        { isRegistered: false, consecutiveFailures: 0 },
-        null,
-        false
-      );
+      const status = calculateStatus(null, false);
 
       expect(status.health).toBe('unhealthy');
       expect(status.error).toBe('Failed to write status ConfigMap: check RBAC permissions');
       expect(status.namespace).toBe('kube9-system');
     });
 
-    it('should return healthy when there are no write or registration failures', async () => {
+    it('should return healthy when there are no write failures', async () => {
       delete process.env.POD_NAMESPACE;
 
       vi.resetModules();
       const { calculateStatus } = await import('./calculator.js');
-      const status = calculateStatus({
-        isRegistered: false,
-        consecutiveFailures: 0,
-      });
+      const status = calculateStatus();
 
       expect(status.health).toBe('healthy');
       expect(status.error).toBe(null);
-      expect(status.namespace).toBe('kube9-system');
-    });
-
-    it('should return degraded when consecutive failures exceed threshold', async () => {
-      delete process.env.POD_NAMESPACE;
-
-      vi.resetModules();
-      const { calculateStatus } = await import('./calculator.js');
-      const status = calculateStatus({
-        isRegistered: false,
-        consecutiveFailures: 5,
-      });
-
-      expect(status.health).toBe('degraded');
-      expect(status.error).toBe('Registration failed 5 times consecutively');
       expect(status.namespace).toBe('kube9-system');
     });
   });
@@ -192,12 +132,7 @@ describe('calculateStatus', () => {
         lastSuccessTime: '2025-01-01T00:00:00Z',
       };
 
-      const status = calculateStatus(
-        { isRegistered: false, consecutiveFailures: 0 },
-        null,
-        true,
-        collectionStats
-      );
+      const status = calculateStatus(null, true, collectionStats);
 
       expect(status.collectionStats).toEqual(collectionStats);
       expect(status.namespace).toBe('kube9-system');
@@ -218,7 +153,6 @@ describe('calculateStatus', () => {
       };
 
       const status = calculateStatus(
-        { isRegistered: false, consecutiveFailures: 0 },
         null,
         true,
         {
@@ -278,7 +212,6 @@ describe('calculateStatus', () => {
       };
 
       const status = calculateStatus(
-        { isRegistered: false, consecutiveFailures: 0 },
         null,
         true,
         {
@@ -351,7 +284,6 @@ describe('calculateStatus', () => {
       };
 
       const status = calculateStatus(
-        { isRegistered: false, consecutiveFailures: 0 },
         null,
         true,
         {
@@ -379,11 +311,7 @@ describe('calculateStatus', () => {
 
       vi.resetModules();
       const { calculateStatus } = await import('./calculator.js');
-      const status = calculateStatus(
-        { isRegistered: false, consecutiveFailures: 0 },
-        'Test error message',
-        false
-      );
+      const status = calculateStatus('Test error message', false);
 
       expect(status.error).toBe('Test error message');
       expect(status.namespace).toBe('error-namespace');
@@ -396,11 +324,7 @@ describe('calculateStatus', () => {
       vi.resetModules();
       const { calculateStatus } = await import('./calculator.js');
       const longError = 'a'.repeat(600);
-      const status = calculateStatus(
-        { isRegistered: false, consecutiveFailures: 0 },
-        longError,
-        false
-      );
+      const status = calculateStatus(longError, false);
 
       expect(status.error).toBeTruthy();
       expect(status.error!.length).toBeLessThanOrEqual(500);

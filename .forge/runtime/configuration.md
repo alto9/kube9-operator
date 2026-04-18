@@ -2,11 +2,6 @@
 
 ## Environment Variables
 
-### Required
-- **SERVER_URL**: kube9-server base URL (required, no default)
-  - Example: `https://api.kube9.io`
-  - Used for pro tier registration and data transmission
-
 ### Optional
 - **POD_NAMESPACE**: Operator namespace (from Kubernetes downward API)
   - Default: `kube9-system`
@@ -29,10 +24,6 @@
 - **STATUS_UPDATE_INTERVAL_SECONDS**: Status ConfigMap update frequency
   - Default: `60` (1 minute)
   - How often operator writes status to ConfigMap
-
-- **REREGISTRATION_INTERVAL_HOURS**: Re-registration interval with server
-  - Default: `24` (24 hours)
-  - How often operator re-registers with kube9-server
 
 ### Collection Interval Environment Variables
 - **CLUSTER_METADATA_INTERVAL_SECONDS**: Cluster metadata collection interval
@@ -130,19 +121,6 @@ statusUpdateIntervalSeconds: 60
 ```
 - Sets `STATUS_UPDATE_INTERVAL_SECONDS` environment variable
 - ConfigMap update frequency in seconds
-
-### Re-registration Interval
-```yaml
-reregistrationIntervalHours: 24
-```
-- Sets `REREGISTRATION_INTERVAL_HOURS` environment variable
-
-### Server URL
-```yaml
-serverUrl: "https://api.kube9.io"
-```
-- Sets `SERVER_URL` environment variable
-- kube9-server URL for pro tier registration
 
 ### ArgoCD Configuration
 ```yaml

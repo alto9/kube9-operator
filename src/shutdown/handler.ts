@@ -1,5 +1,4 @@
 import type { StatusWriter } from '../status/writer.js';
-import type { RegistrationManager } from '../registration/manager.js';
 import type { CollectionScheduler } from '../collection/scheduler.js';
 import type { ArgoCDDetectionManager } from '../argocd/detection-manager.js';
 import type { TrivyDetectionManager } from '../trivy/detection-manager.js';
@@ -32,63 +31,48 @@ let isShuttingDown = false;
 
 /**
  * Gracefully shuts down the operator
- * 
+ *
  * Handles SIGTERM and SIGINT signals by:
- * 1. Stopping all background services (event system, collection scheduler, ArgoCD detection manager, status writer, registration manager, health server)
+ * 1. Stopping all background services (event system, collection scheduler, ArgoCD detection manager, status writer, health server)
  * 2. Writing a final status update indicating shutdown
  * 3. Exiting cleanly with code 0
- * 
+ *
  * Includes a 5-second timeout to force exit if shutdown hangs.
- * 
- * @param statusWriter - Status writer instance to stop and use for final status update
- * @param registrationManager - Optional registration manager instance to stop
- * @param collectionScheduler - Optional collection scheduler instance to stop
- * @param argoCDDetectionManager - Optional ArgoCD detection manager instance to stop
- * @param trivyDetectionManager - Optional Trivy detection manager instance to stop
- * @param eventWatcher - Optional event watcher instance to stop
- * @param eventQueueWorker - Optional event queue worker instance to stop
  */
 export async function gracefulShutdown(
   statusWriter: StatusWriter,
-  registrationManager: RegistrationManager | null,
   collectionScheduler: CollectionScheduler | null,
   argoCDDetectionManager: ArgoCDDetectionManager | null,
   trivyDetectionManager: TrivyDetectionManager | null,
   eventWatcher: KubernetesEventWatcher | null,
   eventQueueWorker: EventQueueWorker | null
 ): Promise<void> {
-  // Prevent multiple shutdown attempts
   if (isShuttingDown) {
     logger.warn('Shutdown already in progress, ignoring signal');
     return;
   }
-  
+
   isShuttingDown = true;
   logger.info('Shutdown initiated, beginning graceful shutdown...');
 
-  // Set up timeout to force exit if shutdown hangs
   const timeoutId = setTimeout(() => {
     logger.error('Shutdown timeout reached, forcing exit');
     process.exit(1);
   }, SHUTDOWN_TIMEOUT_MS);
 
   try {
-    // Stop event watcher first (stops new events from being recorded)
     if (eventWatcher) {
       eventWatcher.stop();
     }
 
-    // Stop event queue worker (flushes remaining events to database)
     if (eventQueueWorker) {
       await eventQueueWorker.stop();
     }
 
-    // Stop collection scheduler if present (clears all collection timers)
     if (collectionScheduler) {
       collectionScheduler.stop();
     }
 
-    // Stop ArgoCD detection manager if present (clears periodic detection interval)
     if (argoCDDetectionManager) {
       argoCDDetectionManager.stop();
     }
@@ -97,41 +81,27 @@ export async function gracefulShutdown(
       trivyDetectionManager.stop();
     }
 
-    // Stop status writer (clears interval)
     statusWriter.stop();
 
-    // Stop registration manager if present (clears timers)
-    if (registrationManager) {
-      registrationManager.stop();
-    }
-
-    // Stop health server (closes HTTP server)
     await stopHealthServer();
 
-    // Get registration state if manager is available
-    const registrationState = registrationManager
-      ? registrationManager.getState()
-      : { isRegistered: false, clusterId: undefined, consecutiveFailures: 0 };
-
-    // Build final status indicating shutdown
     const collectionStats = collectionStatsTracker.getStats();
     const argocdStatus = argocdStatusTracker.getStatus();
     const trivyStatus = trivyStatusTracker.getStatus();
     const assessmentSummary = buildAssessmentStatusSummary(getScheduledAssessmentLastRunSnapshot());
     const finalStatus: OperatorStatus = {
-      mode: "operated",
-      tier: "free",
+      mode: 'operated',
+      tier: 'free',
       version: OPERATOR_VERSION,
-      health: "unhealthy",
+      health: 'unhealthy',
       lastUpdate: new Date().toISOString(),
-      registered: registrationState.isRegistered,
-      error: "Shutting down",
+      error: 'Shutting down',
       namespace: process.env.POD_NAMESPACE || 'kube9-system',
       collectionStats: {
         totalSuccessCount: collectionStats.totalSuccessCount,
         totalFailureCount: collectionStats.totalFailureCount,
         collectionsStoredCount: collectionStats.collectionsStoredCount,
-        lastSuccessTime: collectionStats.lastSuccessTime
+        lastSuccessTime: collectionStats.lastSuccessTime,
       },
       argocd: argocdStatus,
       trivy: trivyStatus,
@@ -141,15 +111,8 @@ export async function gracefulShutdown(
       },
     };
 
-    // Include clusterId if registered
-    if (registrationState.isRegistered && registrationState.clusterId) {
-      finalStatus.clusterId = registrationState.clusterId;
-    }
-
-    // Write final status update
     await statusWriter.writeFinalStatus(finalStatus);
 
-    // Clear timeout since shutdown completed successfully
     clearTimeout(timeoutId);
 
     logger.info('Graceful shutdown completed');
@@ -157,12 +120,9 @@ export async function gracefulShutdown(
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logger.error('Error during graceful shutdown', { error: errorMessage });
-    
-    // Clear timeout
+
     clearTimeout(timeoutId);
-    
-    // Exit anyway - shutdown should always complete
+
     process.exit(0);
   }
 }
-

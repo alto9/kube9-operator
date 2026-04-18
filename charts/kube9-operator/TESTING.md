@@ -101,7 +101,39 @@ The operator detects its namespace via the downward API and advertises it in the
    helm uninstall kube9-operator --namespace test-operator
    ```
 
-### Phase 2: Helm commands
+**Note:** All phases below can be run in a custom namespace by replacing `kube9-system` with your chosen namespace. The operator detects its namespace via the downward API.
+
+### Phase 2: Optional values / upgrade smoke test
+
+1. **Upgrade with extra values (example: shorter status interval):**
+   ```bash
+   helm upgrade kube9-operator charts/kube9-operator \
+     --namespace kube9-system \
+     --reuse-values \
+     --set statusUpdateIntervalSeconds=30
+   ```
+
+2. **Wait for pod ready:**
+   ```bash
+   kubectl wait --for=condition=ready pod \
+     -l app.kubernetes.io/name=kube9-operator \
+     -n kube9-system \
+     --timeout=120s
+   ```
+
+3. **Verify operator logs show successful startup (no kube9-server registration):**
+   ```bash
+   kubectl logs -n kube9-system deployment/kube9-operator --tail=80
+   ```
+
+4. **Verify status ConfigMap shape:**
+   ```bash
+   kubectl get configmap kube9-operator-status -n kube9-system \
+     -o jsonpath='{.data.status}' | jq '.'
+   # Expect mode "operated", tier "free", health "healthy" by default
+   ```
+
+### Phase 3: Helm commands
 
 1. **Run helm lint:**
    ```bash
@@ -157,7 +189,7 @@ The operator detects its namespace via the downward API and advertises it in the
 
    The status ConfigMap may remain until deleted manually (created by the operator).
 
-### Phase 3: Packaging
+### Phase 4: Packaging
 
 1. **Package the chart:**
    ```bash
@@ -183,7 +215,7 @@ The operator detects its namespace via the downward API and advertises it in the
    helm uninstall kube9-operator --namespace kube9-system
    ```
 
-### Phase 4: Cleanup
+### Phase 5: Cleanup
 
 ```bash
 kind delete cluster --name kube9-test
@@ -193,8 +225,9 @@ kind delete cluster --name kube9-test
 
 - No chart-managed Secret named `kube9-operator-config` and no `API_KEY` environment variable in rendered manifests for default values
 - Status ConfigMap reports `mode="operated"` and `tier="free"` for default install when healthy
-- Pod reaches Ready without crash loops
+- Pod reaches Ready without crash loops; operator does **not** log kube9-server registration or `/v1/collections` transmission
 - `helm lint` passes; upgrade with `--reuse-values` preserves prior values
+- Optional API key / custom values (when the chart exposes them): deployment updates apply, pod **Ready**, status fields unchanged for default product constants
 
 ## Troubleshooting
 
@@ -210,6 +243,10 @@ kind delete cluster --name kube9-test
 - Verify RBAC permissions allow ConfigMap creation in the release namespace
 
 ## Completion checklist
+
+### Status looks wrong
+- Confirm RBAC allows ConfigMap create/update in `POD_NAMESPACE`
+- Inspect `health` and `error` fields in the status JSON
 
 - [ ] Default installation works
 - [ ] `helm lint` passes with no errors

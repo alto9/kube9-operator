@@ -82,7 +82,6 @@ if (fs.existsSync(valuesYaml)) {
     'rbac:',
     'logLevel:',
     'statusUpdateIntervalSeconds:',
-    'serverUrl:'
   ];
 
   for (const value of requiredValues) {
