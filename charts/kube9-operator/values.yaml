@@ -33,7 +33,7 @@ statusUpdateIntervalSeconds: 60
 # Re-registration interval (hours)
 reregistrationIntervalHours: 24
 
-# kube9-server URL (for pro tier)
+# Default SERVER_URL string injected into the pod (chart default; open-source path is in-cluster)
 serverUrl: "https://api.kube9.io"
 
 # ArgoCD integration configuration

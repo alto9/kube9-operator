@@ -1,8 +1,10 @@
 # Helm Chart Testing Implementation Summary
 
+> **Note (2026):** The chart **no longer** exposes Helm values or templates for operator API keys or Pro-tier Secrets. Default validation is **single-path**: install the chart, confirm no chart-managed credential Secret, and verify `helm template` output stays free of `API_KEY`. Historical bullets below that reference `apiKey` / Pro tier describe an earlier design iteration.
+
 ## Overview
 
-This document summarizes the implementation of the Helm chart testing task (19-package-and-test-chart.task.md). The task required manual testing of the Helm chart with both free and pro tier configurations, followed by packaging for distribution.
+This document summarizes the implementation of the Helm chart testing task (19-package-and-test-chart.task.md). The task originally covered manual testing for default and optional credential configurations, followed by packaging for distribution.
 
 ## Decision Verification ✅
 

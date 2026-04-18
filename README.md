@@ -12,34 +12,22 @@ The kube9-operator is the foundation of the kube9 ecosystem. It performs Kuberne
 
 The operator works with the kube9 VS Code extension and optional Helm-based UI components to provide cluster management capabilities:
 
-- **Basic mode** (no operator) - VS Code extension provides kubectl-only operations
-- **Free tier** (operated mode) - Operator performs Well-Architected Framework checks and generates point-in-time reports. VS Code extension provides local webviews and basic resource management
-- **Pro tier** (enabled mode) - Operator establishes scheduled data reporting to kube9-server. AI-powered insights, advanced dashboards, and rich UIs are enabled
+- **Basic mode** (no operator) — VS Code extension provides kubectl-focused workflows
+- **Operated mode** (operator installed) — The operator runs Well-Architected Framework checks on a schedule, persists findings and events in-cluster, and publishes status to a ConfigMap for the extension and other consumers
 
-The operator is installed via Helm and requires no ingress - all communication is outbound to kube9-server for Pro tier features.
+The operator is installed via Helm and requires no ingress. It is **fully open source and self-contained**: assessments, storage, and status run inside the cluster without credentials or remote sign-in configured through this chart.
 
 ## Features
 
-### Free Tier (No API Key)
+### Core capabilities
 ✅ Kubernetes Well-Architected Framework validation on schedule  
-✅ Point-in-time framework assessment reports  
-✅ Status exposure via ConfigMap  
-✅ Cluster tier detection for VS Code extension and UI components  
-✅ Health monitoring  
-✅ Minimal resource footprint (~100m CPU, 128Mi RAM)  
-✅ No external communication
+✅ Assessment results and operator state stored in-cluster (SQLite)  
+✅ Status exposure via ConfigMap for the VS Code extension  
+✅ Health and metrics endpoints for the pod  
+✅ Minimal configurable resource footprint (see Helm defaults)  
+✅ Optional ArgoCD and Trivy awareness when you configure those integrations  
 
-### Pro Tier (With API Key)
-✨ All Free tier features  
-✨ Registration with kube9-server  
-✨ Scheduled data reporting (sanitized metrics transmission)  
-✨ Server responses include updated insights and recommendations  
-✨ Enables AI-powered features in VS Code extension  
-✨ Enhanced dashboards and insights  
-✨ Advanced cluster analytics  
-✨ Continuous framework compliance tracking
-
-### ArgoCD Awareness
+### ArgoCD awareness
 🔍 Automatic ArgoCD detection  
 🔍 Configurable detection behavior  
 🔍 Status exposed via OperatorStatus ConfigMap  
@@ -53,7 +41,7 @@ The operator automatically detects if ArgoCD is installed in your cluster and ex
 ┌─────────────────────────────────────┐
 │  VS Code Extension                  │
 │  - Reads operator status            │
-│  - Enables features based on tier   │
+│  - Surfaces in-cluster insights     │
 └─────────────────────────────────────┘
               │ reads
               ↓
@@ -63,22 +51,14 @@ The operator automatically detects if ArgoCD is installed in your cluster and ex
 │  │ kube9-system namespace        │  │
 │  │  ┌─────────────────────────┐  │  │
 │  │  │ kube9-operator          │  │  │
-│  │  │ - Mode: operated/enabled│  │  │
-│  │  │ - Writes status         │  │  │
+│  │  │ - Assessments + storage │  │  │
+│  │  │ - Writes status CM      │  │  │
 │  │  └─────────────────────────┘  │  │
 │  │  ┌─────────────────────────┐  │  │
 │  │  │ Status ConfigMap        │  │  │
-│  │  │ - tier: free/pro        │  │  │
-│  │  │ - health: healthy       │  │  │
+│  │  │ - mode / tier / health  │  │  │
 │  │  └─────────────────────────┘  │  │
 │  └───────────────────────────────┘  │
-└─────────────────────────────────────┘
-              │ (Pro tier only)
-              ↓ registers
-┌─────────────────────────────────────┐
-│  kube9-server (api.kube9.dev)       │
-│  - Validates API keys               │
-│  - Enables Pro features             │
 └─────────────────────────────────────┘
 ```
 
@@ -96,27 +76,13 @@ The operator automatically detects if ArgoCD is installed in your cluster and ex
 
 The operator is conventionally installed in the `kube9-system` namespace:
 
-**Install Free Tier:**
-
 ```bash
 # Add Helm repository
 helm repo add kube9 https://charts.kube9.io
 helm repo update
 
-# Install operator (no API key = free tier)
+# Install operator
 helm install kube9-operator kube9/kube9-operator \
-  --namespace kube9-system \
-  --create-namespace
-```
-
-**Install Pro Tier:**
-
-1. **Get your API key** from [portal.kube9.dev](https://portal.kube9.dev)
-
-2. **Install with API key:**
-```bash
-helm install kube9-operator kube9/kube9-operator \
-  --set apiKey=kdy_prod_YOUR_KEY_HERE \
   --namespace kube9-system \
   --create-namespace
 ```
@@ -126,14 +92,7 @@ helm install kube9-operator kube9/kube9-operator \
 The operator can be installed in any namespace. It will automatically detect its location:
 
 ```bash
-# Install in custom namespace (free tier example)
 helm install kube9-operator kube9/kube9-operator \
-  --namespace my-custom-namespace \
-  --create-namespace
-
-# Install in custom namespace (pro tier example)
-helm install kube9-operator kube9/kube9-operator \
-  --set apiKey=kdy_prod_YOUR_KEY_HERE \
   --namespace my-custom-namespace \
   --create-namespace
 ```
@@ -164,7 +123,6 @@ kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `apiKey` | Optional API key for Pro tier | `""` |
 | `image.repository` | Operator image repository | `ghcr.io/alto9/kube9-operator` |
 | `image.tag` | Operator image tag | `1.0.0` |
 | `resources.requests.cpu` | CPU request | `100m` |
@@ -173,7 +131,6 @@ kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.
 | `resources.limits.memory` | Memory limit | `256Mi` |
 | `logLevel` | Log level (debug, info, warn, error) | `info` |
 | `statusUpdateIntervalSeconds` | Status update frequency | `60` |
-| `serverUrl` | kube9-server URL (Pro tier) | `https://api.kube9.dev` |
 | `argocd.autoDetect` | Enable automatic ArgoCD detection | `true` |
 | `argocd.enabled` | Explicitly enable or disable ArgoCD integration (optional override) | - |
 | `argocd.namespace` | Custom namespace where ArgoCD is installed | `"argocd"` |
@@ -185,8 +142,6 @@ kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.
 Create a `values.yaml`:
 
 ```yaml
-apiKey: kdy_prod_YOUR_KEY_HERE
-
 resources:
   requests:
     memory: "256Mi"
@@ -246,17 +201,6 @@ argocd:
 
 ## Upgrading
 
-### Add API Key (Free → Pro)
-
-```bash
-helm upgrade kube9-operator kube9/kube9-operator \
-  --namespace kube9-system \
-  --set apiKey=kdy_prod_YOUR_KEY_HERE \
-  --reuse-values
-```
-
-### Update to New Version
-
 ```bash
 helm repo update
 helm upgrade kube9-operator kube9/kube9-operator \
@@ -304,7 +248,7 @@ The operator will:
 1. **Cluster**: [kube9-localcluster](https://github.com/alto9/kube9-localcluster) `scripts/start.sh` (or any cluster you trust)
 2. **`export KUBECONFIG=.../kube9-localcluster/out/kubeconfig`** (or equivalent)
 3. **`kubectl config current-context`** should match the cluster you intend (e.g. `kube9-demo` when using the localcluster profile)
-4. **Environment variables**: Defaults are set in npm scripts. Override `SERVER_URL`, `LOG_LEVEL`, `DB_PATH`, `POD_NAMESPACE`, `HEALTH_PORT`, etc. in your shell. See [`.env.example`](.env.example) for a template. This process does **not** load `.env` files automatically; export variables in your shell, use [direnv](https://direnv.net/), or another loader so they are present before `npm run dev`.
+4. **Environment variables**: Defaults are set in npm scripts. Override `LOG_LEVEL`, `DB_PATH`, `POD_NAMESPACE`, `HEALTH_PORT`, etc. in your shell. See [`.env.example`](.env.example) for a template. This process does **not** load `.env` files automatically; export variables in your shell, use [direnv](https://direnv.net/), or another loader so they are present before `npm run dev`.
 
 #### Local data directory (`DB_PATH`)
 
@@ -323,11 +267,10 @@ You can run the operator on your machine against **any** cluster your kubeconfig
 
 #### Environment Variables
 
-The operator requires `SERVER_URL` to be set. The npm scripts provide defaults for `SERVER_URL`, `LOG_LEVEL`, and (for dev scripts only) `DB_PATH`, but you can override:
+For local development, `npm run dev` / `npm run dev:watch` set sensible defaults (including `SERVER_URL` for process compatibility). Override as needed:
 
 ```bash
-# Set in your shell
-export SERVER_URL=https://api.kube9.dev
+# Typical local overrides
 export LOG_LEVEL=debug
 export DB_PATH="$PWD/.kube9-data"
 export POD_NAMESPACE=kube9-system
@@ -445,8 +388,7 @@ helm lint charts/kube9-operator
 
 # Test template rendering
 helm template kube9-operator charts/kube9-operator \
-  --namespace kube9-system \
-  --set apiKey=test123
+  --namespace kube9-system
 
 # Test installation in minikube
 npm run deploy:minikube
@@ -468,12 +410,12 @@ metadata:
 data:
   status: |
     {
-      "mode": "enabled",
-      "tier": "pro",
+      "mode": "operated",
+      "tier": "free",
       "version": "1.0.0",
       "health": "healthy",
       "lastUpdate": "2025-11-10T15:30:00Z",
-      "registered": true,
+      "registered": false,
       "error": null,
       "argocd": {
         "detected": true,
@@ -484,27 +426,23 @@ data:
     }
 ```
 
-The VS Code extension reads this ConfigMap to:
-- Determine which features to enable
-- Show appropriate UI (local vs rich web UIs)
-- Display cluster status to the user
+The VS Code extension reads this ConfigMap to discover where the operator runs, surface status, and enable optional experiences that depend on in-cluster signals (for example ArgoCD awareness).
 
-### Tier Modes
+### Operating modes (summary)
 
-| Mode | API Key | Registered | Extension Behavior |
-|------|---------|------------|--------------------|
-| **basic** | No operator | - | kubectl-only operations, show installation prompts |
-| **operated** | Installed, no key | No | Local webviews, basic features, show upgrade prompts |
-| **enabled** | Installed, has key | Yes | Rich UIs from server, AI features, advanced dashboards |
-| **degraded** | Installed, has key | No | Temporary fallback, registration failed |
+| Mode | Operator | Typical extension behavior |
+|------|----------|---------------------------|
+| **basic** | Not installed | kubectl-focused workflows; prompts to install the operator when appropriate |
+| **operated** | Installed | Extension reads local status and cluster signals published by the operator |
+
+Published `mode` / `tier` fields exist for compatibility with older clients; the open-source chart path is fully in-cluster.
 
 ### Security
 
-- **No Ingress Required**: Operator only makes outbound HTTPS connections
-- **API Key Storage**: Stored in Kubernetes Secrets, never logged
-- **Minimal Permissions**: ClusterRole for read-only cluster metadata, Role for ConfigMap writes
-- **Non-Root**: Runs as non-root user with read-only filesystem
-- **No Sensitive Data**: Status exposes no credentials or sensitive cluster information
+- **No ingress required** for the control-plane path this chart installs
+- **Minimal permissions**: ClusterRole for read-only cluster metadata, Role for ConfigMap writes in the release namespace
+- **Non-root**: Runs as non-root user with read-only filesystem where configured
+- **No sensitive credentials in status**: Follow your own secret-management practices for any credentials you use elsewhere in the cluster
 
 ## Troubleshooting
 
@@ -531,16 +469,10 @@ kubectl auth can-i create configmaps --namespace=kube9-system --as=system:servic
 kubectl get role,rolebinding -n kube9-system
 ```
 
-### Pro tier not working
+### Operator unhealthy or status shows errors
 
 ```bash
-# Verify API key Secret exists
-kubectl get secret kube9-operator-config -n kube9-system
-
-# Check registration status in logs
-kubectl logs -n kube9-system deployment/kube9-operator | grep -i registration
-
-# View status with error details
+kubectl logs -n kube9-system deployment/kube9-operator
 kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.status}' | jq .
 ```
 
@@ -643,7 +575,7 @@ kube9-operator/
 │   ├── health/                  # Health endpoints
 │   ├── kubernetes/              # Kubernetes client
 │   ├── logging/                 # Structured logging
-│   ├── registration/            # Server registration
+│   ├── registration/            # Legacy module (not used by default Helm install path)
 │   ├── shutdown/                # Graceful shutdown
 │   └── status/                  # Status calculator & writer
 ├── tests/                       # Tests
@@ -657,8 +589,7 @@ kube9-operator/
 ## Related Projects
 
 - **[kube9-vscode](https://github.com/alto9/kube9-vscode)** - VS Code extension (primary consumer)
-- **[kube9-server](https://github.com/alto9/kube9-server)** - Backend server for Pro features
-- **[kube9-portal](https://github.com/alto9/kube9-portal)** - User portal for account management
+- **[kube9-localcluster](https://github.com/alto9/kube9-localcluster)** - Local Kubernetes demo environment for development
 
 ## Documentation
 
@@ -712,8 +643,6 @@ MIT License - see [LICENSE](LICENSE) file for details
 - **Contributing Guide**: [CONTRIBUTING.md](CONTRIBUTING.md) - How to contribute
 - **Security Policy**: [SECURITY.md](SECURITY.md) - Security reporting
 - **Code of Conduct**: [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) - Community guidelines
-- **Portal Support**: https://portal.kube9.dev/support
-
 ---
 
 **Built with ❤️ by Alto9 - Making Kubernetes management intelligent**

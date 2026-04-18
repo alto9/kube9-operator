@@ -327,8 +327,7 @@ helm lint charts/kube9-operator
 
 # Test template rendering
 helm template kube9-operator charts/kube9-operator \
-  --namespace kube9-system \
-  --set apiKey=test123
+  --namespace kube9-system
 
 # Test installation in minikube
 npm run deploy:minikube
