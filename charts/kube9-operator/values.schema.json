@@ -2,6 +2,11 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "type": "object",
   "properties": {
+    "podAnnotations": {
+      "type": "object",
+      "description": "Optional annotations on the operator pod (e.g. prometheus.io/scrape, prometheus.io/port, prometheus.io/path for metrics discovery)",
+      "additionalProperties": { "type": "string" }
+    },
     "argocd": {
       "type": "object",
       "properties": {

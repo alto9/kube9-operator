@@ -12,10 +12,14 @@ spec:
   selector:
     matchLabels:
       {{- include "kube9-operator.selectorLabels" . | nindent 6 }}
-  template:
-    metadata:
-      labels:
-        {{- include "kube9-operator.selectorLabels" . | nindent 8 }}
+    template:
+      metadata:
+        labels:
+          {{- include "kube9-operator.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
     spec:
       serviceAccountName: {{ include "kube9-operator.serviceAccountName" . }}
       securityContext:
