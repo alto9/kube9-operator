@@ -116,6 +116,59 @@ All metrics are exposed at `/metrics` endpoint and follow Prometheus naming conv
 - **Labels**:
   - `type`: Collection type
 
+### Assessment metrics
+
+Assessment runs emit `kube9_operator_assessment_*` series on the same `/metrics` handler as collection and event metrics (`src/assessment/metrics.ts`, wired from `src/assessment/runner.ts`). They use **bounded labels** only (invalid values map to `unknown`) to keep cardinality predictable.
+
+#### `kube9_operator_assessment_runs_total`
+
+- **Type**: Counter
+- **Description**: Count of assessment run **lifecycle observations** by terminal or phase label (each successful run increments `queued`, then `running`, then a terminal `state` such as `completed` or `partial`).
+- **Labels**:
+  - `state`: One of `queued`, `running`, `completed`, `failed`, `partial`, or `unknown` if an unexpected value is passed through safeguards.
+- **Cardinality**: 6 well-known states plus `unknown`; low and stable.
+
+#### `kube9_operator_assessment_checks_total`
+
+- **Type**: Counter
+- **Description**: Total check executions by pillar and outcome.
+- **Labels**:
+  - `pillar`: Well-Architected pillar (`security`, `reliability`, `performance-efficiency`, `cost-optimization`, `operational-excellence`, `sustainability`, or `unknown`).
+  - `status`: Check result (`passing`, `failing`, `warning`, `skipped`, `error`, `timeout`, or `unknown`).
+- **Cardinality**: At most 7 pillar labels × 7 status labels (49 series) for this counter alone; in practice only pillars and statuses that actually run appear.
+
+#### `kube9_operator_assessment_run_duration_seconds`
+
+- **Type**: Histogram
+- **Description**: Wall-clock duration of a full assessment run in seconds (one observation when the run finishes).
+- **Labels**: None.
+- **Buckets**: `[1, 5, 10, 30, 60, 120, 300]` seconds.
+
+#### `kube9_operator_assessment_check_duration_seconds`
+
+- **Type**: Histogram
+- **Description**: Duration of each individual check in seconds.
+- **Labels**:
+  - `pillar`: Same bounded set as `kube9_operator_assessment_checks_total`.
+- **Cardinality**: One histogram per pillar that executed at least one check (up to 6 user-facing pillars plus `unknown`).
+
+#### `kube9_operator_assessment_last_run_timestamp`
+
+- **Type**: Gauge
+- **Description**: Unix epoch seconds when the **last** assessment run completed (updated in `recordRunComplete`).
+- **Labels**: None.
+
+#### `kube9_operator_assessment_last_score`
+
+- **Type**: Gauge
+- **Description**: Score from the last completed run as `100 * passed_checks / total_checks`, or `0` when `total_checks` is 0.
+- **Labels**: None.
+
+**Operational notes**
+
+- After install, scrape the pod’s metrics port (default **8080**, path **`/metrics`**) as documented in the Helm chart README (optional `podAnnotations` for `prometheus.io/*` discovery).
+- To confirm assessment metrics in operated mode, trigger a scheduled or manual assessment, then verify `kube9_operator_assessment_runs_total` increases for `queued` and `running`, `kube9_operator_assessment_checks_total` moves for the pillars you expect, and `kube9_operator_assessment_last_run_timestamp` / `kube9_operator_assessment_last_score` update.
+
 ### Vulnerability scanning metrics (planned, M3)
 
 Exposed only when Trivy-backed scanning is active; when Trivy is absent, these metrics should be zero or omitted per Prometheus registration rules (implementation detail), without failing scrapes.
@@ -127,7 +180,7 @@ Exact metric names and label sets are defined at implementation time and registe
 
 ### Metrics Registry
 - All metrics are registered in a single Prometheus registry
-- Metrics are collected from multiple modules (events, collection, vulnerability scanning when enabled)
+- Metrics are collected from multiple modules (events, collection, assessments, vulnerability scanning when enabled)
 - Registry is exported for use by health server
 
 ## Health Check Logic

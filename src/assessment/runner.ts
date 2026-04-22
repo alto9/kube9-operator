@@ -231,6 +231,7 @@ export class AssessmentRunner {
       timeout_checks: 0,
     };
     this.storage.upsertAssessment(initialRecord);
+    recordRunState('queued');
 
     const runningRecord: AssessmentRunRecord = {
       ...initialRecord,
@@ -238,6 +239,7 @@ export class AssessmentRunner {
       started_at: new Date().toISOString(),
     };
     this.storage.upsertAssessment(runningRecord);
+    recordRunState('running');
 
     let passed = 0;
     let failed = 0;

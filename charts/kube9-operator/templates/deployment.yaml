@@ -16,6 +16,10 @@ spec:
     metadata:
       labels:
         {{- include "kube9-operator.selectorLabels" . | nindent 8 }}
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
     spec:
       serviceAccountName: {{ include "kube9-operator.serviceAccountName" . }}
       securityContext:

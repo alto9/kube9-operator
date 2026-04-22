@@ -2,6 +2,8 @@
 
 This Helm chart installs the kube9-operator, a Kubernetes operator that powers Well-Architected Framework validation and in-cluster status for the [kube9 VS Code extension](https://github.com/alto9/kube9-vscode) and other tooling. It also supports optional integrations (for example ArgoCD awareness and Trivy server detection) configured through values.
 
+Assessment walkthroughs and CLI examples are documented in the repository guide: [`docs/assessment/user-guide.md`](../../docs/assessment/user-guide.md).
+
 ## Overview
 
 The kube9-operator runs in your Kubernetes cluster and publishes status and assessment-related data locally. The VS Code extension uses this to determine whether your cluster is in:
@@ -61,12 +63,36 @@ kubectl logs -n kube9-system deployment/kube9-operator
 kubectl get configmap kube9-operator-status -n kube9-system -o yaml
 ```
 
+### Prometheus metrics (`/metrics`)
+
+The operator serves Prometheus text exposition on **`http://<pod-ip>:8080/metrics`** on the same port as `/healthz` and `/readyz`. There is no dedicated `Service` in this chart by default; scrape the pod port directly (for example via a `Service`/`ServiceMonitor` you manage, or via the classic pod annotation pattern).
+
+**Optional scrape annotations** — set `podAnnotations` so agents that honor `prometheus.io/*` can discover the target, for example:
+
+```yaml
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/metrics"
+```
+
+**Validate assessment metrics** — after the operator has run at least one in-cluster assessment (operated mode), confirm counters move (from your workstation, with `curl` available):
+
+```bash
+kubectl port-forward -n kube9-system deploy/kube9-operator 8080:8080
+# In another terminal:
+curl -s http://127.0.0.1:8080/metrics | grep kube9_operator_assessment_
+```
+
+You should see series such as `kube9_operator_assessment_runs_total`, `kube9_operator_assessment_checks_total`, and gauges/histograms named with the `kube9_operator_assessment_` prefix. Full definitions and label cardinality notes live in `.forge/operations/observability.md` in the application repository.
+
 ## Configuration
 
 The following table lists the configurable parameters and their default values:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
+| `podAnnotations` | Optional annotations on the operator pod (for example `prometheus.io/scrape`) | `{}` |
 | `image.repository` | Container image repository | `ghcr.io/alto9/kube9-operator` |
 | `image.tag` | Container image tag | `"1.3.0"` |
 | `image.pullPolicy` | Image pull policy | `IfNotPresent` |
@@ -531,6 +557,7 @@ Complete reference of all configurable values:
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
+| `podAnnotations` | Optional annotations on the operator pod (for example `prometheus.io/scrape`) | `{}` |
 | `image.repository` | Container image repository | `ghcr.io/alto9/kube9-operator` |
 | `image.tag` | Container image tag | `"1.3.0"` |
 | `image.pullPolicy` | Image pull policy (`IfNotPresent`, `Always`, `Never`) | `IfNotPresent` |

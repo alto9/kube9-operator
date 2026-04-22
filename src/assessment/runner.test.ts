@@ -4,6 +4,15 @@ import { Pillar, CheckStatus, AssessmentRunMode } from './types.js';
 import { AssessmentRunner, resolveChecksForRun } from './runner.js';
 import { getRegistry, resetRegistry } from './registry.js';
 import type { AssessmentRunRecord, AssessmentCheckResult as StorageCheckResult } from './contracts.js';
+import { register } from '../collection/metrics.js';
+
+function parseAssessmentRunCounter(metrics: string, state: string): number {
+  const regex = new RegExp(
+    `kube9_operator_assessment_runs_total\\{state="${state}"\\} (\\d+)`
+  );
+  const match = metrics.match(regex);
+  return match ? parseInt(match[1], 10) : 0;
+}
 
 /** Mock storage that records calls for verification */
 class MockAssessmentStorage {
@@ -151,6 +160,12 @@ describe('AssessmentRunner', () => {
       expect(mockStorage.assessments.length).toBeGreaterThanOrEqual(2);
       expect(mockStorage.checkResults).toHaveLength(1);
       expect(mockStorage.checkResults[0].result.status).toBe('passing');
+
+      const metrics = await register.metrics();
+      expect(parseAssessmentRunCounter(metrics, 'queued')).toBeGreaterThanOrEqual(1);
+      expect(parseAssessmentRunCounter(metrics, 'running')).toBeGreaterThanOrEqual(1);
+      expect(parseAssessmentRunCounter(metrics, 'completed')).toBeGreaterThanOrEqual(1);
+      expect(metrics).toContain('kube9_operator_assessment_checks_total{pillar="security",status="passing"}');
     });
   });
 

@@ -20,6 +20,9 @@ serviceAccount:
   create: true
   name: "kube9-operator"
 
+# Optional annotations on the operator pod (e.g. prometheus.io/scrape for metrics discovery)
+podAnnotations: {}
+
 # RBAC configuration
 rbac:
   create: true
