@@ -345,8 +345,11 @@ describe('AssessmentRunner (integration)', () => {
       pillarFilter: Pillar.Sustainability,
     });
 
-    expect(checks.length).toBe(1);
-    expect(checks.map((c) => c.id)).toEqual(['sustainability.resource-efficiency-signals']);
+    expect(checks.length).toBe(2);
+    expect(checks.map((c) => c.id)).toEqual([
+      'sustainability.resource-efficiency-signals',
+      'sustainability.workload-consolidation-signals',
+    ]);
 
     const sustainabilityMockK8s = {
       coreApi: {
@@ -431,12 +434,15 @@ describe('AssessmentRunner (integration)', () => {
     });
 
     expect(record.run_id).toBe('run-sustainability-pillar');
-    expect(record.total_checks).toBe(1);
-    expect(record.completed_checks).toBe(1);
-    expect(record.passed_checks).toBe(1);
+    expect(record.total_checks).toBe(2);
+    expect(record.completed_checks).toBe(2);
+    expect(record.passed_checks).toBe(2);
 
     const history = storage.queryHistory({ filters: { run_id: 'run-sustainability-pillar' } });
-    expect(history).toHaveLength(1);
-    expect(history[0]?.check_id).toBe('sustainability.resource-efficiency-signals');
+    expect(history).toHaveLength(2);
+    expect(history.map((h) => h.check_id)).toEqual([
+      'sustainability.resource-efficiency-signals',
+      'sustainability.workload-consolidation-signals',
+    ]);
   });
 });
