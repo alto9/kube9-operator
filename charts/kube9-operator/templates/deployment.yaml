@@ -99,6 +99,18 @@ spec:
           value: {{ .Values.trivy.vulnMaxMedium | quote }}
         - name: WORKLOAD_IMAGE_SCAN_INTERVAL_SECONDS
           value: {{ .Values.metrics.intervals.workloadImageScan | default 86400 | quote }}
+        # Periodic assessment schedule (see assessment.* in values.yaml)
+        {{- $assessment := .Values.assessment | default dict }}
+        - name: ASSESSMENT_ENABLED
+          value: {{ $assessment.enabled | default false | quote }}
+        - name: ASSESSMENT_INTERVAL_SECONDS
+          value: {{ $assessment.intervalSeconds | default 86400 | quote }}
+        - name: ASSESSMENT_MODE
+          value: {{ $assessment.mode | default "full" | quote }}
+        {{- if $assessment.timeoutSeconds }}
+        - name: ASSESSMENT_TIMEOUT_SECONDS
+          value: {{ $assessment.timeoutSeconds | quote }}
+        {{- end }}
         # Event retention configuration
         - name: EVENT_RETENTION_INFO_WARNING_DAYS
           value: {{ .Values.events.retention.infoWarning | default 7 | quote }}
