@@ -602,6 +602,7 @@ kube9-operator/
 - **[Implementation Stories](./ai/sessions/mvp/tickets/)** - Breakdown of implementation work
 - **[API Specifications](./ai/specs/)** - Technical API specs
 - **[Feature Definitions](./ai/features/)** - Feature behavior in Gherkin
+- **[Built-In Assessment Checks](./docs/assessment/checks.md)** - Reference for all built-in assessment checks, grouped by pillar
 
 ## Contributing
 
