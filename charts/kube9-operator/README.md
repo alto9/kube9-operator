@@ -1,6 +1,6 @@
 # kube9-operator Helm Chart
 
-This Helm chart installs the kube9-operator, a Kubernetes operator that powers Well-Architected Framework validation and in-cluster status for the [kube9 VS Code extension](https://github.com/alto9/kube9-vscode) and other tooling.
+This Helm chart installs the kube9-operator, a Kubernetes operator that powers Well-Architected Framework validation and in-cluster status for the [kube9 VS Code extension](https://github.com/alto9/kube9-vscode) and other tooling. It also supports optional integrations (for example ArgoCD awareness and Trivy server detection) configured through values.
 
 ## Overview
 
@@ -8,6 +8,7 @@ The kube9-operator runs in your Kubernetes cluster and publishes status and asse
 
 - **Basic mode** (no operator) — kubectl-focused workflows
 - **Operated mode** (operator installed) — scheduled assessments, local persistence, and ConfigMap status for the extension
+- **Enabled mode** — richer server-connected experiences when registration succeeds (not configured through Helm API key values in this chart)
 
 The operator is installed via Helm and requires no ingress for the control plane path this chart installs. The chart does not configure API keys, credentials, or remote product sign-in.
 
@@ -78,6 +79,8 @@ The following table lists the configurable parameters and their default values:
 | `rbac.create` | Create RBAC resources (ClusterRole and ClusterRoleBinding) | `true` |
 | `logLevel` | Log level for the operator. Options: `debug`, `info`, `warn`, `error` | `"info"` |
 | `statusUpdateIntervalSeconds` | How often the operator updates the status ConfigMap (in seconds) | `60` |
+| `reregistrationIntervalHours` | How often the operator re-registers with kube9-server (hours) | `24` |
+| `serverUrl` | URL of the kube9-server API | `"https://api.kube9.io"` |
 | `metrics.intervals.clusterMetadata` | Cluster metadata collection interval (seconds). Default 86400 (24h), minimum 3600 (1h) | `86400` |
 | `metrics.intervals.resourceInventory` | Resource inventory collection interval (seconds). Default 21600 (6h), minimum 1800 (30m) | `21600` |
 | `metrics.intervals.resourceConfigurationPatterns` | Resource configuration patterns collection interval (seconds). Default 43200 (12h), minimum 3600 (1h) | `43200` |
@@ -143,6 +146,8 @@ The operator uses Guaranteed QoS for stable performance:
 #### Status interval
 
 - **statusUpdateIntervalSeconds**: How frequently the operator writes status to the ConfigMap (default: 60 seconds). Lower values provide more real-time status but increase API calls; higher values reduce API load but status may be slightly stale.
+- **reregistrationIntervalHours**: How often to re-register with kube9-server (default: 24 hours)
+- **serverUrl**: The kube9-server API endpoint used by the operator (default: https://api.kube9.io)
 
 #### Metrics Collection Intervals (`metrics.intervals`)
 
@@ -538,6 +543,8 @@ Complete reference of all configurable values:
 | `rbac.create` | Create RBAC resources (ClusterRole and ClusterRoleBinding) | `true` |
 | `logLevel` | Log level (`debug`, `info`, `warn`, `error`) | `"info"` |
 | `statusUpdateIntervalSeconds` | Status ConfigMap update interval (seconds) | `60` |
+| `reregistrationIntervalHours` | Re-registration interval with kube9-server (hours) | `24` |
+| `serverUrl` | kube9-server API URL | `"https://api.kube9.io"` |
 | `metrics.intervals.clusterMetadata` | Cluster metadata collection interval (seconds). Default 86400 (24h), minimum 3600 (1h) | `86400` |
 | `metrics.intervals.resourceInventory` | Resource inventory collection interval (seconds). Default 21600 (6h), minimum 1800 (30m) | `21600` |
 | `metrics.intervals.resourceConfigurationPatterns` | Resource configuration patterns collection interval (seconds). Default 43200 (12h), minimum 3600 (1h) | `43200` |

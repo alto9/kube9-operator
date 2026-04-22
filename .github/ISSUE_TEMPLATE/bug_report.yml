@@ -120,8 +120,8 @@ body:
       description: What Helm values were used for installation? (redact API keys)
       render: yaml
       placeholder: |
-        apiKey: "***"
         logLevel: "info"
+        serverUrl: "https://api.kube9.io"
 
   - type: textarea
     id: additional
