@@ -2,6 +2,8 @@
 
 This Helm chart installs the kube9-operator, a Kubernetes operator that powers Well-Architected Framework validation and in-cluster status for the [kube9 VS Code extension](https://github.com/alto9/kube9-vscode) and other tooling. It also supports optional integrations (for example ArgoCD awareness and Trivy server detection) configured through values.
 
+Assessment walkthroughs and CLI examples are documented in the repository guide: [`docs/assessment/user-guide.md`](../../docs/assessment/user-guide.md).
+
 ## Overview
 
 The kube9-operator runs in your Kubernetes cluster and publishes status and assessment-related data locally. The VS Code extension uses this to determine whether your cluster is in:
