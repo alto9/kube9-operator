@@ -35,8 +35,7 @@ The Helm chart supports comprehensive configuration through `values.yaml`:
 #### Operator Configuration
 - `logLevel`: Log level (default: `info`; options: `debug`, `info`, `warn`, `error`)
 - `statusUpdateIntervalSeconds`: Status update interval in seconds (default: `60`)
-- `reregistrationIntervalHours`: Re-registration interval in hours (default: `24`)
-- `serverUrl`: kube9-server URL for pro tier (default: `https://api.kube9.io`)
+- Chart values configure logging, status interval, ArgoCD/Trivy options, collection intervals, and event retention (see `charts/kube9-operator/values.yaml`).
 
 #### ArgoCD Integration
 - `argocd.autoDetect`: Enable automatic ArgoCD detection (default: `true`)

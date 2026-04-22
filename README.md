@@ -15,7 +15,9 @@ The operator works with the kube9 VS Code extension and optional Helm-based UI c
 - **Basic mode** (no operator) — VS Code extension provides kubectl-focused workflows
 - **Operated mode** (operator installed) — The operator runs Well-Architected Framework checks on a schedule, persists findings and events in-cluster, and publishes status to a ConfigMap for the extension and other consumers
 
-The operator is installed via Helm and requires no ingress. It is **fully open source and self-contained**: assessments, storage, and status run inside the cluster without credentials or remote sign-in configured through this chart. Optional outbound use of `serverUrl` and related behavior are runtime concerns, not Helm-managed API keys.
+The operator is installed via Helm and requires no ingress. It is **fully open source and self-contained**: assessments, storage, and status run inside the cluster using the Kubernetes API, optional outbound HTTP for Trivy detection when configured, and local SQLite. This operator does **not** register with kube9-server or transmit collections to it.
+
+**Pro tier** naming remains reserved for future ecosystem capabilities; the chart does not require a kube9-server URL for core operation.
 
 ## Features
 
@@ -131,7 +133,6 @@ kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.
 | `resources.limits.memory` | Memory limit | `256Mi` |
 | `logLevel` | Log level (debug, info, warn, error) | `info` |
 | `statusUpdateIntervalSeconds` | Status update frequency | `60` |
-| `serverUrl` | kube9-server API base URL (outbound; not a Helm credential surface) | `https://api.kube9.io` |
 | `argocd.autoDetect` | Enable automatic ArgoCD detection | `true` |
 | `argocd.enabled` | Explicitly enable or disable ArgoCD integration (optional override) | - |
 | `argocd.namespace` | Custom namespace where ArgoCD is installed | `"argocd"` |
@@ -268,7 +269,7 @@ You can run the operator on your machine against **any** cluster your kubeconfig
 
 #### Environment Variables
 
-For local development, `npm run dev` / `npm run dev:watch` set sensible defaults (including `SERVER_URL` for process compatibility). Override as needed:
+`loadConfig()` does not require kube9-server URL variables. The npm scripts set defaults for `LOG_LEVEL` and (for dev scripts only) `DB_PATH`. Override as needed:
 
 ```bash
 # Typical local overrides
@@ -416,12 +417,24 @@ data:
       "version": "1.0.0",
       "health": "healthy",
       "lastUpdate": "2025-11-10T15:30:00Z",
-      "registered": false,
       "error": null,
+      "namespace": "kube9-system",
+      "collectionStats": {
+        "totalSuccessCount": 0,
+        "totalFailureCount": 0,
+        "collectionsStoredCount": 0,
+        "lastSuccessTime": null
+      },
       "argocd": {
         "detected": true,
         "namespace": "argocd",
         "version": "v2.8.0",
+        "lastChecked": "2025-11-10T15:30:00Z"
+      },
+      "trivy": {
+        "detected": false,
+        "serverUrl": null,
+        "version": null,
         "lastChecked": "2025-11-10T15:30:00Z"
       }
     }
@@ -443,6 +456,7 @@ Published `mode` / `tier` fields exist for compatibility with older clients; the
 - **No ingress required** for the control-plane path this chart installs
 - **Minimal permissions**: ClusterRole for read-only cluster metadata, Role for ConfigMap writes in the release namespace
 - **Non-root**: Runs as non-root user with read-only filesystem where configured
+- **Optional outbound HTTP**: Trivy health/version probes when `trivy.serverUrl` is set; otherwise cluster API and DNS only
 - **No sensitive credentials in status**: Follow your own secret-management practices for any credentials you use elsewhere in the cluster
 
 ## Troubleshooting
@@ -475,9 +489,7 @@ kubectl get role,rolebinding -n kube9-system
 ```bash
 kubectl logs -n kube9-system deployment/kube9-operator
 
-# Optional: registration-related messages
-kubectl logs -n kube9-system deployment/kube9-operator | grep -i registration || true
-
+# View published status (health, errors, collection stats)
 kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.status}' | jq .
 ```
 
@@ -580,7 +592,6 @@ kube9-operator/
 │   ├── health/                  # Health endpoints
 │   ├── kubernetes/              # Kubernetes client
 │   ├── logging/                 # Structured logging
-│   ├── registration/            # Legacy module (not used by default Helm install path)
 │   ├── shutdown/                # Graceful shutdown
 │   └── status/                  # Status calculator & writer
 ├── tests/                       # Tests

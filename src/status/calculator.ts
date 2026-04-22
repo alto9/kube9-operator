@@ -1,6 +1,5 @@
 import type {
   OperatorStatus,
-  RegistrationState,
   CollectionStats,
   ArgoCDStatus,
   TrivyStatus,
@@ -27,15 +26,6 @@ const STATUS_NAMESPACE = process.env.POD_NAMESPACE || 'kube9-system';
 const MAX_ERROR_LENGTH = 500;
 
 /**
- * Default registration state when registration manager is not available
- */
-const DEFAULT_REGISTRATION_STATE: RegistrationState = {
-  isRegistered: false,
-  clusterId: undefined,
-  consecutiveFailures: 0,
-};
-
-/**
  * Default ArgoCD status when ArgoCD detection is not yet implemented
  */
 const DEFAULT_ARGOCD_STATUS: ArgoCDStatus = {
@@ -53,10 +43,9 @@ const DEFAULT_TRIVY_STATUS: TrivyStatus = {
 };
 
 /**
- * Calculate the current operator status from registration and runtime signals.
+ * Calculate the current operator status from runtime signals.
  * `mode` and `tier` are fixed product constants (not derived from config or secrets).
- * 
- * @param registrationState - Optional registration state (defaults to unregistered)
+ *
  * @param lastError - Optional error message from last operation
  * @param canWriteConfigMap - Whether the operator can write to ConfigMap (defaults to true)
  * @param collectionStats - Optional collection statistics (defaults to zero stats)
@@ -66,71 +55,53 @@ const DEFAULT_TRIVY_STATUS: TrivyStatus = {
  * @returns OperatorStatus object with current operator state
  */
 export function calculateStatus(
-  registrationState: RegistrationState = DEFAULT_REGISTRATION_STATE,
   lastError: string | null = null,
   canWriteConfigMap: boolean = true,
   collectionStats: CollectionStats = {
     totalSuccessCount: 0,
     totalFailureCount: 0,
     collectionsStoredCount: 0,
-    lastSuccessTime: null
+    lastSuccessTime: null,
   },
   argocdStatus: ArgoCDStatus = DEFAULT_ARGOCD_STATUS,
   trivyStatus: TrivyStatus = DEFAULT_TRIVY_STATUS,
   assessmentSummary: AssessmentStatusSummary = DEFAULT_ASSESSMENT_STATUS_SUMMARY
 ): OperatorStatus {
-  const { isRegistered, clusterId, consecutiveFailures = 0 } = registrationState;
-  
   // Published status uses fixed mode/tier; this function does not read config or credentials.
-  const mode: "operated" | "enabled" = "operated";
-  const tier: "free" | "pro" = "free";
-  
-  // Calculate health based on system state
-  const health = calculateHealth(
-    consecutiveFailures,
-    canWriteConfigMap,
-    lastError
-  );
-  
-  // Determine error message
-  // If health is healthy, error must be null
-  // Otherwise, use provided error or generate one based on health state
+  const mode: 'operated' | 'enabled' = 'operated';
+  const tier: 'free' | 'pro' = 'free';
+
+  const health = calculateHealth(canWriteConfigMap, lastError);
+
   let error: string | null = null;
-  if (health !== "healthy") {
+  if (health !== 'healthy') {
     if (lastError) {
-      // Truncate error message if too long
-      error = lastError.length > MAX_ERROR_LENGTH
-        ? lastError.substring(0, MAX_ERROR_LENGTH - 3) + "..."
-        : lastError;
-    } else {
-      // Generate error message based on health state
-      if (health === "unhealthy") {
-        if (!canWriteConfigMap) {
-          error = "Failed to write status ConfigMap: check RBAC permissions";
-        } else {
-          error = "Critical system error";
-        }
-      } else if (health === "degraded" && consecutiveFailures > 3) {
-        error = `Registration failed ${consecutiveFailures} times consecutively`;
+      error =
+        lastError.length > MAX_ERROR_LENGTH
+          ? lastError.substring(0, MAX_ERROR_LENGTH - 3) + '...'
+          : lastError;
+    } else if (health === 'unhealthy') {
+      if (!canWriteConfigMap) {
+        error = 'Failed to write status ConfigMap: check RBAC permissions';
+      } else {
+        error = 'Critical system error';
       }
     }
   }
-  
-  // Build status object
-  const status: OperatorStatus = {
+
+  return {
     mode,
     tier,
     version: OPERATOR_VERSION,
     health,
     lastUpdate: new Date().toISOString(),
-    registered: isRegistered,
     error,
     namespace: STATUS_NAMESPACE,
     collectionStats: {
       totalSuccessCount: collectionStats.totalSuccessCount,
       totalFailureCount: collectionStats.totalFailureCount,
       collectionsStoredCount: collectionStats.collectionsStoredCount,
-      lastSuccessTime: collectionStats.lastSuccessTime
+      lastSuccessTime: collectionStats.lastSuccessTime,
     },
     argocd: argocdStatus,
     trivy: trivyStatus,
@@ -139,51 +110,25 @@ export function calculateStatus(
       lastScheduledTotals: { ...assessmentSummary.lastScheduledTotals },
     },
   };
-  
-  // Include clusterId when registration reports an id
-  if (isRegistered && clusterId) {
-    status.clusterId = clusterId;
-  }
-  
-  return status;
 }
 
 /**
  * Calculate health status based on system state
- * 
- * Health determination logic:
- * - unhealthy: Can't write ConfigMap OR config errors
- * - degraded: Consecutive registration failures > 3
+ *
+ * - unhealthy: Can't write ConfigMap OR critical config errors in lastError
  * - healthy: All other cases
- * 
- * @param consecutiveFailures - Number of consecutive registration failures
- * @param canWriteConfigMap - Whether operator can write to ConfigMap
- * @param lastError - Last error message (if any)
- * @returns Health status
  */
 function calculateHealth(
-  consecutiveFailures: number,
   canWriteConfigMap: boolean,
   lastError: string | null
-): "healthy" | "degraded" | "unhealthy" {
-  // Critical: Can't write to Kubernetes API
+): 'healthy' | 'degraded' | 'unhealthy' {
   if (!canWriteConfigMap) {
-    return "unhealthy";
+    return 'unhealthy';
   }
-  
-  // Critical: Config errors (if we detect any)
-  // Note: Config loader throws on invalid config, so if we get here, config is valid
-  // But we check lastError for any critical errors
-  if (lastError && lastError.includes("config") && lastError.includes("required")) {
-    return "unhealthy";
+
+  if (lastError && lastError.includes('config') && lastError.includes('required')) {
+    return 'unhealthy';
   }
-  
-  // Degraded: Registration attempts failing repeatedly
-  if (consecutiveFailures > 3) {
-    return "degraded";
-  }
-  
-  return "healthy";
+
+  return 'healthy';
 }
-
-

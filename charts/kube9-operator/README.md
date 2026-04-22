@@ -105,8 +105,6 @@ The following table lists the configurable parameters and their default values:
 | `rbac.create` | Create RBAC resources (ClusterRole and ClusterRoleBinding) | `true` |
 | `logLevel` | Log level for the operator. Options: `debug`, `info`, `warn`, `error` | `"info"` |
 | `statusUpdateIntervalSeconds` | How often the operator updates the status ConfigMap (in seconds) | `60` |
-| `reregistrationIntervalHours` | How often the operator re-registers with kube9-server (hours) | `24` |
-| `serverUrl` | URL of the kube9-server API | `"https://api.kube9.io"` |
 | `metrics.intervals.clusterMetadata` | Cluster metadata collection interval (seconds). Default 86400 (24h), minimum 3600 (1h) | `86400` |
 | `metrics.intervals.resourceInventory` | Resource inventory collection interval (seconds). Default 21600 (6h), minimum 1800 (30m) | `21600` |
 | `metrics.intervals.resourceConfigurationPatterns` | Resource configuration patterns collection interval (seconds). Default 43200 (12h), minimum 3600 (1h) | `43200` |
@@ -172,8 +170,6 @@ The operator uses Guaranteed QoS for stable performance:
 #### Status interval
 
 - **statusUpdateIntervalSeconds**: How frequently the operator writes status to the ConfigMap (default: 60 seconds). Lower values provide more real-time status but increase API calls; higher values reduce API load but status may be slightly stale.
-- **reregistrationIntervalHours**: How often to re-register with kube9-server (default: 24 hours)
-- **serverUrl**: The kube9-server API endpoint used by the operator (default: https://api.kube9.io)
 
 #### Metrics Collection Intervals (`metrics.intervals`)
 
@@ -512,7 +508,7 @@ kubectl get role,rolebinding -n kube9-system | grep kube9-operator
 
 ### Operator reports unhealthy or errors in status
 
-**Symptoms**: Status ConfigMap `health` is not `healthy`, or `error` is set
+**Symptoms**: Status ConfigMap `health` is not `healthy`, `error` is set, or the extension shows stale status
 
 **Diagnosis**:
 
@@ -521,7 +517,10 @@ kubectl logs -n kube9-system deployment/kube9-operator
 kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.status}' | jq .
 ```
 
-**Common causes**: RBAC preventing ConfigMap writes, insufficient CPU/memory, optional integrations (for example Trivy) timing out.
+**Common causes**:
+- RBAC preventing ConfigMap writes
+- Insufficient CPU/memory or operator startup errors
+- Optional integrations (for example Trivy) timing out or misconfigured
 
 ### RBAC Permission Issues
 
@@ -570,8 +569,6 @@ Complete reference of all configurable values:
 | `rbac.create` | Create RBAC resources (ClusterRole and ClusterRoleBinding) | `true` |
 | `logLevel` | Log level (`debug`, `info`, `warn`, `error`) | `"info"` |
 | `statusUpdateIntervalSeconds` | Status ConfigMap update interval (seconds) | `60` |
-| `reregistrationIntervalHours` | Re-registration interval with kube9-server (hours) | `24` |
-| `serverUrl` | kube9-server API URL | `"https://api.kube9.io"` |
 | `metrics.intervals.clusterMetadata` | Cluster metadata collection interval (seconds). Default 86400 (24h), minimum 3600 (1h) | `86400` |
 | `metrics.intervals.resourceInventory` | Resource inventory collection interval (seconds). Default 21600 (6h), minimum 1800 (30m) | `21600` |
 | `metrics.intervals.resourceConfigurationPatterns` | Resource configuration patterns collection interval (seconds). Default 43200 (12h), minimum 3600 (1h) | `43200` |

@@ -159,33 +159,20 @@ export interface OperatorStatus {
    * @example "2025-11-10T15:30:00Z"
    */
   lastUpdate: string;
-  
-  /**
-   * Whether operator is registered with kube9-server
-   * true only when mode="enabled" and registration successful
-   */
-  registered: boolean;
-  
+
   /**
    * Error message if health is degraded or unhealthy
    * null when health is healthy
    */
   error: string | null;
-  
+
   /**
    * Namespace where the operator is running
    * Used by external consumers to discover operator location
    * @example "kube9-system"
    */
   namespace: string;
-  
-  /**
-   * Server-assigned cluster ID
-   * Only present when tier="pro" and registered=true
-   * @example "cls_abc123def456"
-   */
-  clusterId?: string;
-  
+
   /**
    * Collection statistics
    * Tracks data collection activity and status
@@ -208,29 +195,3 @@ export interface OperatorStatus {
    */
   assessment: AssessmentStatusSummary;
 }
-
-/**
- * Registration State
- * Represents the current registration status with kube9-server
- * Used by the status calculator to determine tier and health
- */
-export interface RegistrationState {
-  /**
-   * Whether the operator is currently registered with kube9-server
-   */
-  isRegistered: boolean;
-  
-  /**
-   * Server-assigned cluster ID (only present when registered)
-   * @example "cls_abc123def456"
-   */
-  clusterId?: string;
-  
-  /**
-   * Number of consecutive registration failures
-   * Used for health calculation (degraded if > 3)
-   */
-  consecutiveFailures?: number;
-}
-
-

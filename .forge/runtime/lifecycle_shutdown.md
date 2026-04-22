@@ -35,14 +35,14 @@ The operator implements graceful shutdown handling for `SIGTERM` and `SIGINT` si
    - Clears periodic detection interval
    - Prevents new detection checks
 
-7. **Stop Status Writer**
+7. **Stop Trivy Detection Manager**
+   - Stops `TrivyDetectionManager` if present
+   - Clears periodic detection interval
+
+8. **Stop Status Writer**
    - Stops `StatusWriter`
    - Clears status update interval
    - Prevents further ConfigMap updates
-
-8. **Stop Registration Manager**
-   - Stops `RegistrationManager` if present (optional)
-   - Clears registration timers
 
 9. **Stop Health Server**
    - Stops HTTP health server
@@ -55,7 +55,7 @@ The operator implements graceful shutdown handling for `SIGTERM` and `SIGINT` si
       - `error: "Shutting down"`
       - Current collection stats
       - Current ArgoCD status
-      - Registration state (if available)
+      - Current Trivy detection status
     - Writes final status to ConfigMap via `statusWriter.writeFinalStatus()`
     - Ensures status reflects shutdown state
 

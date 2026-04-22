@@ -152,9 +152,6 @@ export async function assessRun(options: Record<string, unknown>) {
     ensureDb();
     bootstrapAssessmentRegistry();
 
-    if (!process.env.SERVER_URL) {
-      process.env.SERVER_URL = 'https://api.kube9.io';
-    }
     const config = await loadConfig();
     setConfig(config);
 

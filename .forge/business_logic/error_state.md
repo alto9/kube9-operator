@@ -6,28 +6,23 @@
 - All systems operational
 - ConfigMap writes succeeding
 - No critical errors
-- Consecutive registration failures ≤ 3 (if applicable)
 
 ### degraded
-- Non-critical issues detected
-- Consecutive registration failures > 3 (if applicable)
-- System continues operating with limitations
-- Example: Registration retries failing but operator still functional
+- Reserved in the status schema for future use; the operator currently reports `healthy` or `unhealthy` from `calculateHealth()`.
 
 ### unhealthy
 - Critical issues preventing normal operation
 - Cannot write to ConfigMap (RBAC failure)
-- Configuration errors detected
+- Configuration errors detected (when surfaced as critical)
 - System requires immediate attention
 
-**Implementation**: Health calculated by `calculateHealth()` function in `src/status/calculator.ts`:
-- `unhealthy`: `!canWriteConfigMap` OR config errors detected
-- `degraded`: `consecutiveFailures > 3`
-- `healthy`: All other cases
+**Implementation**: Health calculated by `calculateHealth()` in `src/status/calculator.ts`:
+- `unhealthy`: `!canWriteConfigMap` OR critical config-style errors in `lastError`
+- `healthy`: all other cases
 
 ## Extension Behavior
 - **healthy** → enable all tier features, normal operation
-- **degraded** → show warning banner, enable fallback features, continue operation
+- **degraded** → reserved for future operator-side semantics
 - **unhealthy** → show error message, fall back to basic mode (kubectl-only)
 
 ## Stale Status

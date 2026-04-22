@@ -2,22 +2,12 @@ import * as k8s from '@kubernetes/client-node';
 import { kubernetesClient, KubernetesClient } from '../kubernetes/client.js';
 import { calculateStatus } from './calculator.js';
 import { buildAssessmentStatusSummary } from './assessment-summary.js';
-import type { OperatorStatus, RegistrationState } from './types.js';
+import type { OperatorStatus } from './types.js';
 import { getScheduledAssessmentLastRunSnapshot } from '../assessment/scheduled-tick.js';
-import type { RegistrationManager } from '../registration/manager.js';
 import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
 import { argocdStatusTracker } from '../argocd/state.js';
 import { trivyStatusTracker } from '../trivy/state.js';
-
-/**
- * Default registration state when registration manager is not available
- */
-const DEFAULT_REGISTRATION_STATE: RegistrationState = {
-  isRegistered: false,
-  clusterId: undefined,
-  consecutiveFailures: 0,
-};
 
 /**
  * ConfigMap name for operator status
@@ -33,7 +23,7 @@ const STATUS_NAMESPACE = process.env.POD_NAMESPACE || 'kube9-system';
 
 /**
  * Creates or updates a ConfigMap in the specified namespace
- * 
+ *
  * @param namespace - Kubernetes namespace
  * @param name - ConfigMap name
  * @param data - Data to store in ConfigMap
@@ -48,8 +38,6 @@ async function createOrUpdateConfigMap(
   labels: Record<string, string>,
   coreApi: k8s.CoreV1Api
 ): Promise<void> {
-
-  // Create ConfigMap object with proper structure
   const configMap: k8s.V1ConfigMap = {
     apiVersion: 'v1',
     kind: 'ConfigMap',
@@ -62,21 +50,14 @@ async function createOrUpdateConfigMap(
   };
 
   try {
-    // Try to read existing ConfigMap
     await coreApi.readNamespacedConfigMap({ name, namespace });
-    
-    // ConfigMap exists, update it
     await coreApi.replaceNamespacedConfigMap({ name, namespace, body: configMap });
   } catch (error: unknown) {
-    // Check if error is 404 (not found)
-    // kubernetes-client-node throws errors with a 'code' property for HTTP status codes
     const httpError = error as { code?: number; statusCode?: number };
-    
+
     if (httpError.code === 404 || httpError.statusCode === 404) {
-      // ConfigMap doesn't exist, create it
       await coreApi.createNamespacedConfigMap({ namespace, body: configMap });
     } else {
-      // Re-throw other errors
       throw error;
     }
   }
@@ -89,25 +70,17 @@ export class StatusWriter {
   private intervalId: NodeJS.Timeout | null = null;
   private readonly kubernetesClient: KubernetesClient;
   private readonly intervalSeconds: number;
-  private readonly registrationManager?: RegistrationManager;
   private lastWriteError: string | null = null;
 
   /**
    * Creates a new StatusWriter instance
-   * 
+   *
    * @param client - Kubernetes client instance (defaults to singleton)
    * @param intervalSeconds - Update interval in seconds (defaults to 60)
-   * @param registrationManager - Optional registration manager for registration state
    */
-  constructor(
-    client?: KubernetesClient,
-    intervalSeconds: number = 60,
-    registrationManager?: RegistrationManager
-  ) {
-    // Use provided client or fall back to singleton
+  constructor(client?: KubernetesClient, intervalSeconds: number = 60) {
     this.kubernetesClient = client ?? kubernetesClient;
     this.intervalSeconds = intervalSeconds;
-    this.registrationManager = registrationManager;
   }
 
   /**
@@ -120,14 +93,12 @@ export class StatusWriter {
     }
 
     logger.info('Starting status writer', { intervalSeconds: this.intervalSeconds });
-    
-    // Perform initial update immediately
+
     this.updateStatus().catch((error) => {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error('Initial status update failed', { error: errorMessage });
     });
 
-    // Set up periodic updates
     this.intervalId = setInterval(() => {
       this.updateStatus().catch((error) => {
         const errorMessage = error instanceof Error ? error.message : String(error);
@@ -152,15 +123,13 @@ export class StatusWriter {
   /**
    * Writes a final status update to the ConfigMap
    * Used during graceful shutdown to indicate the operator is shutting down
-   * 
+   *
    * @param status - Final status to write
    */
   async writeFinalStatus(status: OperatorStatus): Promise<void> {
     try {
-      // Convert status to JSON string
       const statusJson = JSON.stringify(status, null, 2);
 
-      // Create or update ConfigMap
       await createOrUpdateConfigMap(
         STATUS_NAMESPACE,
         STATUS_CONFIGMAP_NAME,
@@ -175,7 +144,6 @@ export class StatusWriter {
       logger.info('Final status update written: shutting down');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      // Log error but don't throw (non-fatal during shutdown)
       logger.error('Failed to write final status ConfigMap', { error: errorMessage });
     }
   }
@@ -186,23 +154,14 @@ export class StatusWriter {
    */
   private async updateStatus(): Promise<void> {
     try {
-      // Get registration state from manager if available, otherwise use default
-      const registrationState = this.registrationManager
-        ? this.registrationManager.getState()
-        : DEFAULT_REGISTRATION_STATE;
-      
-      const canWriteConfigMap = true; // Assume we can write unless proven otherwise
-      
-      // Get current collection statistics
+      const canWriteConfigMap = true;
+
       const collectionStats = collectionStatsTracker.getStats();
-      
-      // Get current ArgoCD status
       const argocdStatus = argocdStatusTracker.getStatus();
       const trivyStatus = trivyStatusTracker.getStatus();
       const assessmentSummary = buildAssessmentStatusSummary(getScheduledAssessmentLastRunSnapshot());
-      
+
       const status = calculateStatus(
-        registrationState,
         this.lastWriteError,
         canWriteConfigMap,
         collectionStats,
@@ -211,10 +170,8 @@ export class StatusWriter {
         assessmentSummary
       );
 
-      // Convert status to JSON string
       const statusJson = JSON.stringify(status, null, 2);
 
-      // Create or update ConfigMap
       await createOrUpdateConfigMap(
         STATUS_NAMESPACE,
         STATUS_CONFIGMAP_NAME,
@@ -226,27 +183,22 @@ export class StatusWriter {
         this.kubernetesClient.coreApi
       );
 
-      // Clear any previous write errors on success
       if (this.lastWriteError !== null) {
         this.lastWriteError = null;
         logger.info('Status ConfigMap write recovered from previous error');
       }
 
-      // Log successful update at INFO level
       logger.info('Status updated', {
         mode: status.mode,
         tier: status.tier,
         health: status.health,
-        registered: status.registered,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       this.lastWriteError = errorMessage;
-      
-      // Log error but don't throw (non-fatal)
+
       logger.error('Failed to update status ConfigMap', { error: errorMessage });
-      
-      // Log additional context for debugging
+
       if (error instanceof Error && 'response' in error) {
         const k8sError = error as { response?: { statusCode?: number; body?: unknown } };
         if (k8sError.response?.statusCode === 403) {
@@ -256,4 +208,3 @@ export class StatusWriter {
     }
   }
 }
-

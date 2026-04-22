@@ -25,7 +25,7 @@ The kube9-operator binary supports multiple execution modes via Commander.js CLI
 - **Command**: `kube9-operator query <subcommand>`
 - **Purpose**: Query stored data via kubectl exec
 - **Subcommands**:
-  - `query status` - Operator status, health, registration
+  - `query status` - Operator status and health from the status ConfigMap
   - `query events list` - List events with filters (type, severity, since)
   - `query events get <id>` - Get specific event by ID
 - **Behavior**:

@@ -64,5 +64,5 @@ The operator requires the following RBAC permissions:
 ### Security Principles
 - **Minimal permissions**: Operator only requests necessary read-only cluster access
 - **No arbitrary writes**: Operator only writes to its own status ConfigMap
-- **No secrets access**: Operator does not read or write secrets (except in Pro tier for registration)
+- **No secrets access**: Operator does not read or write arbitrary workload secrets beyond what the Helm chart explicitly mounts for optional features
 - **Namespace-scoped writes**: All write operations are scoped to operator namespace

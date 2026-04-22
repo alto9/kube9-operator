@@ -51,7 +51,7 @@ function createMockCheck(overrides: Partial<AssessmentCheck> = {}): AssessmentCh
 const mockKubernetes = {} as Parameters<AssessmentRunner['run']>[0] extends { kubernetes: infer K }
   ? K
   : never;
-const mockConfig = { serverUrl: 'https://test', logLevel: 'info' } as Parameters<
+const mockConfig = { logLevel: 'info' } as Parameters<
   AssessmentRunner['run']
 >[0] extends { config: infer C }
   ? C

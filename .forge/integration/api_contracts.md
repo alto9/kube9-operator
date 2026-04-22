@@ -15,12 +15,11 @@
 - `version`: string - Semantic version (e.g., `"1.0.0"`)
 - `health`: `"healthy"` | `"degraded"` | `"unhealthy"` - Current health status
 - `lastUpdate`: string - ISO 8601 timestamp
-- `registered`: boolean - Whether registered with kube9-server
 - `error`: string | null - Error message if unhealthy
 - `namespace`: string - Operator deployment namespace (used for subsequent operations)
-- `clusterId`: string | undefined - Server-assigned cluster ID (Pro tier only)
 - `collectionStats`: object - Collection activity statistics
 - `argocd`: object - ArgoCD detection status (`detected`, `namespace`, `version`, `lastChecked`)
+- `trivy`: object - Trivy detection status (`detected`, `serverUrl`, `version`, `lastChecked`)
 
 **Discovery Flow**:
 1. Extension checks default namespace (`kube9-system`) for ConfigMap

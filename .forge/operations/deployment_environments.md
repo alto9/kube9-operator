@@ -79,5 +79,5 @@ Shared local cluster for **kube9-vscode** and **kube9-operator** development: [k
 
 ### Environment variables (local)
 
-- Host-run dev: `SERVER_URL`, `LOG_LEVEL`, `DB_PATH` (defaults to `./.kube9-data` when unset in `npm run dev` / `dev:watch`), `POD_NAMESPACE`, `HEALTH_PORT` (default `8080`); see `.env.example`.
+- Host-run dev: `LOG_LEVEL`, `DB_PATH` (defaults to `./.kube9-data` when unset in `npm run dev` / `dev:watch`), `POD_NAMESPACE`, `HEALTH_PORT` (default `8080`); see `.env.example`.
 - In-cluster: override via Helm values (e.g. `logLevel: debug`) on install/upgrade.

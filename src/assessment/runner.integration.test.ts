@@ -69,10 +69,8 @@ const mockKubernetes = {
   },
 } as never;
 const mockConfig = {
-  serverUrl: 'https://test',
   logLevel: 'info',
   statusUpdateIntervalSeconds: 60,
-  reregistrationIntervalHours: 24,
   clusterMetadataIntervalSeconds: 86400,
   resourceInventoryIntervalSeconds: 21600,
   resourceConfigurationPatternsIntervalSeconds: 43200,

@@ -11,40 +11,27 @@ import * as k8s from '@kubernetes/client-node';
 import type { ResourceInventory, CollectionPayload } from '../types.js';
 import { validateResourceInventory } from '../validation.js';
 import { LocalStorage } from '../storage.js';
-import { TransmissionClient } from '../transmission.js';
 import { KubernetesClient } from '../../kubernetes/client.js';
 import { generateClusterIdForCollection } from '../../cluster/identifier.js';
-import type { Config } from '../../config/types.js';
 import { logger } from '../../logging/logger.js';
 
 /**
  * ResourceInventoryCollector collects resource inventory and processes it
- * through validation, local storage, or optional transmission.
+ * through validation and local storage.
  */
 export class ResourceInventoryCollector {
   private readonly kubernetesClient: KubernetesClient;
   private readonly localStorage: LocalStorage;
-  private readonly transmissionClient: TransmissionClient | null;
-  private readonly config: Config;
 
   /**
    * Creates a new ResourceInventoryCollector instance
-   * 
+   *
    * @param kubernetesClient - Kubernetes client for API access
-   * @param localStorage - Local storage for free tier
-   * @param transmissionClient - Transmission client for pro tier (null if free tier)
-   * @param config - Configuration to determine tier
+   * @param localStorage - Local storage for collection payloads
    */
-  constructor(
-    kubernetesClient: KubernetesClient,
-    localStorage: LocalStorage,
-    transmissionClient: TransmissionClient | null,
-    config: Config
-  ) {
+  constructor(kubernetesClient: KubernetesClient, localStorage: LocalStorage) {
     this.kubernetesClient = kubernetesClient;
     this.localStorage = localStorage;
-    this.transmissionClient = transmissionClient;
-    this.config = config;
   }
 
   /**
@@ -118,7 +105,7 @@ export class ResourceInventoryCollector {
   }
 
   /**
-   * Processes collected inventory: validates, wraps in payload, and stores/transmits
+   * Processes collected inventory: validates, wraps in payload, and stores locally
    * 
    * @param inventory - Collected resource inventory
    * @returns Promise that resolves when processing is complete
@@ -139,21 +126,13 @@ export class ResourceInventoryCollector {
         },
       };
 
-      if (this.transmissionClient) {
-        logger.info('Transmitting resource inventory collection', {
-          collectionId: validatedInventory.collectionId,
-        });
-        await this.transmissionClient.transmit(payload);
-      } else {
-        logger.info('Storing resource inventory collection locally', {
-          collectionId: validatedInventory.collectionId,
-        });
-        await this.localStorage.store(payload);
-      }
+      logger.info('Storing resource inventory collection locally', {
+        collectionId: validatedInventory.collectionId,
+      });
+      await this.localStorage.store(payload);
 
       logger.info('Resource inventory collection processed successfully', {
         collectionId: validatedInventory.collectionId,
-        transmitted: this.transmissionClient !== null,
       });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

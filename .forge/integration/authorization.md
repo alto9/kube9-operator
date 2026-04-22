@@ -119,15 +119,10 @@ rules:
 - CLI exec: Direct `kubectl exec` into pod (no ingress)
 - All communication uses standard Kubernetes mechanisms
 
-**No External Server Communication** (Free Tier):
-- Free tier operator makes no outbound connections
-- All data stays within cluster
-- Status exposed via ConfigMap only
-
-**Pro Tier** (Future):
-- Outbound HTTPS connections to `kube9-server` (API)
-- Operator-initiated only (no ingress)
-- Uses standard egress policies
+**Outbound connections (operator core)**:
+- Kubernetes API (in-cluster or via kubeconfig)
+- Optional Trivy HTTP health/version probes when `TRIVY_SERVER_URL` / chart `trivy.serverUrl` is set
+- The operator does not register with or upload collections to `kube9-server`
 
 **Benefits**:
 - No ingress controller required

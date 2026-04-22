@@ -3,11 +3,6 @@
  */
 export interface Config {
   /**
-   * kube9-server base URL
-   */
-  serverUrl: string;
-
-  /**
    * Logging level (info, debug, warn, error)
    */
   logLevel: string;
@@ -16,11 +11,6 @@ export interface Config {
    * How often to update status ConfigMap (seconds)
    */
   statusUpdateIntervalSeconds: number;
-
-  /**
-   * How often to re-register with server (hours)
-   */
-  reregistrationIntervalHours: number;
 
   /**
    * Cluster metadata collection interval in seconds
@@ -89,4 +79,3 @@ export interface Config {
    */
   assessmentTimeoutSeconds?: number;
 }
-

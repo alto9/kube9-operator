@@ -15,10 +15,8 @@ The `status` key contains a JSON string with the following `OperatorStatus` stru
 - `version`: Operator version (semantic versioning, e.g., "1.0.0")
 - `health`: Health status ("healthy" | "degraded" | "unhealthy")
 - `lastUpdate`: ISO 8601 timestamp of last status update
-- `registered`: Boolean indicating registration with kube9-server
 - `error`: Error message string or null
 - `namespace`: Namespace where operator is running
-- `clusterId`: Server-assigned cluster ID (optional, only when tier="pro" and registered=true)
 - `collectionStats`: Collection statistics object
   - `totalSuccessCount`: Number of successful collections
   - `totalFailureCount`: Number of failed collections
@@ -28,6 +26,11 @@ The `status` key contains a JSON string with the following `OperatorStatus` stru
   - `detected`: Boolean indicating if ArgoCD is detected
   - `namespace`: Namespace where ArgoCD is installed (or null)
   - `version`: ArgoCD version string (or null)
+  - `lastChecked`: ISO 8601 timestamp of last detection check
+- `trivy`: Trivy detection status object
+  - `detected`: Boolean indicating if a Trivy server was probed successfully
+  - `serverUrl`: Base URL when detected (or null)
+  - `version`: Trivy server version when available (or null)
   - `lastChecked`: ISO 8601 timestamp of last detection check
 
 ## Extension Flow
