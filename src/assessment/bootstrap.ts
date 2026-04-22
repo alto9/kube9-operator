@@ -83,7 +83,8 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
 /**
  * Bootstrap the assessment check registry with built-in checks.
  * Validates all checks and fails fast on first invalid or duplicate.
- * Safe to call multiple times; duplicate registration will throw.
+ * Calling this when checks are already registered throws; the operator uses
+ * `ensureAssessmentRegistryBootstrapped` in `scheduled-tick.ts` for idempotent wiring.
  */
 export function bootstrapAssessmentRegistry(): void {
   const registry = getRegistry();

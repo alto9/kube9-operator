@@ -1,5 +1,6 @@
 import type { Config } from './types.js';
 import { logger } from '../logging/logger.js';
+import { isPillar } from '../assessment/types.js';
 
 const ASSESSMENT_MODES = ['full', 'pillar', 'single-check'] as const;
 type AssessmentMode = (typeof ASSESSMENT_MODES)[number];
@@ -117,6 +118,22 @@ export async function loadConfig(): Promise<Config> {
     );
   }
 
+  let assessmentPillar: string | undefined;
+  if (assessmentEnabled && assessmentMode === 'pillar') {
+    const raw = process.env.ASSESSMENT_PILLAR?.trim();
+    if (!raw) {
+      throw new Error(
+        'ASSESSMENT_PILLAR is required when ASSESSMENT_ENABLED=true and ASSESSMENT_MODE=pillar'
+      );
+    }
+    if (!isPillar(raw)) {
+      throw new Error(
+        `Invalid ASSESSMENT_PILLAR "${raw}" (must be a Well-Architected pillar id)`
+      );
+    }
+    assessmentPillar = raw;
+  }
+
   const config: Config = {
     serverUrl,
     logLevel,
@@ -131,6 +148,7 @@ export async function loadConfig(): Promise<Config> {
     assessmentEnabled,
     assessmentIntervalSeconds,
     assessmentMode,
+    ...(assessmentPillar !== undefined ? { assessmentPillar } : {}),
     ...(assessmentTimeoutSeconds !== undefined
       ? { assessmentTimeoutSeconds }
       : {}),
@@ -152,10 +170,12 @@ export async function loadConfig(): Promise<Config> {
     assessmentEnabled: config.assessmentEnabled,
     assessmentIntervalSeconds: config.assessmentIntervalSeconds,
     assessmentMode: config.assessmentMode,
+    assessmentPillar: config.assessmentPillar ?? null,
     assessmentTimeoutSeconds: config.assessmentTimeoutSeconds ?? null,
     assessmentEnabledOverridden: process.env.ASSESSMENT_ENABLED !== undefined,
     assessmentIntervalOverridden: process.env.ASSESSMENT_INTERVAL_SECONDS !== undefined,
     assessmentModeOverridden: process.env.ASSESSMENT_MODE !== undefined,
+    assessmentPillarOverridden: process.env.ASSESSMENT_PILLAR !== undefined,
     assessmentTimeoutOverridden: process.env.ASSESSMENT_TIMEOUT_SECONDS !== undefined,
   });
 

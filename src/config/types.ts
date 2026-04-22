@@ -78,6 +78,12 @@ export interface Config {
   assessmentMode: 'full' | 'pillar' | 'single-check';
 
   /**
+   * Well-Architected pillar id when {@link assessmentMode} is `pillar` and scheduling is enabled.
+   * Set from `ASSESSMENT_PILLAR` (e.g. `security`).
+   */
+  assessmentPillar?: string;
+
+  /**
    * Optional wall-clock cap for a scheduled assessment run (seconds).
    * When unset, runners use their own defaults.
    */

@@ -29,6 +29,10 @@ import { SchemaManager } from './database/schema.js';
 import { KubernetesEventWatcher } from './events/kubernetes-event-watcher.js';
 import { EventQueueWorker } from './events/queue-worker.js';
 import { registerEventWatcher } from './events/health.js';
+import {
+  runScheduledAssessmentTick,
+  getScheduledAssessmentLastRunSnapshot,
+} from './assessment/scheduled-tick.js';
 
 // Module-level references for shutdown handler
 let statusWriterInstance: StatusWriter | null = null;
@@ -354,6 +358,45 @@ export async function startOperator() {
         }
       }
     );
+
+    if (config.assessmentEnabled) {
+      collectionScheduler.register(
+        'well-architected-assessment',
+        config.assessmentIntervalSeconds,
+        3600,
+        3600,
+        async () => {
+          const startTime = Date.now();
+          try {
+            await runScheduledAssessmentTick({
+              kubernetes: kubernetesClient,
+              config,
+              logger,
+              getTrivyStatus: () => trivyStatusTracker.getStatus(),
+            });
+            const durationSeconds = (Date.now() - startTime) / 1000;
+            const snap = getScheduledAssessmentLastRunSnapshot();
+            const tickOk = snap?.outcome !== 'failed';
+            recordCollection(
+              'well-architected-assessment',
+              tickOk ? 'success' : 'failed',
+              durationSeconds
+            );
+            if (tickOk) {
+              collectionStatsTracker.recordSuccess('well-architected-assessment');
+            } else {
+              collectionStatsTracker.recordFailure('well-architected-assessment');
+            }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            logger.error('Scheduled assessment tick failed unexpectedly', { error: errorMessage });
+            const durationSeconds = (Date.now() - startTime) / 1000;
+            recordCollection('well-architected-assessment', 'failed', durationSeconds);
+            collectionStatsTracker.recordFailure('well-architected-assessment');
+          }
+        }
+      );
+    }
     
       // Start scheduler
       collectionScheduler.start();

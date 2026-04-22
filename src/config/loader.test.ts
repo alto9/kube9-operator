@@ -6,6 +6,7 @@ const trackedKeys = [
   'ASSESSMENT_ENABLED',
   'ASSESSMENT_INTERVAL_SECONDS',
   'ASSESSMENT_MODE',
+  'ASSESSMENT_PILLAR',
   'ASSESSMENT_TIMEOUT_SECONDS',
 ] as const;
 
@@ -35,6 +36,7 @@ describe('loadConfig — assessment schedule', () => {
     delete process.env.ASSESSMENT_ENABLED;
     delete process.env.ASSESSMENT_INTERVAL_SECONDS;
     delete process.env.ASSESSMENT_MODE;
+    delete process.env.ASSESSMENT_PILLAR;
     delete process.env.ASSESSMENT_TIMEOUT_SECONDS;
   });
 
@@ -54,10 +56,25 @@ describe('loadConfig — assessment schedule', () => {
     process.env.ASSESSMENT_ENABLED = 'true';
     process.env.ASSESSMENT_INTERVAL_SECONDS = '7200';
     process.env.ASSESSMENT_MODE = 'pillar';
+    process.env.ASSESSMENT_PILLAR = 'security';
     const config = await loadConfig();
     expect(config.assessmentEnabled).toBe(true);
     expect(config.assessmentIntervalSeconds).toBe(7200);
     expect(config.assessmentMode).toBe('pillar');
+    expect(config.assessmentPillar).toBe('security');
+  });
+
+  it('rejects pillar mode when enabled without ASSESSMENT_PILLAR', async () => {
+    process.env.ASSESSMENT_ENABLED = 'true';
+    process.env.ASSESSMENT_MODE = 'pillar';
+    await expect(loadConfig()).rejects.toThrow(/ASSESSMENT_PILLAR/);
+  });
+
+  it('rejects invalid ASSESSMENT_PILLAR', async () => {
+    process.env.ASSESSMENT_ENABLED = 'true';
+    process.env.ASSESSMENT_MODE = 'pillar';
+    process.env.ASSESSMENT_PILLAR = 'not-a-pillar';
+    await expect(loadConfig()).rejects.toThrow(/ASSESSMENT_PILLAR/);
   });
 
   it('rejects interval below minimum', async () => {
