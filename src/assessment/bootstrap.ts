@@ -46,6 +46,10 @@ import {
   kube9OperatorDeploymentStrategyCheck,
   gitopsDeliverySignalsCheck,
 } from './checks/operational-excellence/index.js';
+import {
+  resourceEfficiencySignalsCheck,
+  workloadConsolidationSignalsCheck,
+} from './checks/sustainability/index.js';
 
 /** Built-in checks to register at bootstrap (extend as checks are implemented) */
 const BUILT_IN_CHECKS: AssessmentCheck[] = [
@@ -78,6 +82,8 @@ const BUILT_IN_CHECKS: AssessmentCheck[] = [
   kube9OperatorAuditSignalsCheck,
   kube9OperatorDeploymentStrategyCheck,
   gitopsDeliverySignalsCheck,
+  resourceEfficiencySignalsCheck,
+  workloadConsolidationSignalsCheck,
 ];
 
 /**

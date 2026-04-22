@@ -335,4 +335,114 @@ describe('AssessmentRunner (integration)', () => {
       'cost-optimization.spot-instance-usage',
     ]);
   });
+
+  it('sustainability pillar checks are discoverable and runnable', async () => {
+    resetRegistry();
+    bootstrapAssessmentRegistry();
+
+    const checks = resolveChecksForRun({
+      mode: AssessmentRunMode.Pillar,
+      pillarFilter: Pillar.Sustainability,
+    });
+
+    expect(checks.length).toBe(2);
+    expect(checks.map((c) => c.id)).toEqual([
+      'sustainability.resource-efficiency-signals',
+      'sustainability.workload-consolidation-signals',
+    ]);
+
+    const sustainabilityMockK8s = {
+      coreApi: {
+        listNode: async () => ({
+          items: [
+            {
+              metadata: { name: 'integration-node' },
+              spec: { unschedulable: false },
+              status: {
+                allocatable: { cpu: '8', memory: '16Gi' },
+              },
+            },
+          ],
+        }),
+        listPodForAllNamespaces: async () => ({ items: [] }),
+        listConfigMapForAllNamespaces: async () => ({ items: [] }),
+        listResourceQuotaForAllNamespaces: async () => ({ items: [] }),
+        listLimitRangeForAllNamespaces: async () => ({ items: [] }),
+        listNamespace: async () => ({ items: [] }),
+      },
+      appsApi: {
+        listDeploymentForAllNamespaces: async () => ({
+          items: [
+            {
+              metadata: { namespace: 'default', name: 'integration-app' },
+              spec: {
+                replicas: 2,
+                template: {
+                  spec: {
+                    containers: [
+                      {
+                        name: 'main',
+                        resources: {
+                          requests: { cpu: '2', memory: '4Gi' },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            },
+          ],
+        }),
+        listStatefulSetForAllNamespaces: async () => ({ items: [] }),
+        listDaemonSetForAllNamespaces: async () => ({ items: [] }),
+      },
+      autoscalingApi: {
+        listHorizontalPodAutoscalerForAllNamespaces: async () => ({ items: [] }),
+      },
+      policyApi: {
+        listPodDisruptionBudgetForAllNamespaces: async () => ({ items: [] }),
+      },
+      apiextensionsApi: {
+        readCustomResourceDefinition: async () => ({
+          metadata: { name: 'externalsecrets.external-secrets.io' },
+        }),
+        listCustomResourceDefinition: async () => ({ body: { items: [] }, items: [] }),
+      },
+      customObjectsApi: {
+        listClusterCustomObject: async () => ({ body: { items: [] }, items: [] }),
+      },
+      rbacApi: {
+        listClusterRole: async () => ({ items: [] }),
+        listRoleForAllNamespaces: async () => ({ items: [] }),
+        listClusterRoleBinding: async () => ({ items: [] }),
+        listRoleBindingForAllNamespaces: async () => ({ items: [] }),
+      },
+    } as never;
+
+    const storage = new AssessmentRepository();
+    const runner = new AssessmentRunner({
+      kubernetes: sustainabilityMockK8s,
+      config: mockConfig,
+      logger: mockLogger,
+      storage,
+    });
+
+    const record = await runner.run({
+      runId: 'run-sustainability-pillar',
+      mode: AssessmentRunMode.Pillar,
+      pillarFilter: Pillar.Sustainability,
+    });
+
+    expect(record.run_id).toBe('run-sustainability-pillar');
+    expect(record.total_checks).toBe(2);
+    expect(record.completed_checks).toBe(2);
+    expect(record.passed_checks).toBe(2);
+
+    const history = storage.queryHistory({ filters: { run_id: 'run-sustainability-pillar' } });
+    expect(history).toHaveLength(2);
+    expect(history.map((h) => h.check_id)).toEqual([
+      'sustainability.resource-efficiency-signals',
+      'sustainability.workload-consolidation-signals',
+    ]);
+  });
 });
