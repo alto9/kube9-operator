@@ -80,6 +80,48 @@ export interface TrivyStatus {
 }
 
 /**
+ * Bounded summary of the last scheduled Well-Architected assessment tick.
+ * Intended for the status ConfigMap: counts and metadata only (no per-check arrays).
+ */
+export interface AssessmentStatusSummary {
+  /**
+   * ISO 8601 completion time of the last scheduled tick, or null before any tick completes.
+   */
+  lastScheduledCompletedAt: string | null;
+
+  /**
+   * `none` until the first scheduled tick finishes in this process; then `success` or `failed`.
+   */
+  lastScheduledOutcome: 'none' | 'success' | 'failed';
+
+  /**
+   * Assessment lifecycle state from the last successful run record; null if none or last tick failed.
+   */
+  lastScheduledRunState: string | null;
+
+  /**
+   * Storage run id for the last successful tick; null when there has been no successful completion.
+   */
+  lastScheduledRunId: string | null;
+
+  /**
+   * Aggregate check counts from the last successful run; all zero when no successful completion yet.
+   */
+  lastScheduledTotals: {
+    totalChecks: number;
+    completedChecks: number;
+    passedChecks: number;
+    failedChecks: number;
+    warningChecks: number;
+  };
+
+  /**
+   * Short error summary when `lastScheduledOutcome` is `failed`; otherwise null.
+   */
+  lastScheduledError: string | null;
+}
+
+/**
  * Operator Status Model
  * Represents the current state and health of the kube9 operator
  */
@@ -160,6 +202,11 @@ export interface OperatorStatus {
    * Optional Trivy server awareness (does not install or manage Trivy)
    */
   trivy: TrivyStatus;
+
+  /**
+   * Last scheduled Well-Architected assessment tick summary (bounded; no check result list).
+   */
+  assessment: AssessmentStatusSummary;
 }
 
 /**

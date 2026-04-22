@@ -4,7 +4,9 @@ import type {
   CollectionStats,
   ArgoCDStatus,
   TrivyStatus,
+  AssessmentStatusSummary,
 } from './types.js';
+import { DEFAULT_ASSESSMENT_STATUS_SUMMARY } from './assessment-summary.js';
 
 /**
  * Operator version (semver)
@@ -60,6 +62,7 @@ const DEFAULT_TRIVY_STATUS: TrivyStatus = {
  * @param collectionStats - Optional collection statistics (defaults to zero stats)
  * @param argocdStatus - Optional ArgoCD detection status (defaults to not detected)
  * @param trivyStatus - Optional Trivy detection status (defaults to unavailable)
+ * @param assessmentSummary - Bounded last scheduled assessment tick summary (defaults to no-run state)
  * @returns OperatorStatus object with current operator state
  */
 export function calculateStatus(
@@ -73,7 +76,8 @@ export function calculateStatus(
     lastSuccessTime: null
   },
   argocdStatus: ArgoCDStatus = DEFAULT_ARGOCD_STATUS,
-  trivyStatus: TrivyStatus = DEFAULT_TRIVY_STATUS
+  trivyStatus: TrivyStatus = DEFAULT_TRIVY_STATUS,
+  assessmentSummary: AssessmentStatusSummary = DEFAULT_ASSESSMENT_STATUS_SUMMARY
 ): OperatorStatus {
   const { isRegistered, clusterId, consecutiveFailures = 0 } = registrationState;
   
@@ -129,7 +133,11 @@ export function calculateStatus(
       lastSuccessTime: collectionStats.lastSuccessTime
     },
     argocd: argocdStatus,
-    trivy: trivyStatus
+    trivy: trivyStatus,
+    assessment: {
+      ...assessmentSummary,
+      lastScheduledTotals: { ...assessmentSummary.lastScheduledTotals },
+    },
   };
   
   // Include clusterId when registration reports an id

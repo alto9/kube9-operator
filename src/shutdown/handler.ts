@@ -11,6 +11,8 @@ import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
 import { argocdStatusTracker } from '../argocd/state.js';
 import { trivyStatusTracker } from '../trivy/state.js';
+import { buildAssessmentStatusSummary } from '../status/assessment-summary.js';
+import { getScheduledAssessmentLastRunSnapshot } from '../assessment/scheduled-tick.js';
 
 /**
  * Operator version (semver)
@@ -115,6 +117,7 @@ export async function gracefulShutdown(
     const collectionStats = collectionStatsTracker.getStats();
     const argocdStatus = argocdStatusTracker.getStatus();
     const trivyStatus = trivyStatusTracker.getStatus();
+    const assessmentSummary = buildAssessmentStatusSummary(getScheduledAssessmentLastRunSnapshot());
     const finalStatus: OperatorStatus = {
       mode: "operated",
       tier: "free",
@@ -131,7 +134,11 @@ export async function gracefulShutdown(
         lastSuccessTime: collectionStats.lastSuccessTime
       },
       argocd: argocdStatus,
-      trivy: trivyStatus
+      trivy: trivyStatus,
+      assessment: {
+        ...assessmentSummary,
+        lastScheduledTotals: { ...assessmentSummary.lastScheduledTotals },
+      },
     };
 
     // Include clusterId if registered
