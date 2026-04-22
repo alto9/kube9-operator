@@ -1,7 +1,9 @@
 import * as k8s from '@kubernetes/client-node';
 import { kubernetesClient, KubernetesClient } from '../kubernetes/client.js';
 import { calculateStatus } from './calculator.js';
+import { buildAssessmentStatusSummary } from './assessment-summary.js';
 import type { OperatorStatus, RegistrationState } from './types.js';
+import { getScheduledAssessmentLastRunSnapshot } from '../assessment/scheduled-tick.js';
 import type { RegistrationManager } from '../registration/manager.js';
 import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
@@ -197,6 +199,7 @@ export class StatusWriter {
       // Get current ArgoCD status
       const argocdStatus = argocdStatusTracker.getStatus();
       const trivyStatus = trivyStatusTracker.getStatus();
+      const assessmentSummary = buildAssessmentStatusSummary(getScheduledAssessmentLastRunSnapshot());
       
       const status = calculateStatus(
         registrationState,
@@ -204,7 +207,8 @@ export class StatusWriter {
         canWriteConfigMap,
         collectionStats,
         argocdStatus,
-        trivyStatus
+        trivyStatus,
+        assessmentSummary
       );
 
       // Convert status to JSON string

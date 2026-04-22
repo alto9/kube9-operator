@@ -58,5 +58,35 @@ export interface Config {
    * Default: 30 days
    */
   eventRetentionErrorCriticalDays: number;
+
+  /**
+   * When true, the operator may run periodic Well-Architected assessments on a schedule.
+   * Default: false (scheduler wiring is optional until enabled in deployment).
+   */
+  assessmentEnabled: boolean;
+
+  /**
+   * Seconds between scheduled assessment runs when {@link assessmentEnabled} is true.
+   * Default: 86400 (24 hours). Minimum: 3600 (1 hour).
+   */
+  assessmentIntervalSeconds: number;
+
+  /**
+   * Default run mode for scheduled assessments (CLI may still override per run).
+   * One of: full, pillar, single-check
+   */
+  assessmentMode: 'full' | 'pillar' | 'single-check';
+
+  /**
+   * Well-Architected pillar id when {@link assessmentMode} is `pillar` and scheduling is enabled.
+   * Set from `ASSESSMENT_PILLAR` (e.g. `security`).
+   */
+  assessmentPillar?: string;
+
+  /**
+   * Optional wall-clock cap for a scheduled assessment run (seconds).
+   * When unset, runners use their own defaults.
+   */
+  assessmentTimeoutSeconds?: number;
 }
 

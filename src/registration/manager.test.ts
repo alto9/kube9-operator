@@ -24,6 +24,9 @@ function createMockConfig(): Config {
     workloadImageScanIntervalSeconds: 86400,
     eventRetentionInfoWarningDays: 7,
     eventRetentionErrorCriticalDays: 30,
+    assessmentEnabled: false,
+    assessmentIntervalSeconds: 86400,
+    assessmentMode: 'full',
   };
 }
 

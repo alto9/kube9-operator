@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import type { RegistrationState, CollectionStats, ArgoCDStatus, TrivyStatus } from './types.js';
+import type {
+  RegistrationState,
+  CollectionStats,
+  ArgoCDStatus,
+  TrivyStatus,
+  AssessmentStatusSummary,
+} from './types.js';
+import { DEFAULT_ASSESSMENT_STATUS_SUMMARY, buildAssessmentStatusSummary } from './assessment-summary.js';
 
 describe('calculateStatus', () => {
   let originalPodNamespace: string | undefined;
@@ -47,6 +54,10 @@ describe('calculateStatus', () => {
       expect(status.collectionStats).toBeDefined();
       expect(status.argocd).toBeDefined();
       expect(status.trivy).toBeDefined();
+      expect(status.assessment).toEqual({
+        ...DEFAULT_ASSESSMENT_STATUS_SUMMARY,
+        lastScheduledTotals: { ...DEFAULT_ASSESSMENT_STATUS_SUMMARY.lastScheduledTotals },
+      });
     });
 
     it('should return free tier when registered', async () => {
@@ -221,6 +232,108 @@ describe('calculateStatus', () => {
 
       expect(status.argocd).toEqual(argocdStatus);
       expect(status.namespace).toBe('kube9-system');
+    });
+  });
+
+  describe('assessment summary', () => {
+    it('should use stable defaults when no assessment run has occurred', async () => {
+      delete process.env.POD_NAMESPACE;
+
+      vi.resetModules();
+      const { calculateStatus } = await import('./calculator.js');
+      const status = calculateStatus();
+
+      expect(status.assessment.lastScheduledOutcome).toBe('none');
+      expect(status.assessment.lastScheduledCompletedAt).toBe(null);
+      expect(status.assessment.lastScheduledRunState).toBe(null);
+      expect(status.assessment.lastScheduledRunId).toBe(null);
+      expect(status.assessment.lastScheduledError).toBe(null);
+      expect(status.assessment.lastScheduledTotals).toEqual({
+        totalChecks: 0,
+        completedChecks: 0,
+        passedChecks: 0,
+        failedChecks: 0,
+        warningChecks: 0,
+      });
+    });
+
+    it('should include provided assessment summary in status', async () => {
+      delete process.env.POD_NAMESPACE;
+
+      vi.resetModules();
+      const { calculateStatus } = await import('./calculator.js');
+      const summary: AssessmentStatusSummary = {
+        lastScheduledCompletedAt: '2025-06-01T12:00:00Z',
+        lastScheduledOutcome: 'success',
+        lastScheduledRunState: 'completed',
+        lastScheduledRunId: 'run-1',
+        lastScheduledTotals: {
+          totalChecks: 10,
+          completedChecks: 10,
+          passedChecks: 8,
+          failedChecks: 1,
+          warningChecks: 1,
+        },
+        lastScheduledError: null,
+      };
+
+      const status = calculateStatus(
+        { isRegistered: false, consecutiveFailures: 0 },
+        null,
+        true,
+        {
+          totalSuccessCount: 0,
+          totalFailureCount: 0,
+          collectionsStoredCount: 0,
+          lastSuccessTime: null,
+        },
+        {
+          detected: false,
+          namespace: null,
+          version: null,
+          lastChecked: '2025-01-01T00:00:00Z',
+        },
+        {
+          detected: false,
+          serverUrl: null,
+          version: null,
+          lastChecked: '2025-01-01T00:00:00Z',
+        },
+        summary
+      );
+
+      expect(status.assessment).toEqual({
+        ...summary,
+        lastScheduledTotals: { ...summary.lastScheduledTotals },
+      });
+    });
+
+    it('should map scheduled snapshot via buildAssessmentStatusSummary', () => {
+      const fromSuccess = buildAssessmentStatusSummary({
+        startedAt: '2025-06-01T11:00:00Z',
+        completedAt: '2025-06-01T12:00:00Z',
+        outcome: 'success',
+        runId: 'abc',
+        state: 'completed',
+        totalChecks: 5,
+        completedChecks: 5,
+        passedChecks: 4,
+        failedChecks: 0,
+        warningChecks: 1,
+      });
+      expect(fromSuccess.lastScheduledOutcome).toBe('success');
+      expect(fromSuccess.lastScheduledRunId).toBe('abc');
+      expect(fromSuccess.lastScheduledTotals.passedChecks).toBe(4);
+
+      const fromFail = buildAssessmentStatusSummary({
+        startedAt: '2025-06-01T11:00:00Z',
+        completedAt: '2025-06-01T12:00:01Z',
+        outcome: 'failed',
+        errorMessage: 'boom',
+      });
+      expect(fromFail.lastScheduledOutcome).toBe('failed');
+      expect(fromFail.lastScheduledError).toBe('boom');
+      expect(fromFail.lastScheduledTotals.totalChecks).toBe(0);
     });
   });
 

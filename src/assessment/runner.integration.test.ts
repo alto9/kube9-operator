@@ -79,6 +79,9 @@ const mockConfig = {
   workloadImageScanIntervalSeconds: 86400,
   eventRetentionInfoWarningDays: 7,
   eventRetentionErrorCriticalDays: 30,
+  assessmentEnabled: false,
+  assessmentIntervalSeconds: 86400,
+  assessmentMode: 'full',
 } as never;
 const mockLogger = {
   info: () => {},

@@ -89,6 +89,16 @@ metrics:
     # Minimum: 3600 seconds (1 hour)
     workloadImageScan: 86400
 
+# Periodic Well-Architected assessment scheduling (operator reads these at startup)
+assessment:
+  enabled: false
+  # Interval between scheduled runs when enabled (seconds). Minimum: 3600
+  intervalSeconds: 86400
+  # Default mode for scheduled runs: full | pillar | single-check
+  mode: full
+  # Optional per-run timeout in seconds (omit to use runner defaults)
+  # timeoutSeconds: 3600
+
 # Event storage configuration
 events:
   # PersistentVolume configuration for event database

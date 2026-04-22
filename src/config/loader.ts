@@ -1,5 +1,39 @@
 import type { Config } from './types.js';
 import { logger } from '../logging/logger.js';
+import { isPillar } from '../assessment/types.js';
+
+const ASSESSMENT_MODES = ['full', 'pillar', 'single-check'] as const;
+type AssessmentMode = (typeof ASSESSMENT_MODES)[number];
+
+const ASSESSMENT_INTERVAL_MIN_SECONDS = 3600;
+const ASSESSMENT_TIMEOUT_MIN_SECONDS = 60;
+const ASSESSMENT_TIMEOUT_MAX_SECONDS = 7 * 24 * 3600;
+
+function parseEnvBool(raw: string | undefined, defaultValue: boolean): boolean {
+  if (raw === undefined || raw === '') {
+    return defaultValue;
+  }
+  const v = raw.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(v)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'off'].includes(v)) {
+    return false;
+  }
+  throw new Error(
+    `Invalid boolean for ASSESSMENT_ENABLED: "${raw}" (use true/false, 1/0, yes/no)`
+  );
+}
+
+function parseAssessmentMode(raw: string | undefined): AssessmentMode {
+  const v = (raw ?? 'full').trim().toLowerCase();
+  if ((ASSESSMENT_MODES as readonly string[]).includes(v)) {
+    return v as AssessmentMode;
+  }
+  throw new Error(
+    `ASSESSMENT_MODE must be one of ${ASSESSMENT_MODES.join(', ')}; got "${raw ?? ''}"`
+  );
+}
 
 /**
  * Load configuration from environment variables
@@ -43,10 +77,61 @@ export async function loadConfig(): Promise<Config> {
     process.env.EVENT_RETENTION_ERROR_CRITICAL_DAYS || '30',
     10
   );
+  const assessmentEnabled = parseEnvBool(process.env.ASSESSMENT_ENABLED, false);
+  const assessmentIntervalSeconds = parseInt(
+    process.env.ASSESSMENT_INTERVAL_SECONDS || '86400',
+    10
+  );
+  const assessmentMode = parseAssessmentMode(process.env.ASSESSMENT_MODE);
+  const assessmentTimeoutRaw = process.env.ASSESSMENT_TIMEOUT_SECONDS;
+  let assessmentTimeoutSeconds: number | undefined;
+  if (assessmentTimeoutRaw !== undefined && assessmentTimeoutRaw !== '') {
+    assessmentTimeoutSeconds = parseInt(assessmentTimeoutRaw, 10);
+    if (
+      Number.isNaN(assessmentTimeoutSeconds) ||
+      assessmentTimeoutSeconds < ASSESSMENT_TIMEOUT_MIN_SECONDS ||
+      assessmentTimeoutSeconds > ASSESSMENT_TIMEOUT_MAX_SECONDS
+    ) {
+      throw new Error(
+        `ASSESSMENT_TIMEOUT_SECONDS must be an integer between ${ASSESSMENT_TIMEOUT_MIN_SECONDS} and ${ASSESSMENT_TIMEOUT_MAX_SECONDS}`
+      );
+    }
+  }
 
   // Validate required environment variables
   if (!serverUrl) {
     throw new Error('SERVER_URL environment variable is required');
+  }
+
+  if (
+    Number.isNaN(assessmentIntervalSeconds) ||
+    assessmentIntervalSeconds < ASSESSMENT_INTERVAL_MIN_SECONDS
+  ) {
+    throw new Error(
+      `ASSESSMENT_INTERVAL_SECONDS must be an integer >= ${ASSESSMENT_INTERVAL_MIN_SECONDS}`
+    );
+  }
+
+  if (assessmentEnabled && assessmentMode === 'single-check') {
+    throw new Error(
+      'ASSESSMENT_MODE cannot be "single-check" for scheduled assessments (no check id context)'
+    );
+  }
+
+  let assessmentPillar: string | undefined;
+  if (assessmentEnabled && assessmentMode === 'pillar') {
+    const raw = process.env.ASSESSMENT_PILLAR?.trim();
+    if (!raw) {
+      throw new Error(
+        'ASSESSMENT_PILLAR is required when ASSESSMENT_ENABLED=true and ASSESSMENT_MODE=pillar'
+      );
+    }
+    if (!isPillar(raw)) {
+      throw new Error(
+        `Invalid ASSESSMENT_PILLAR "${raw}" (must be a Well-Architected pillar id)`
+      );
+    }
+    assessmentPillar = raw;
   }
 
   const config: Config = {
@@ -60,6 +145,13 @@ export async function loadConfig(): Promise<Config> {
     workloadImageScanIntervalSeconds,
     eventRetentionInfoWarningDays,
     eventRetentionErrorCriticalDays,
+    assessmentEnabled,
+    assessmentIntervalSeconds,
+    assessmentMode,
+    ...(assessmentPillar !== undefined ? { assessmentPillar } : {}),
+    ...(assessmentTimeoutSeconds !== undefined
+      ? { assessmentTimeoutSeconds }
+      : {}),
   };
 
   // Log configured intervals (and any overrides)
@@ -72,6 +164,19 @@ export async function loadConfig(): Promise<Config> {
     resourceConfigurationPatternsOverridden: process.env.RESOURCE_CONFIGURATION_PATTERNS_INTERVAL_SECONDS !== undefined,
     workloadImageScanIntervalSeconds: config.workloadImageScanIntervalSeconds,
     workloadImageScanOverridden: process.env.WORKLOAD_IMAGE_SCAN_INTERVAL_SECONDS !== undefined,
+  });
+
+  logger.info('Assessment schedule configured', {
+    assessmentEnabled: config.assessmentEnabled,
+    assessmentIntervalSeconds: config.assessmentIntervalSeconds,
+    assessmentMode: config.assessmentMode,
+    assessmentPillar: config.assessmentPillar ?? null,
+    assessmentTimeoutSeconds: config.assessmentTimeoutSeconds ?? null,
+    assessmentEnabledOverridden: process.env.ASSESSMENT_ENABLED !== undefined,
+    assessmentIntervalOverridden: process.env.ASSESSMENT_INTERVAL_SECONDS !== undefined,
+    assessmentModeOverridden: process.env.ASSESSMENT_MODE !== undefined,
+    assessmentPillarOverridden: process.env.ASSESSMENT_PILLAR !== undefined,
+    assessmentTimeoutOverridden: process.env.ASSESSMENT_TIMEOUT_SECONDS !== undefined,
   });
 
   return config;
