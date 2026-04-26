@@ -13,6 +13,28 @@ const EXTERNAL_SECRETS_CRD = 'externalsecrets.external-secrets.io';
 const REMEDIATION =
   'Consider installing external-secrets operator for secure secret management from Vault, AWS Secrets Manager, etc.';
 
+function isNotFoundError(err: unknown): boolean {
+  const error = err as {
+    response?: { statusCode?: number; body?: { reason?: string } };
+    statusCode?: number;
+    body?: { reason?: string };
+    message?: string;
+  };
+
+  const statusCode = error.response?.statusCode ?? error.statusCode;
+  if (statusCode === 404) {
+    return true;
+  }
+
+  const reason = error.response?.body?.reason ?? error.body?.reason;
+  if (reason === 'NotFound') {
+    return true;
+  }
+
+  const message = error.message ?? (err instanceof Error ? err.message : String(err));
+  return message.includes('NotFound') || message.includes('not found') || message.includes('HTTP-Code: 404');
+}
+
 export const externalSecretsUsageCheck: AssessmentCheck = {
   id: 'security.external-secrets-usage',
   name: 'External Secrets Usage',
@@ -35,16 +57,15 @@ export const externalSecretsUsageCheck: AssessmentCheck = {
         remediation: REMEDIATION,
       };
     } catch (err: unknown) {
-      const statusCode = (err as { response?: { statusCode?: number } })?.response?.statusCode;
-      if (statusCode === 404) {
+      if (isNotFoundError(err)) {
         return {
           checkId: 'security.external-secrets-usage',
           checkName: 'External Secrets Usage',
           pillar: Pillar.Security,
-          status: CheckStatus.Warning,
-          severity: Severity.Medium,
+          status: CheckStatus.Skipped,
+          severity: Severity.Low,
           message:
-            'external-secrets operator not detected. Consider using it for secure secret management.',
+            'external-secrets CRD not detected; skipping check in this cluster.',
           remediation: REMEDIATION,
         };
       }

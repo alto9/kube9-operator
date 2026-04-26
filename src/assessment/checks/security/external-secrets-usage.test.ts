@@ -39,7 +39,7 @@ describe('externalSecretsUsageCheck', () => {
     expect(result.message).toContain('external-secrets operator is installed');
   });
 
-  it('returns Warning when ExternalSecret CRD does not exist (404)', async () => {
+  it('returns Skipped when ExternalSecret CRD does not exist (404)', async () => {
     const err = new Error('Not Found');
     (err as { response?: { statusCode?: number } }).response = { statusCode: 404 };
 
@@ -50,8 +50,19 @@ describe('externalSecretsUsageCheck', () => {
     });
 
     const result = await externalSecretsUsageCheck.run(ctx);
-    expect(result.status).toBe(CheckStatus.Warning);
-    expect(result.message).toContain('external-secrets operator not detected');
+    expect(result.status).toBe(CheckStatus.Skipped);
+    expect(result.message).toContain('CRD not detected');
+  });
+
+  it('returns Skipped when NotFound appears in kubernetes-style error message', async () => {
+    const ctx = createMockContext({
+      readCustomResourceDefinition: async () => {
+        throw new Error('HTTP-Code: 404 customresourcedefinitions.apiextensions.k8s.io "externalsecrets.external-secrets.io" not found');
+      },
+    });
+
+    const result = await externalSecretsUsageCheck.run(ctx);
+    expect(result.status).toBe(CheckStatus.Skipped);
   });
 
   it('throws when CRD read fails with non-404', async () => {

@@ -26,7 +26,34 @@ function workloadKey(namespace: string, kind: string, name: string): WorkloadKey
 }
 
 function toErrorStatusCode(err: unknown): number | undefined {
-  return (err as { response?: { statusCode?: number } })?.response?.statusCode;
+  const error = err as {
+    response?: { statusCode?: number; body?: { reason?: string } };
+    statusCode?: number;
+    body?: { reason?: string };
+    message?: string;
+  };
+  return error.response?.statusCode ?? error.statusCode;
+}
+
+function isNotFoundError(err: unknown): boolean {
+  const error = err as {
+    response?: { statusCode?: number; body?: { reason?: string } };
+    statusCode?: number;
+    body?: { reason?: string };
+    message?: string;
+  };
+
+  if (toErrorStatusCode(err) === 404) {
+    return true;
+  }
+
+  const reason = error.response?.body?.reason ?? error.body?.reason;
+  if (reason === 'NotFound') {
+    return true;
+  }
+
+  const message = error.message ?? (err instanceof Error ? err.message : String(err));
+  return message.includes('NotFound') || message.includes('not found') || message.includes('HTTP-Code: 404');
 }
 
 function isInScopeNamespace(namespace: string | undefined): namespace is string {
@@ -60,14 +87,14 @@ export const vpaConfigurationSanityCheck: AssessmentCheck = {
     try {
       await ctx.kubernetes.apiextensionsApi.readCustomResourceDefinition({ name: VPA_CRD });
     } catch (err: unknown) {
-      if (toErrorStatusCode(err) === 404) {
+      if (isNotFoundError(err)) {
         return {
           checkId: CHECK_ID,
           checkName: CHECK_NAME,
           pillar: Pillar.PerformanceEfficiency,
-          status: CheckStatus.Warning,
+          status: CheckStatus.Skipped,
           severity: Severity.Low,
-          message: 'VPA CRD not detected; skipping VPA object validation.',
+          message: 'VPA CRD not detected; skipping check in this cluster.',
           remediation: REMEDIATION,
         };
       }

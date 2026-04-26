@@ -40,12 +40,12 @@ function createMockCtx(args?: {
 }
 
 describe('vpaConfigurationSanityCheck', () => {
-  it('warns with clear message when VPA CRD is missing', async () => {
+  it('skips with clear message when VPA CRD is missing', async () => {
     const result = await vpaConfigurationSanityCheck.run(createMockCtx({ vpaCrdMissing: true }));
 
     expect(result.checkId).toBe('performance-efficiency.vpa-configuration-sanity');
     expect(result.pillar).toBe(Pillar.PerformanceEfficiency);
-    expect(result.status).toBe(CheckStatus.Warning);
+    expect(result.status).toBe(CheckStatus.Skipped);
     expect(result.message).toContain('VPA CRD not detected');
   });
 
