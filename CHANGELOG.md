@@ -1,3 +1,31 @@
+# [2.0.0](https://github.com/alto9/kube9-operator/compare/v1.9.0...v2.0.0) (2026-04-26)
+
+
+### Bug Fixes
+
+* **chart:** place Deployment pod template alongside selector ([d2fbbed](https://github.com/alto9/kube9-operator/commit/d2fbbeda1cd7a9aea0e8fc75bb400061d26bcf7d))
+
+
+### Features
+
+* **assessment:** add GitOps delivery signals operational check ([ee4dc42](https://github.com/alto9/kube9-operator/commit/ee4dc42b0f320f3dc644cad3b6e9eb7dbc0edb66)), closes [#113](https://github.com/alto9/kube9-operator/issues/113)
+* **assessment:** add kube9-operator deployment strategy check ([6e90400](https://github.com/alto9/kube9-operator/commit/6e90400cffb7954c48bef0000c2888f19e322aea)), closes [#112](https://github.com/alto9/kube9-operator/issues/112)
+* **assessment:** add logging and audit operational-excellence checks ([e4d0250](https://github.com/alto9/kube9-operator/commit/e4d0250b28f8870a908ec073af63dbeca7682961)), closes [#111](https://github.com/alto9/kube9-operator/issues/111) [#20](https://github.com/alto9/kube9-operator/issues/20)
+* **assessment:** add operational-excellence observability checks ([a8e7fa7](https://github.com/alto9/kube9-operator/commit/a8e7fa71d59774dad39557aeefc899b2f5b52eef)), closes [alto9/kube9-operator#110](https://github.com/alto9/kube9-operator/issues/110)
+* **assessment:** add periodic scheduler execution path ([f12a46f](https://github.com/alto9/kube9-operator/commit/f12a46f1432eb70549bffc6f4def448e0925b6a8))
+* **assessment:** add sustainability resource-efficiency check ([080b456](https://github.com/alto9/kube9-operator/commit/080b4563bfece69054fccbde1133a09fc801964e)), closes [#120](https://github.com/alto9/kube9-operator/issues/120) [#21](https://github.com/alto9/kube9-operator/issues/21)
+* **assessment:** add sustainability workload consolidation check ([7b11c00](https://github.com/alto9/kube9-operator/commit/7b11c00f2edd43b12e66d5ceecee85ff6027ac95))
+* **config:** add assessment schedule to Helm and loadConfig ([6dda375](https://github.com/alto9/kube9-operator/commit/6dda3753edb0ef7a54d12560a05e5338e73fb6d2)), closes [#122](https://github.com/alto9/kube9-operator/issues/122)
+* **operator:** remove registration and kube9-server transmission ([09365fa](https://github.com/alto9/kube9-operator/commit/09365fac7e30c547e21e134655a01c616d34fc0f))
+* **status:** add assessment summary to operator status ConfigMap ([b99b961](https://github.com/alto9/kube9-operator/commit/b99b96126e73fed9ff1ac9eb245ef1fdf6f71176)), closes [#125](https://github.com/alto9/kube9-operator/issues/125)
+
+
+### BREAKING CHANGES
+
+* **operator:** Status JSON no longer includes registered or clusterId.
+Helm values serverUrl and reregistrationIntervalHours are removed; deployment
+no longer sets SERVER_URL or REREGISTRATION_INTERVAL_HOURS.
+
 # [Unreleased]
 
 ### BREAKING CHANGES (documentation)
