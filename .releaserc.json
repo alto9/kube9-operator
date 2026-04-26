@@ -18,7 +18,8 @@
     [
       "@semantic-release/exec",
       {
-        "prepareCmd": "sed -i 's/^version: .*/version: ${nextRelease.version}/' charts/kube9-operator/Chart.yaml && sed -i 's/^appVersion: .*/appVersion: \"${nextRelease.version}\"/' charts/kube9-operator/Chart.yaml && sed -i 's/^  tag: .*/  tag: \"${nextRelease.version}\"/' charts/kube9-operator/values.yaml"
+        "prepareCmd": "sed -i 's/^version: .*/version: ${nextRelease.version}/' charts/kube9-operator/Chart.yaml && sed -i 's/^appVersion: .*/appVersion: \"${nextRelease.version}\"/' charts/kube9-operator/Chart.yaml && sed -i 's/^  tag: .*/  tag: \"${nextRelease.version}\"/' charts/kube9-operator/values.yaml",
+        "successCmd": "echo released > .semantic-release-success"
       }
     ],
     [
