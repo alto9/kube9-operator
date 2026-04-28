@@ -8,6 +8,8 @@ type AssessmentMode = (typeof ASSESSMENT_MODES)[number];
 const ASSESSMENT_INTERVAL_MIN_SECONDS = 3600;
 const ASSESSMENT_TIMEOUT_MIN_SECONDS = 60;
 const ASSESSMENT_TIMEOUT_MAX_SECONDS = 7 * 24 * 3600;
+/** Matches operator scheduler minimum for `resource-inventory` (30 minutes). */
+const RESOURCE_INVENTORY_INTERVAL_MIN_SECONDS = 1800;
 
 /**
  * Parses a positive base-10 integer from env or a default string.
@@ -75,7 +77,8 @@ export async function loadConfig(): Promise<Config> {
   const resourceInventoryIntervalSeconds = parsePositiveInt(
     'RESOURCE_INVENTORY_INTERVAL_SECONDS',
     process.env.RESOURCE_INVENTORY_INTERVAL_SECONDS,
-    '21600'
+    '21600',
+    RESOURCE_INVENTORY_INTERVAL_MIN_SECONDS
   );
   const resourceConfigurationPatternsIntervalSeconds = parsePositiveInt(
     'RESOURCE_CONFIGURATION_PATTERNS_INTERVAL_SECONDS',

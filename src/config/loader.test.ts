@@ -3,6 +3,7 @@ import { loadConfig } from './loader.js';
 
 const trackedKeys = [
   'SERVER_URL',
+  'RESOURCE_INVENTORY_INTERVAL_SECONDS',
   'ASSESSMENT_ENABLED',
   'ASSESSMENT_INTERVAL_SECONDS',
   'ASSESSMENT_MODE',
@@ -33,6 +34,7 @@ describe('loadConfig — assessment schedule', () => {
   beforeEach(() => {
     stashEnv();
     process.env.SERVER_URL = 'https://config-test.example';
+    delete process.env.RESOURCE_INVENTORY_INTERVAL_SECONDS;
     delete process.env.ASSESSMENT_ENABLED;
     delete process.env.ASSESSMENT_INTERVAL_SECONDS;
     delete process.env.ASSESSMENT_MODE;
@@ -128,5 +130,42 @@ describe('loadConfig — assessment schedule', () => {
   it('rejects invalid ASSESSMENT_ENABLED', async () => {
     process.env.ASSESSMENT_ENABLED = 'sure';
     await expect(loadConfig()).rejects.toThrow(/ASSESSMENT_ENABLED/);
+  });
+});
+
+describe('loadConfig — resource inventory interval', () => {
+  beforeEach(() => {
+    stashEnv();
+    delete process.env.RESOURCE_INVENTORY_INTERVAL_SECONDS;
+    delete process.env.ASSESSMENT_ENABLED;
+    delete process.env.ASSESSMENT_INTERVAL_SECONDS;
+    delete process.env.ASSESSMENT_MODE;
+    delete process.env.ASSESSMENT_PILLAR;
+    delete process.env.ASSESSMENT_TIMEOUT_SECONDS;
+  });
+
+  afterEach(() => {
+    restoreEnv();
+  });
+
+  it('defaults to 21600 seconds (6 hours)', async () => {
+    const config = await loadConfig();
+    expect(config.resourceInventoryIntervalSeconds).toBe(21600);
+  });
+
+  it('accepts the minimum interval (1800 seconds)', async () => {
+    process.env.RESOURCE_INVENTORY_INTERVAL_SECONDS = '1800';
+    const config = await loadConfig();
+    expect(config.resourceInventoryIntervalSeconds).toBe(1800);
+  });
+
+  it('rejects values below the minimum', async () => {
+    process.env.RESOURCE_INVENTORY_INTERVAL_SECONDS = '1799';
+    await expect(loadConfig()).rejects.toThrow(/RESOURCE_INVENTORY_INTERVAL_SECONDS/);
+  });
+
+  it('rejects non-numeric values', async () => {
+    process.env.RESOURCE_INVENTORY_INTERVAL_SECONDS = 'not-a-number';
+    await expect(loadConfig()).rejects.toThrow(/RESOURCE_INVENTORY_INTERVAL_SECONDS/);
   });
 });
