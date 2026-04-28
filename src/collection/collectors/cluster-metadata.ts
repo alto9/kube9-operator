@@ -49,12 +49,18 @@ export class ClusterMetadataCollector {
       // Strip 'v' prefix if present
       const kubernetesVersion = gitVersion.startsWith('v') ? gitVersion.substring(1) : gitVersion;
 
-      // Generate cluster identifier
-      const clusterId = generateClusterIdForCollection();
-
-      // Get node list for counting and metadata extraction
+      // Get node list for counting and metadata extraction (fail fast before cluster ID when unusable)
       const nodeList = await this.kubernetesClient.coreApi.listNode();
       const nodeCount = nodeList.items?.length || 0;
+
+      if (nodeCount === 0) {
+        const message =
+          'Cluster metadata collection failed: node list is empty (expected at least one node for a valid cluster-metadata payload; validation requires nodeCount 1–10000). Check RBAC for nodes/list and cluster state.';
+        logger.error(message);
+        throw new Error(message);
+      }
+
+      const clusterId = generateClusterIdForCollection();
 
       // Detect provider from node labels
       const provider = this.detectProvider(nodeList);
@@ -133,7 +139,7 @@ export class ClusterMetadataCollector {
         error: errorMessage,
         collectionId: metadata.collectionId,
       });
-      // Don't throw - graceful degradation
+      throw error;
     }
   }
 
