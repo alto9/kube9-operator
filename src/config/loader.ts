@@ -9,6 +9,26 @@ const ASSESSMENT_INTERVAL_MIN_SECONDS = 3600;
 const ASSESSMENT_TIMEOUT_MIN_SECONDS = 60;
 const ASSESSMENT_TIMEOUT_MAX_SECONDS = 7 * 24 * 3600;
 
+/**
+ * Parses a positive base-10 integer from env or a default string.
+ * Rejects NaN and values below `minInclusive` so misconfigured Helm/env fails fast at startup.
+ */
+function parsePositiveInt(
+  envName: string,
+  raw: string | undefined,
+  defaultValue: string,
+  minInclusive: number = 1
+): number {
+  const s = raw !== undefined && raw !== '' ? raw : defaultValue;
+  const n = parseInt(s, 10);
+  if (Number.isNaN(n) || n < minInclusive) {
+    throw new Error(
+      `${envName} must be an integer >= ${minInclusive}${raw !== undefined && raw !== '' ? ` (got "${raw}")` : ''}`
+    );
+  }
+  return n;
+}
+
 function parseEnvBool(raw: string | undefined, defaultValue: boolean): boolean {
   if (raw === undefined || raw === '') {
     return defaultValue;
@@ -42,38 +62,47 @@ function parseAssessmentMode(raw: string | undefined): AssessmentMode {
  */
 export async function loadConfig(): Promise<Config> {
   const logLevel = process.env.LOG_LEVEL || 'info';
-  const statusUpdateIntervalSeconds = parseInt(
-    process.env.STATUS_UPDATE_INTERVAL_SECONDS || '60',
-    10
+  const statusUpdateIntervalSeconds = parsePositiveInt(
+    'STATUS_UPDATE_INTERVAL_SECONDS',
+    process.env.STATUS_UPDATE_INTERVAL_SECONDS,
+    '60'
   );
-  const clusterMetadataIntervalSeconds = parseInt(
-    process.env.CLUSTER_METADATA_INTERVAL_SECONDS || '86400',
-    10
+  const clusterMetadataIntervalSeconds = parsePositiveInt(
+    'CLUSTER_METADATA_INTERVAL_SECONDS',
+    process.env.CLUSTER_METADATA_INTERVAL_SECONDS,
+    '86400'
   );
-  const resourceInventoryIntervalSeconds = parseInt(
-    process.env.RESOURCE_INVENTORY_INTERVAL_SECONDS || '21600',
-    10
+  const resourceInventoryIntervalSeconds = parsePositiveInt(
+    'RESOURCE_INVENTORY_INTERVAL_SECONDS',
+    process.env.RESOURCE_INVENTORY_INTERVAL_SECONDS,
+    '21600'
   );
-  const resourceConfigurationPatternsIntervalSeconds = parseInt(
-    process.env.RESOURCE_CONFIGURATION_PATTERNS_INTERVAL_SECONDS || '43200',
-    10
+  const resourceConfigurationPatternsIntervalSeconds = parsePositiveInt(
+    'RESOURCE_CONFIGURATION_PATTERNS_INTERVAL_SECONDS',
+    process.env.RESOURCE_CONFIGURATION_PATTERNS_INTERVAL_SECONDS,
+    '43200'
   );
-  const workloadImageScanIntervalSeconds = parseInt(
-    process.env.WORKLOAD_IMAGE_SCAN_INTERVAL_SECONDS || '86400',
-    10
+  const workloadImageScanIntervalSeconds = parsePositiveInt(
+    'WORKLOAD_IMAGE_SCAN_INTERVAL_SECONDS',
+    process.env.WORKLOAD_IMAGE_SCAN_INTERVAL_SECONDS,
+    '86400'
   );
-  const eventRetentionInfoWarningDays = parseInt(
-    process.env.EVENT_RETENTION_INFO_WARNING_DAYS || '7',
-    10
+  const eventRetentionInfoWarningDays = parsePositiveInt(
+    'EVENT_RETENTION_INFO_WARNING_DAYS',
+    process.env.EVENT_RETENTION_INFO_WARNING_DAYS,
+    '7'
   );
-  const eventRetentionErrorCriticalDays = parseInt(
-    process.env.EVENT_RETENTION_ERROR_CRITICAL_DAYS || '30',
-    10
+  const eventRetentionErrorCriticalDays = parsePositiveInt(
+    'EVENT_RETENTION_ERROR_CRITICAL_DAYS',
+    process.env.EVENT_RETENTION_ERROR_CRITICAL_DAYS,
+    '30'
   );
   const assessmentEnabled = parseEnvBool(process.env.ASSESSMENT_ENABLED, false);
-  const assessmentIntervalSeconds = parseInt(
-    process.env.ASSESSMENT_INTERVAL_SECONDS || '86400',
-    10
+  const assessmentIntervalSeconds = parsePositiveInt(
+    'ASSESSMENT_INTERVAL_SECONDS',
+    process.env.ASSESSMENT_INTERVAL_SECONDS,
+    '86400',
+    ASSESSMENT_INTERVAL_MIN_SECONDS
   );
   const assessmentMode = parseAssessmentMode(process.env.ASSESSMENT_MODE);
   const assessmentTimeoutRaw = process.env.ASSESSMENT_TIMEOUT_SECONDS;
@@ -89,15 +118,6 @@ export async function loadConfig(): Promise<Config> {
         `ASSESSMENT_TIMEOUT_SECONDS must be an integer between ${ASSESSMENT_TIMEOUT_MIN_SECONDS} and ${ASSESSMENT_TIMEOUT_MAX_SECONDS}`
       );
     }
-  }
-
-  if (
-    Number.isNaN(assessmentIntervalSeconds) ||
-    assessmentIntervalSeconds < ASSESSMENT_INTERVAL_MIN_SECONDS
-  ) {
-    throw new Error(
-      `ASSESSMENT_INTERVAL_SECONDS must be an integer >= ${ASSESSMENT_INTERVAL_MIN_SECONDS}`
-    );
   }
 
   if (assessmentEnabled && assessmentMode === 'single-check') {

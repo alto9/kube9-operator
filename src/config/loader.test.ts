@@ -82,6 +82,20 @@ describe('loadConfig — assessment schedule', () => {
     await expect(loadConfig()).rejects.toThrow(/ASSESSMENT_INTERVAL_SECONDS/);
   });
 
+  it('rejects non-numeric collection interval env', async () => {
+    const prev = process.env.CLUSTER_METADATA_INTERVAL_SECONDS;
+    process.env.CLUSTER_METADATA_INTERVAL_SECONDS = 'not-a-number';
+    try {
+      await expect(loadConfig()).rejects.toThrow(/CLUSTER_METADATA_INTERVAL_SECONDS/);
+    } finally {
+      if (prev === undefined) {
+        delete process.env.CLUSTER_METADATA_INTERVAL_SECONDS;
+      } else {
+        process.env.CLUSTER_METADATA_INTERVAL_SECONDS = prev;
+      }
+    }
+  });
+
   it('rejects invalid mode string', async () => {
     process.env.ASSESSMENT_MODE = 'nope';
     await expect(loadConfig()).rejects.toThrow(/ASSESSMENT_MODE/);
