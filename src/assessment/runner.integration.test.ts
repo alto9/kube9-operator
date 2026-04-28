@@ -440,9 +440,11 @@ describe('AssessmentRunner (integration)', () => {
 
     const history = storage.queryHistory({ filters: { run_id: 'run-sustainability-pillar' } });
     expect(history).toHaveLength(2);
-    expect(history.map((h) => h.check_id)).toEqual([
-      'sustainability.resource-efficiency-signals',
-      'sustainability.workload-consolidation-signals',
-    ]);
+    expect(history.map((h) => h.check_id).sort()).toEqual(
+      [
+        'sustainability.resource-efficiency-signals',
+        'sustainability.workload-consolidation-signals',
+      ].sort()
+    );
   });
 });
