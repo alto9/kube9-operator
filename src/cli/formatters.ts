@@ -37,6 +37,18 @@ function formatTable(data: any, format: string = 'table'): string {
     return renderTable(headers, rows, isCompact);
   }
 
+  // Handle collections list (summaries)
+  if (data.collections && Array.isArray(data.collections)) {
+    const headers = ['COLLECTION_ID', 'CLUSTER_ID', 'TYPE', 'COLLECTED_AT'];
+    const rows = data.collections.map((c: any) => [
+      truncate(c.collection_id, isCompact ? 20 : 36),
+      truncate(c.cluster_id, isCompact ? 18 : 36),
+      truncate(c.type, isCompact ? 24 : 36),
+      formatDate(c.collected_at),
+    ]);
+    return renderTable(headers, rows, isCompact);
+  }
+
   // Handle assessments list
   if (data.assessments && Array.isArray(data.assessments)) {
     const headers = ['RUN_ID', 'MODE', 'STATE', 'TOTAL', 'PASSED', 'FAILED', 'REQUESTED'];

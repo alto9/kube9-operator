@@ -13,6 +13,7 @@ import {
   assessHistory,
 } from './commands/assess.js';
 import { listVulnerabilities, summarizeVulnerabilities } from './commands/vulnerabilities.js';
+import { listCollections, getCollection } from './commands/collections.js';
 
 /**
  * Create the assess command structure
@@ -138,6 +139,31 @@ export function createQueryCommands(): Command {
     .description('Summary counts by severity from stored findings')
     .option('--format <format>', 'Output format (json|yaml|table|compact)', 'json')
     .action(summarizeVulnerabilities);
+
+  const collections = query
+    .command('collections')
+    .description('Query persisted M8 collection payloads (SQLite)');
+
+  collections
+    .command('list')
+    .description('List stored collections')
+    .option(
+      '--type <type>',
+      'Filter by type: cluster-metadata, resource-inventory, resource-configuration-patterns'
+    )
+    .option('--cluster-id <id>', 'Filter by cluster id')
+    .option('--since <date>', 'Collected on/after (ISO 8601)')
+    .option('--until <date>', 'Collected before (ISO 8601)')
+    .option('--limit <number>', 'Limit number of results', '50')
+    .option('--offset <number>', 'Skip number of results', '0')
+    .option('--format <format>', 'Output format (json|yaml|table|compact)', 'json')
+    .action(listCollections);
+
+  collections
+    .command('get <collectionId>')
+    .description('Get full collection payload by id')
+    .option('--format <format>', 'Output format (json|yaml|table|compact)', 'json')
+    .action(getCollection);
 
   return query;
 }

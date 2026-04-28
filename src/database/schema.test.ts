@@ -116,7 +116,7 @@ describe('SchemaManager', () => {
     
     expect(versions.length).toBeGreaterThanOrEqual(1);
     expect(versions[0]?.version).toBe(1);
-    expect(schema.getVersion()).toBeGreaterThanOrEqual(3);
+    expect(schema.getVersion()).toBeGreaterThanOrEqual(4);
   });
 
   it('schema version has correct fields', () => {
@@ -256,7 +256,7 @@ describe('SchemaManager', () => {
     const versionAfter = schema.getVersion();
     
     expect(versionBefore).toBe(versionAfter);
-    expect(versionAfter).toBeGreaterThanOrEqual(3);
+    expect(versionAfter).toBeGreaterThanOrEqual(4);
   });
 
   it('creates image_scans and image_vulnerabilities when migrating to v3', () => {
@@ -285,13 +285,39 @@ describe('SchemaManager', () => {
     expect(scanFk?.to).toBe('scan_id');
   });
 
+  it('creates collections table when migrating to v4', () => {
+    const schema = new SchemaManager();
+    schema.initialize();
+
+    const manager = DatabaseManager.getInstance();
+    const db = manager.getDatabase();
+
+    const result = db
+      .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='collections'`)
+      .get() as { name: string } | undefined;
+
+    expect(result?.name).toBe('collections');
+
+    const columns = db.prepare(`PRAGMA table_info(collections)`).all() as Array<{ name: string }>;
+    const columnNames = columns.map((col) => col.name);
+    expect(columnNames).toEqual(
+      expect.arrayContaining([
+        'collection_id',
+        'cluster_id',
+        'type',
+        'collected_at',
+        'payload_json',
+      ])
+    );
+  });
+
   it('migration runs cleanly on fresh database', () => {
     DatabaseManager.reset();
     const schema = new SchemaManager();
     schema.initialize();
     
-    expect(schema.getVersion()).toBeGreaterThanOrEqual(3);
-    
+    expect(schema.getVersion()).toBeGreaterThanOrEqual(4);
+
     const manager = DatabaseManager.getInstance();
     const db = manager.getDatabase();
     

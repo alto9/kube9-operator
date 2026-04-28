@@ -15,14 +15,11 @@ describe('createQueryCommands', () => {
     expect(queryCmd.description()).toBe('Query operator data');
   });
 
-  it('structure is extensible', () => {
+  it('includes collections query commands', () => {
     const queryCmd = createQueryCommands();
-    
-    // Verify it's a Command instance with commands array
-    expect('commands' in queryCmd).toBe(true);
-    
-    // Initially should have no subcommands (they will be added in later stories)
-    const subcommands = queryCmd.commands;
-    expect(Array.isArray(subcommands)).toBe(true);
+    const names = queryCmd.commands.map((c) => c.name());
+    expect(names).toContain('collections');
+    expect(names).toContain('events');
+    expect(names).toContain('vulnerabilities');
   });
 });

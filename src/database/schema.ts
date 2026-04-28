@@ -7,7 +7,7 @@ import Database from 'better-sqlite3';
 import { logger } from '../logging/logger.js';
 
 /** Latest schema version - bump when adding migrations */
-const LATEST_SCHEMA_VERSION = 3;
+const LATEST_SCHEMA_VERSION = 4;
 
 /**
  * SchemaManager handles database schema initialization and migrations
@@ -53,6 +53,10 @@ export class SchemaManager {
       {
         version: 3,
         apply: () => this.migrateToV3(),
+      },
+      {
+        version: 4,
+        apply: () => this.migrateToV4(),
       },
     ];
 
@@ -156,6 +160,29 @@ export class SchemaManager {
       CREATE INDEX IF NOT EXISTS idx_image_vulnerabilities_scan_id ON image_vulnerabilities(scan_id);
       CREATE INDEX IF NOT EXISTS idx_image_vulnerabilities_severity ON image_vulnerabilities(severity);
       CREATE INDEX IF NOT EXISTS idx_image_vulnerabilities_vulnerability_id ON image_vulnerabilities(vulnerability_id);
+    `);
+  }
+
+  /**
+   * Migration v4: M8 collection payloads (SQLite persistence + CLI query path).
+   */
+  private migrateToV4(): void {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS collections (
+        collection_id TEXT PRIMARY KEY,
+        cluster_id TEXT NOT NULL,
+        type TEXT NOT NULL CHECK (type IN (
+          'cluster-metadata',
+          'resource-inventory',
+          'resource-configuration-patterns'
+        )),
+        collected_at TEXT NOT NULL,
+        payload_json TEXT NOT NULL
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_collections_cluster_id ON collections(cluster_id);
+      CREATE INDEX IF NOT EXISTS idx_collections_type ON collections(type);
+      CREATE INDEX IF NOT EXISTS idx_collections_collected_at ON collections(collected_at DESC);
     `);
   }
 
