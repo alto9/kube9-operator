@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 import type { ResourceConfigurationPatternsData } from '../types.js';
 import {
@@ -940,6 +940,42 @@ it('processServiceType - handles multiple services', () => {
   expect(data.services.serviceTypes.LoadBalancer).toBe(1);
   expect(data.services.portsPerService).toEqual([1, 2, 1, 0]);
   expect(data.services.totalServices).toBe(4);
+});
+
+// M8 / #54 acceptance: collector must walk cluster-scoped List APIs for core workloads + services.
+it('ResourceConfigurationPatternsCollector - collect() invokes cluster-wide pod, workload, and service list APIs', async () => {
+  const listPods = vi.fn(async () => ({ body: { items: [] } }));
+  const listServices = vi.fn(async () => ({ body: { items: [] } }));
+  const listDeployments = vi.fn(async () => ({ body: { items: [] } }));
+  const listStatefulSets = vi.fn(async () => ({ body: { items: [] } }));
+  const listDaemonSets = vi.fn(async () => ({ body: { items: [] } }));
+
+  const mockKubernetesClient = {
+    coreApi: {
+      listPodForAllNamespaces: listPods,
+      listServiceForAllNamespaces: listServices,
+    },
+    appsApi: {
+      listDeploymentForAllNamespaces: listDeployments,
+      listStatefulSetForAllNamespaces: listStatefulSets,
+      listDaemonSetForAllNamespaces: listDaemonSets,
+    },
+  };
+
+  const mockLocalStorage = { store: async () => {} };
+
+  const collector = new ResourceConfigurationPatternsCollector(
+    mockKubernetesClient as any,
+    mockLocalStorage as any
+  );
+
+  await collector.collect();
+
+  expect(listPods).toHaveBeenCalledTimes(1);
+  expect(listDeployments).toHaveBeenCalledTimes(1);
+  expect(listStatefulSets).toHaveBeenCalledTimes(1);
+  expect(listDaemonSets).toHaveBeenCalledTimes(1);
+  expect(listServices).toHaveBeenCalledTimes(1);
 });
 
 // ResourceConfigurationPatternsCollector tests
