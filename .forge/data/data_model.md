@@ -170,4 +170,20 @@ Normalized vulnerability findings linked to a scan (and optionally to originatin
 
 **Retention:** Deleting a row in `image_scans` cascades to `image_vulnerabilities` (`ON DELETE CASCADE`). Optional time-based pruning is implemented in application code (`ImageScanRepository.deleteScansCompletedBefore`); there is no DB-level TTL trigger.
 
-**Note:** Collections and argocd_apps tables are planned for future milestones (M8/M9) but are not yet implemented in the current schema.
+### collections (M8)
+
+Stores serialized periodic collection payloads (`ClusterMetadata`, `ResourceInventory`, `ResourceConfigurationPatternsData`) wrapped as `CollectionPayload` in `src/collection/types.ts`. Persisted JSON must match `CollectionPayload` at write time.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| collection_id | TEXT | PRIMARY KEY | Matches payload `collectionId` (e.g. `coll_*`) |
+| cluster_id | TEXT | NOT NULL | Cluster identifier `cls_*` |
+| type | TEXT | NOT NULL | `cluster-metadata` \| `resource-inventory` \| `resource-configuration-patterns` |
+| collected_at | TEXT | NOT NULL | ISO 8601 (payload `timestamp`) |
+| payload_json | TEXT | NOT NULL | Full `CollectionPayload` document as JSON |
+
+**Indexes (suggested):** `cluster_id`, `type`, `collected_at` (DESC).
+
+**Status:** Target schema and CLI read path captured in [issue #53](https://github.com/alto9/kube9-operator/issues/53); implement before or with collector tickets (#50–#54, #51).
+
+**Note:** The `argocd_apps` table remains planned for a later milestone (e.g. M9); see integration docs.

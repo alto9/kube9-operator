@@ -3,7 +3,7 @@
 How data is modeled, persisted, serialized, and kept consistent.
 
 - **Status**: ConfigMap (kube9-operator-status)
-- **Rich data**: SQLite at /data/kube9.db (events, assessments; argocd_apps and collections in M8/M9)
+- **Rich data**: SQLite at /data/kube9.db (events, assessments; vulnerability scans; collections table specified in M8 — [issue #53](https://github.com/alto9/kube9-operator/issues/53); argocd_apps planned)
 - **Query**: CLI via kubectl exec
 
 ## Child Docs
