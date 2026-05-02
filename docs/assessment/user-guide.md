@@ -73,6 +73,10 @@ Full assessment:
 kubectl exec -n kube9-system "$POD" -- kube9-operator assess run --mode full --format table
 ```
 
+When this command is executed **inside the operator pod**, results are written to the operator's SQLite database on the pod volume. The **main** `kube9-operator` process reads the latest completed run from that database whenever it refreshes the `kube9-operator-status` ConfigMap (see `statusUpdateIntervalSeconds`, default 60s). So you can run an on-demand assessment and see it in the VS Code report (or `kubectl get configmap kube9-operator-status ... | jq .assessment`) shortly after, without waiting for the scheduled assessment tick.
+
+`kubectl exec` starts a separate process: it does **not** share memory with the long-running operator, which is why status is merged from SQLite rather than from the CLI process directly.
+
 Single pillar (example: security):
 
 ```bash

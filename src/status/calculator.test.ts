@@ -5,7 +5,8 @@ import type {
   TrivyStatus,
   AssessmentStatusSummary,
 } from './types.js';
-import { DEFAULT_ASSESSMENT_STATUS_SUMMARY, buildAssessmentStatusSummary } from './assessment-summary.js';
+import { DEFAULT_ASSESSMENT_STATUS_SUMMARY, DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT, buildAssessmentStatusSummary } from './assessment-summary.js';
+import type { AssessmentRunRecord } from '../assessment/contracts.js';
 
 describe('calculateStatus', () => {
   let originalPodNamespace: string | undefined;
@@ -295,6 +296,47 @@ describe('calculateStatus', () => {
       });
       expect(withChecks.lastScheduledChecks).toEqual([
         { checkId: 'c1', checkName: 'Check One', pillar: 'security', status: 'passing' },
+      ]);
+    });
+
+    it('prefers newer persisted run over older in-memory snapshot', () => {
+      const snap = {
+        startedAt: '2025-01-01T09:00:00Z',
+        completedAt: '2025-01-01T10:00:00Z',
+        outcome: 'success' as const,
+        runId: 'scheduled-old',
+        state: 'completed',
+        totalChecks: 1,
+        completedChecks: 1,
+        passedChecks: 1,
+        failedChecks: 0,
+        warningChecks: 0,
+      };
+      const db: AssessmentRunRecord = {
+        run_id: 'cli-newer',
+        mode: 'full',
+        state: 'completed',
+        requested_at: '2025-01-01T11:00:00.000Z',
+        completed_at: '2025-01-01T12:00:00.000Z',
+        total_checks: 2,
+        completed_checks: 2,
+        passed_checks: 2,
+        failed_checks: 0,
+        warning_checks: 0,
+        skipped_checks: 0,
+        error_checks: 0,
+        timeout_checks: 0,
+      };
+      const s = buildAssessmentStatusSummary(
+        snap,
+        DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT,
+        db,
+        [{ checkId: 'x', checkName: 'X', pillar: 'security', status: 'passing' }]
+      );
+      expect(s.lastScheduledRunId).toBe('cli-newer');
+      expect(s.lastScheduledTotals.totalChecks).toBe(2);
+      expect(s.lastScheduledChecks).toEqual([
+        { checkId: 'x', checkName: 'X', pillar: 'security', status: 'passing' },
       ]);
     });
   });

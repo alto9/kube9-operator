@@ -87,7 +87,7 @@ metrics:
 
 # Periodic Well-Architected assessment scheduling (operator reads these at startup)
 assessment:
-  enabled: false
+  enabled: true
   # Interval between scheduled runs when enabled (seconds). Minimum: 3600
   intervalSeconds: 86400
   # Default mode for scheduled runs: full | pillar | single-check

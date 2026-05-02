@@ -102,7 +102,7 @@ spec:
         # Periodic assessment schedule (see assessment.* in values.yaml)
         {{- $assessment := .Values.assessment | default dict }}
         - name: ASSESSMENT_ENABLED
-          value: {{ $assessment.enabled | default false | quote }}
+          value: {{ $assessment.enabled | default true | quote }}
         - name: ASSESSMENT_INTERVAL_SECONDS
           value: {{ $assessment.intervalSeconds | default 86400 | quote }}
         - name: ASSESSMENT_MODE

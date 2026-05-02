@@ -12,6 +12,31 @@ import {
   AssessmentLifecycleStateSchema,
   AssessmentRunModeSchema,
 } from '../assessment/contracts.js';
+import type { AssessmentCheckStatusSummary } from '../status/types.js';
+
+/** Keep per-check detail small for the status ConfigMap (unicode-safe length cap). */
+const CHECK_STATUS_FIELD_MAX = 420;
+
+function truncateForStatusPayload(value: string | null | undefined): string | undefined {
+  if (value == null) {
+    return undefined;
+  }
+  const t = value.trim();
+  if (t === '') {
+    return undefined;
+  }
+  if (t.length <= CHECK_STATUS_FIELD_MAX) {
+    return t;
+  }
+  return `${t.slice(0, CHECK_STATUS_FIELD_MAX - 3)}...`;
+}
+
+function shouldPublishCheckDetail(status: string): boolean {
+  const s = status.toLowerCase();
+  return (
+    s === 'failing' || s === 'warning' || s === 'error' || s === 'timeout' || s === 'skipped'
+  );
+}
 
 /** Row from assessments table */
 export interface AssessmentRow {
@@ -290,6 +315,45 @@ export class AssessmentRepository {
     }
     const result = this.db.prepare(query).get(...params) as { count: number };
     return result.count;
+  }
+
+  /**
+   * One summary row per distinct check_id for a run (for status ConfigMap / extension).
+   */
+  public getCheckSummariesForRun(runId: string): AssessmentCheckStatusSummary[] {
+    const rows = this.queryHistory({ filters: { run_id: runId }, limit: 512 });
+    const byCheckId = new Map<string, (typeof rows)[number]>();
+    for (const row of rows) {
+      if (!byCheckId.has(row.check_id)) {
+        byCheckId.set(row.check_id, row);
+      }
+    }
+    const summaries: AssessmentCheckStatusSummary[] = Array.from(byCheckId.values()).map((row) => {
+      const base: AssessmentCheckStatusSummary = {
+        checkId: row.check_id,
+        checkName: row.check_name ?? row.check_id,
+        pillar: row.pillar,
+        status: row.status,
+      };
+      if (!shouldPublishCheckDetail(row.status)) {
+        return base;
+      }
+      const message = truncateForStatusPayload(row.message);
+      const remediation = truncateForStatusPayload(row.remediation);
+      return {
+        ...base,
+        ...(message !== undefined ? { message } : {}),
+        ...(remediation !== undefined ? { remediation } : {}),
+      };
+    });
+    summaries.sort((a, b) => {
+      const byPillar = a.pillar.localeCompare(b.pillar);
+      if (byPillar !== 0) {
+        return byPillar;
+      }
+      return a.checkName.localeCompare(b.checkName);
+    });
+    return summaries;
   }
 
   private rowToRunRecord(row: AssessmentRow): AssessmentRunRecord {

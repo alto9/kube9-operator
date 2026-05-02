@@ -81,13 +81,17 @@ export interface TrivyStatus {
 
 /**
  * One row per check from the last successful scheduled assessment run.
- * Kept small for the status ConfigMap (id, display name, pillar, status only).
+ * Detail fields are bounded before publishing (see assessment-repository.getCheckSummariesForRun).
  */
 export interface AssessmentCheckStatusSummary {
   checkId: string;
   checkName: string;
   pillar: string;
   status: string;
+  /** Short explanation when the check did not pass (omitted for passing checks when empty). */
+  message?: string | null;
+  /** Suggested remediation / next steps when present. */
+  remediation?: string | null;
 }
 
 /**

@@ -5,10 +5,12 @@ import {
   buildAssessmentScheduleContextFromConfig,
   buildAssessmentStatusSummary,
   DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT,
+  loadLatestPersistedAssessment,
 } from './assessment-summary.js';
 import { getConfig } from '../config/loader.js';
 import type { OperatorStatus } from './types.js';
 import { getScheduledAssessmentLastRunSnapshot } from '../assessment/scheduled-tick.js';
+import { AssessmentRepository } from '../database/assessment-repository.js';
 import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
 import { argocdStatusTracker } from '../argocd/state.js';
@@ -170,9 +172,13 @@ export class StatusWriter {
       } catch {
         // Config not initialized (unlikely in production); omit schedule fields
       }
+      const assessmentRepo = new AssessmentRepository();
+      const { record: latestDbRun, checks: dbChecks } = loadLatestPersistedAssessment(assessmentRepo);
       const assessmentSummary = buildAssessmentStatusSummary(
         getScheduledAssessmentLastRunSnapshot(),
-        assessmentSchedule
+        assessmentSchedule,
+        latestDbRun,
+        dbChecks
       );
 
       const status = calculateStatus(

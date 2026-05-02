@@ -100,7 +100,7 @@ export async function loadConfig(): Promise<Config> {
     process.env.EVENT_RETENTION_ERROR_CRITICAL_DAYS,
     '30'
   );
-  const assessmentEnabled = parseEnvBool(process.env.ASSESSMENT_ENABLED, false);
+  const assessmentEnabled = parseEnvBool(process.env.ASSESSMENT_ENABLED, true);
   const assessmentIntervalSeconds = parsePositiveInt(
     'ASSESSMENT_INTERVAL_SECONDS',
     process.env.ASSESSMENT_INTERVAL_SECONDS,

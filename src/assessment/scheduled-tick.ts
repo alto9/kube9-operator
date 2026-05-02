@@ -4,7 +4,9 @@
  * On each tick: ensures the global check registry is bootstrapped, runs {@link AssessmentRunner}
  * with the same persistence stack as `assess run` ({@link AssessmentRepository},
  * {@link ImageScanRepository} via runner defaults), and records a lightweight in-memory
- * snapshot for status consumers.
+ * snapshot for failed ticks and for consumers that read memory only. Successful runs are also
+ * persisted to SQLite; {@link buildAssessmentStatusSummary} in the main process prefers the
+ * latest completed row there so `kubectl exec ... assess run` updates the status ConfigMap.
  */
 
 import type { Config } from '../config/types.js';
@@ -38,33 +40,6 @@ export interface ScheduledAssessmentLastRunSnapshot {
 }
 
 let lastRunSnapshot: ScheduledAssessmentLastRunSnapshot | null = null;
-
-function collectCheckSummariesFromRun(
-  storage: AssessmentRepository,
-  runId: string
-): AssessmentCheckStatusSummary[] {
-  const rows = storage.queryHistory({ filters: { run_id: runId }, limit: 512 });
-  const byCheckId = new Map<string, (typeof rows)[number]>();
-  for (const row of rows) {
-    if (!byCheckId.has(row.check_id)) {
-      byCheckId.set(row.check_id, row);
-    }
-  }
-  const summaries: AssessmentCheckStatusSummary[] = Array.from(byCheckId.values()).map((row) => ({
-    checkId: row.check_id,
-    checkName: row.check_name ?? row.check_id,
-    pillar: row.pillar,
-    status: row.status,
-  }));
-  summaries.sort((a, b) => {
-    const byPillar = a.pillar.localeCompare(b.pillar);
-    if (byPillar !== 0) {
-      return byPillar;
-    }
-    return a.checkName.localeCompare(b.checkName);
-  });
-  return summaries;
-}
 
 /** @internal */
 export function resetScheduledAssessmentStateForTests(): void {
@@ -143,11 +118,11 @@ export async function runScheduledAssessmentTick(deps: ScheduledAssessmentTickDe
       timeoutMs,
     });
 
-    const checkSummaries = collectCheckSummariesFromRun(storage, record.run_id);
+    const checkSummaries = storage.getCheckSummariesForRun(record.run_id);
 
     lastRunSnapshot = {
       startedAt,
-      completedAt: new Date().toISOString(),
+      completedAt: record.completed_at ?? new Date().toISOString(),
       outcome: 'success',
       runId: record.run_id,
       state: record.state,

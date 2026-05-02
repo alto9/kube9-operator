@@ -48,7 +48,7 @@ describe('loadConfig — assessment schedule', () => {
 
   it('applies defaults when assessment env vars are omitted', async () => {
     const config = await loadConfig();
-    expect(config.assessmentEnabled).toBe(false);
+    expect(config.assessmentEnabled).toBe(true);
     expect(config.assessmentIntervalSeconds).toBe(86400);
     expect(config.assessmentMode).toBe('full');
     expect(config.assessmentTimeoutSeconds).toBeUndefined();

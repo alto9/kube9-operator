@@ -14,9 +14,11 @@ import {
   buildAssessmentScheduleContextFromConfig,
   buildAssessmentStatusSummary,
   DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT,
+  loadLatestPersistedAssessment,
 } from '../status/assessment-summary.js';
 import { getConfig } from '../config/loader.js';
 import { getScheduledAssessmentLastRunSnapshot } from '../assessment/scheduled-tick.js';
+import { AssessmentRepository } from '../database/assessment-repository.js';
 
 /**
  * Operator version (semver)
@@ -99,9 +101,13 @@ export async function gracefulShutdown(
     } catch {
       // ignore
     }
+    const assessmentRepo = new AssessmentRepository();
+    const { record: latestDbRun, checks: dbChecks } = loadLatestPersistedAssessment(assessmentRepo);
     const assessmentSummary = buildAssessmentStatusSummary(
       getScheduledAssessmentLastRunSnapshot(),
-      assessmentSchedule
+      assessmentSchedule,
+      latestDbRun,
+      dbChecks
     );
     const finalStatus: OperatorStatus = {
       mode: 'operated',
