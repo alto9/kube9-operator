@@ -122,7 +122,7 @@ rules:
 **Outbound connections (operator core)**:
 - Kubernetes API (in-cluster or via kubeconfig)
 - Optional Trivy HTTP health/version probes when `TRIVY_SERVER_URL` / chart `trivy.serverUrl` is set
-- The operator does not register with or upload collections to `kube9-server`
+- The operator does not register with or upload collections to `kube9-api`
 
 **Benefits**:
 - No ingress controller required

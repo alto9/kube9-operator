@@ -15,7 +15,7 @@ The operator works with the kube9 VS Code extension and optional Helm-based UI c
 - **Basic mode** (no operator) — VS Code extension provides kubectl-focused workflows
 - **Operated mode** (operator installed) — The operator runs Well-Architected Framework checks on a schedule, persists findings and events in-cluster, and publishes status to a ConfigMap for the extension and other consumers
 
-The operator is installed via Helm and requires no ingress. It is **fully open source and self-contained**: assessments, storage, and status run inside the cluster using the Kubernetes API, optional outbound HTTP for Trivy detection when configured, and local SQLite. This operator does **not** register with kube9-server or transmit collections to it.
+The operator is installed via Helm and requires no ingress. It is **fully open source and self-contained**: assessments, storage, and status run inside the cluster using the Kubernetes API, optional outbound HTTP for Trivy detection when configured, and local SQLite. This operator does **not** register with kube9-api or transmit collections to it.
 
 Paid kube9 experiences are offered separately (for example **kube9-desktop**); this repository’s chart and operator remain open source without subscription gates.
 
@@ -226,10 +226,10 @@ helm uninstall kube9-operator --namespace kube9-system
 
 ### Local Development with Minikube
 
-Bring up a cluster from **[kube9-localcluster](https://github.com/alto9/kube9-localcluster)** (this repo does not create clusters). Export its kubeconfig, then run the operator on your host against that API:
+Bring up a cluster from **[kube9-minikube](https://github.com/alto9/kube9-minikube)** (this repo does not create clusters). Export its kubeconfig, then run the operator on your host against that API:
 
 ```bash
-# From kube9-localcluster (sibling clone recommended)
+# From kube9-minikube (sibling clone recommended)
 ./scripts/start.sh
 export KUBECONFIG="$PWD/out/kubeconfig"
 
@@ -237,7 +237,7 @@ export KUBECONFIG="$PWD/out/kubeconfig"
 npm run dev:watch   # or npm run dev
 ```
 
-**Important:** Set `KUBECONFIG` to the file kube9-localcluster writes (`out/kubeconfig` by default). Use the same Minikube profile in both places (`MINIKUBE_PROFILE`, default `kube9-demo`). Environment variables for the operator process are set via npm scripts or `.env` (see `.env.example`).
+**Important:** Set `KUBECONFIG` to the file kube9-minikube writes (`out/kubeconfig` by default). Use the same Minikube profile in both places (`MINIKUBE_PROFILE`, default `kube9-demo`). Environment variables for the operator process are set via npm scripts or `.env` (see `.env.example`).
 
 The operator will:
 - Run on your local machine (not in a pod)
@@ -247,8 +247,8 @@ The operator will:
 
 #### Prerequisites for Local Development
 
-1. **Cluster**: [kube9-localcluster](https://github.com/alto9/kube9-localcluster) `scripts/start.sh` (or any cluster you trust)
-2. **`export KUBECONFIG=.../kube9-localcluster/out/kubeconfig`** (or equivalent)
+1. **Cluster**: [kube9-minikube](https://github.com/alto9/kube9-minikube) `scripts/start.sh` (or any cluster you trust)
+2. **`export KUBECONFIG=.../kube9-minikube/out/kubeconfig`** (or equivalent)
 3. **`kubectl config current-context`** should match the cluster you intend (e.g. `kube9-demo` when using the localcluster profile)
 4. **Environment variables**: Defaults are set in npm scripts. Override `LOG_LEVEL`, `DB_PATH`, `POD_NAMESPACE`, `HEALTH_PORT`, etc. in your shell. See [`.env.example`](.env.example) for a template. This process does **not** load `.env` files automatically; export variables in your shell, use [direnv](https://direnv.net/), or another loader so they are present before `npm run dev`.
 
@@ -261,7 +261,7 @@ The SQLite database defaults to `{DB_PATH}/kube9.db`. In production, `DB_PATH` i
 
 #### Remote or existing clusters
 
-You can run the operator on your machine against **any** cluster your kubeconfig can reach: managed cloud (EKS, GKE, AKS), on-prem, or minikube from kube9-localcluster.
+You can run the operator on your machine against **any** cluster your kubeconfig can reach: managed cloud (EKS, GKE, AKS), on-prem, or minikube from kube9-minikube.
 
 - **API access**: The operator uses the same mechanism as `kubectl` (`KUBECONFIG` or `~/.kube/config`). If the API is reached via **`kubectl proxy`**, an SSH tunnel to `localhost:6443`, or a VPN, ensure your **current context** points at that endpoint (merge kubeconfig as needed).
 - **RBAC**: Local runs use **your kubeconfig identity**, not the in-cluster Helm `ServiceAccount`. You need permission to list/watch resources and to create/update ConfigMaps in the target namespace. For a shared remote cluster, prefer a dedicated dev user or service account kubeconfig rather than personal admin credentials when possible.
@@ -269,7 +269,7 @@ You can run the operator on your machine against **any** cluster your kubeconfig
 
 #### Environment Variables
 
-`loadConfig()` does not require kube9-server URL variables. The npm scripts set defaults for `LOG_LEVEL` and (for dev scripts only) `DB_PATH`. Override as needed:
+`loadConfig()` does not require kube9-api URL variables. The npm scripts set defaults for `LOG_LEVEL` and (for dev scripts only) `DB_PATH`. Override as needed:
 
 ```bash
 # Typical local overrides
@@ -290,14 +290,14 @@ cp .env.example .env
 
 **Operator process on host (daily iteration):**
 ```bash
-export KUBECONFIG=/path/to/kube9-localcluster/out/kubeconfig
+export KUBECONFIG=/path/to/kube9-minikube/out/kubeconfig
 npm run dev:watch
 ```
 
 **In-cluster build (before PR):** builds a local image, loads it into the Minikube node for `MINIKUBE_PROFILE` (default `kube9-demo`), and installs/upgrades via Helm:
 
 ```bash
-export KUBECONFIG=/path/to/kube9-localcluster/out/kubeconfig
+export KUBECONFIG=/path/to/kube9-minikube/out/kubeconfig
 npm run deploy:minikube
 
 kubectl get pods -n kube9-system
@@ -308,7 +308,7 @@ kubectl logs -n kube9-system deployment/kube9-operator
 
 | Flow | Use case |
 |------|----------|
-| `kube9-localcluster` → `./scripts/populate.sh with-operator` | Predictable demo / extension testing (Helm chart from disk + demo workloads; not necessarily your latest local image) |
+| `kube9-minikube` → `./scripts/populate.sh with-operator` | Predictable demo / extension testing (Helm chart from disk + demo workloads; not necessarily your latest local image) |
 | This repo → `npm run deploy:minikube` | Iterate on **local** operator code with `kube9-operator:local` image |
 
 Use the same `KUBECONFIG` and `MINIKUBE_PROFILE` for both.
@@ -618,7 +618,7 @@ kube9-operator/
 ## Related Projects
 
 - **[kube9-vscode](https://github.com/alto9/kube9-vscode)** - VS Code extension (primary consumer)
-- **[kube9-localcluster](https://github.com/alto9/kube9-localcluster)** - Local Kubernetes demo environment for development
+- **[kube9-minikube](https://github.com/alto9/kube9-minikube)** - Local Kubernetes demo environment for development
 
 ## Documentation
 
@@ -649,13 +649,13 @@ This project uses [Forge](https://github.com/alto9/forge) for structured context
 ### Quick Start for Contributors
 
 ```bash
-# Fork and clone kube9-operator (and clone kube9-localcluster beside it)
+# Fork and clone kube9-operator (and clone kube9-minikube beside it)
 git clone https://github.com/alto9/kube9-operator.git
 cd kube9-operator
 npm install
 
-# In another terminal: start local cluster (see kube9-localcluster README)
-cd ../kube9-localcluster && ./scripts/start.sh && export KUBECONFIG="$PWD/out/kubeconfig"
+# In another terminal: start local cluster (see kube9-minikube README)
+cd ../kube9-minikube && ./scripts/start.sh && export KUBECONFIG="$PWD/out/kubeconfig"
 
 # Run operator locally with auto-reload
 cd ../kube9-operator

@@ -43,9 +43,9 @@ This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDU
    npm install
    ```
 
-3. **Start a local cluster** (this repo does not create clusters — use [kube9-localcluster](https://github.com/alto9/kube9-localcluster)):
+3. **Start a local cluster** (this repo does not create clusters — use [kube9-minikube](https://github.com/alto9/kube9-minikube)):
    ```bash
-   cd ../kube9-localcluster
+   cd ../kube9-minikube
    ./scripts/start.sh
    export KUBECONFIG="$PWD/out/kubeconfig"
    cd ../kube9-operator
@@ -60,7 +60,7 @@ This project adheres to the [Contributor Covenant Code of Conduct](CODE_OF_CONDU
    npm run dev
    ```
 
-The operator will connect to the cluster selected by your kubeconfig (`KUBECONFIG` or `~/.kube/config`) and run locally (not in a pod). For [kube9-localcluster](https://github.com/alto9/kube9-localcluster), keep `export KUBECONFIG=.../out/kubeconfig` in the same shell. For a remote or existing cluster, use any context whose API server you can reach (VPN, `kubectl proxy`, tunnel, or direct endpoint).
+The operator will connect to the cluster selected by your kubeconfig (`KUBECONFIG` or `~/.kube/config`) and run locally (not in a pod). For [kube9-minikube](https://github.com/alto9/kube9-minikube), keep `export KUBECONFIG=.../out/kubeconfig` in the same shell. For a remote or existing cluster, use any context whose API server you can reach (VPN, `kubectl proxy`, tunnel, or direct endpoint).
 
 **Local SQLite:** `npm run dev` / `dev:watch` default `DB_PATH` to `<repo>/.kube9-data` when unset so the host does not need `/data`. Override with `export DB_PATH=...` if needed. See [`.env.example`](.env.example).
 
@@ -161,11 +161,11 @@ kube9-operator/
 
 ### Local Development
 
-**Recommended workflow:** Run operator locally against a cluster from [kube9-localcluster](https://github.com/alto9/kube9-localcluster)
+**Recommended workflow:** Run operator locally against a cluster from [kube9-minikube](https://github.com/alto9/kube9-minikube)
 
 ```bash
-# From kube9-localcluster: create cluster, then in the same shell you use for dev:
-#   export KUBECONFIG=/path/to/kube9-localcluster/out/kubeconfig
+# From kube9-minikube: create cluster, then in the same shell you use for dev:
+#   export KUBECONFIG=/path/to/kube9-minikube/out/kubeconfig
 
 # From kube9-operator: run with auto-reload
 npm run dev:watch

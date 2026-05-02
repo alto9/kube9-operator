@@ -121,7 +121,7 @@ The operator detects its namespace via the downward API and advertises it in the
      --timeout=120s
    ```
 
-3. **Verify operator logs show successful startup (no kube9-server registration):**
+3. **Verify operator logs show successful startup (no kube9-api registration):**
    ```bash
    kubectl logs -n kube9-system deployment/kube9-operator --tail=80
    ```
@@ -225,7 +225,7 @@ kind delete cluster --name kube9-test
 
 - No chart-managed Secret named `kube9-operator-config` and no `API_KEY` environment variable in rendered manifests for default values
 - Status ConfigMap reports `mode="operated"` and healthy status by default when RBAC and runtime are OK
-- Pod reaches Ready without crash loops; operator does **not** log kube9-server registration or `/v1/collections` transmission
+- Pod reaches Ready without crash loops; operator does **not** log kube9-api registration or `/v1/collections` transmission
 - `helm lint` passes; upgrade with `--reuse-values` preserves prior values
 - Optional custom values: deployment updates apply, pod **Ready**, status fields reflect current operator version and health
 

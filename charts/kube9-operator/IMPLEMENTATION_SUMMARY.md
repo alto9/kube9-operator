@@ -18,5 +18,5 @@
 ## Testing notes
 
 - Default `helm template` / `helm install` must not create a Secret for install-time credentials or inject a legacy credential environment variable on the Deployment.
-- The open-source operator does not register with kube9-server or transmit collections to it; chart values do not require `SERVER_URL` for core operation.
+- The open-source operator does not register with kube9-api or transmit collections to it; chart values do not require `SERVER_URL` for core operation.
 

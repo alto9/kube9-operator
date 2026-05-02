@@ -30,7 +30,7 @@
 * **assessment:** add sustainability resource-efficiency check ([080b456](https://github.com/alto9/kube9-operator/commit/080b4563bfece69054fccbde1133a09fc801964e)), closes [#120](https://github.com/alto9/kube9-operator/issues/120) [#21](https://github.com/alto9/kube9-operator/issues/21)
 * **assessment:** add sustainability workload consolidation check ([7b11c00](https://github.com/alto9/kube9-operator/commit/7b11c00f2edd43b12e66d5ceecee85ff6027ac95))
 * **config:** add assessment schedule to Helm and loadConfig ([6dda375](https://github.com/alto9/kube9-operator/commit/6dda3753edb0ef7a54d12560a05e5338e73fb6d2)), closes [#122](https://github.com/alto9/kube9-operator/issues/122)
-* **operator:** remove registration and kube9-server transmission ([09365fa](https://github.com/alto9/kube9-operator/commit/09365fac7e30c547e21e134655a01c616d34fc0f))
+* **operator:** remove registration and kube9-api transmission ([09365fa](https://github.com/alto9/kube9-operator/commit/09365fac7e30c547e21e134655a01c616d34fc0f))
 * **status:** add assessment summary to operator status ConfigMap ([b99b961](https://github.com/alto9/kube9-operator/commit/b99b96126e73fed9ff1ac9eb245ef1fdf6f71176)), closes [#125](https://github.com/alto9/kube9-operator/issues/125)
 
 

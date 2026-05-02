@@ -2,7 +2,7 @@
 # Deploy kube9-operator to minikube cluster for in-cluster testing
 # Builds Docker image, loads into minikube, and deploys with Helm
 #
-# Prerequisites: cluster already running (e.g. from kube9-localcluster). Set KUBECONFIG
+# Prerequisites: cluster already running (e.g. from kube9-minikube). Set KUBECONFIG
 # to your local cluster kubeconfig. MINIKUBE_PROFILE must match that cluster (default: kube9-demo).
 
 set -e
@@ -78,7 +78,7 @@ success "kubectl is installed"
 # Check if minikube is running for this profile
 if ! mk status &> /dev/null; then
     error "minikube cluster is not running (profile: ${MINIKUBE_PROFILE})"
-    echo "  Create a local cluster from kube9-localcluster, or: minikube start -p ${MINIKUBE_PROFILE}"
+    echo "  Create a local cluster from kube9-minikube, or: minikube start -p ${MINIKUBE_PROFILE}"
     exit 1
 fi
 success "minikube cluster is running (profile: ${MINIKUBE_PROFILE})"
