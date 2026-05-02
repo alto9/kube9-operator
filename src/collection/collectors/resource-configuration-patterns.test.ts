@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest';
 
+vi.mock('../../cluster/identifier.js', () => ({
+  generateClusterIdForCollection: vi.fn(() => 'cls_' + 'a'.repeat(32)),
+}));
+
 import type { ResourceConfigurationPatternsData } from '../types.js';
 import {
   initResourceLimitsRequestsData,

@@ -115,9 +115,50 @@ export class KubernetesClient {
   }
 }
 
+let kubernetesClientSingleton: KubernetesClient | undefined;
+
+/** Properties assigned on `kubernetesClient` (e.g. test mocks) override delegation until cleared. */
+let kubernetesClientProxyOverrides: Record<string | symbol, unknown> = {};
+
+function hasKubernetesClientOverride(prop: string | symbol): boolean {
+  return Object.prototype.hasOwnProperty.call(kubernetesClientProxyOverrides, prop);
+}
+
 /**
- * Singleton instance of KubernetesClient
- * Use this instance throughout the application for cluster interactions
+ * Returns the process-wide Kubernetes client, constructing it on first use.
+ * Prefer importing `kubernetesClient` unless you need explicit lazy access.
  */
-export const kubernetesClient = new KubernetesClient();
+export function getKubernetesClient(): KubernetesClient {
+  if (!kubernetesClientSingleton) {
+    kubernetesClientSingleton = new KubernetesClient();
+  }
+  return kubernetesClientSingleton;
+}
+
+/**
+ * Clears the lazy singleton and any properties assigned onto `kubernetesClient` (used by unit tests).
+ */
+export function resetKubernetesClientForTests(): void {
+  kubernetesClientSingleton = undefined;
+  kubernetesClientProxyOverrides = {};
+}
+
+/**
+ * Singleton Kubernetes client — lazily initialized on first property access so importing this module
+ * does not require a valid kubeconfig (e.g. Vitest without a cluster context).
+ */
+export const kubernetesClient = new Proxy({} as KubernetesClient, {
+  get(_target, prop, _receiver) {
+    if (hasKubernetesClientOverride(prop)) {
+      return kubernetesClientProxyOverrides[prop];
+    }
+    const client = getKubernetesClient();
+    const value = Reflect.get(client, prop, client);
+    return typeof value === 'function' ? (value as (...args: unknown[]) => unknown).bind(client) : value;
+  },
+  set(_target, prop, value) {
+    kubernetesClientProxyOverrides[prop] = value;
+    return true;
+  },
+});
 

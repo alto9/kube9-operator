@@ -1,18 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { createHash } from 'crypto';
 import * as k8s from '@kubernetes/client-node';
 import { generateClusterIdentifier } from './identifier.js';
-import { kubernetesClient } from '../kubernetes/client.js';
+import { kubernetesClient, resetKubernetesClientForTests } from '../kubernetes/client.js';
 
 describe('generateClusterIdentifier', () => {
-  let originalGetKubeConfig: any;
-
-  beforeEach(() => {
-    originalGetKubeConfig = kubernetesClient.getKubeConfig.bind(kubernetesClient);
-  });
-
   afterEach(() => {
-    (kubernetesClient as any).getKubeConfig = originalGetKubeConfig;
+    resetKubernetesClientForTests();
   });
 
   it('deterministic output', () => {
