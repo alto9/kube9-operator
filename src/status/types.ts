@@ -80,8 +80,19 @@ export interface TrivyStatus {
 }
 
 /**
+ * One row per check from the last successful scheduled assessment run.
+ * Kept small for the status ConfigMap (id, display name, pillar, status only).
+ */
+export interface AssessmentCheckStatusSummary {
+  checkId: string;
+  checkName: string;
+  pillar: string;
+  status: string;
+}
+
+/**
  * Bounded summary of the last scheduled Well-Architected assessment tick.
- * Intended for the status ConfigMap: counts and metadata only (no per-check arrays).
+ * Intended for the status ConfigMap: counts, scheduling hints, and per-check outcomes.
  */
 export interface AssessmentStatusSummary {
   /**
@@ -119,6 +130,31 @@ export interface AssessmentStatusSummary {
    * Short error summary when `lastScheduledOutcome` is `failed`; otherwise null.
    */
   lastScheduledError: string | null;
+
+  /**
+   * Per-check results from the last successful scheduled run; empty when none or last tick failed.
+   */
+  lastScheduledChecks: AssessmentCheckStatusSummary[];
+
+  /**
+   * Whether periodic in-cluster assessments are enabled via operator configuration.
+   */
+  schedulingEnabled: boolean;
+
+  /**
+   * Seconds between scheduled runs when {@link schedulingEnabled} is true; otherwise null.
+   */
+  scheduleIntervalSeconds: number | null;
+
+  /**
+   * Configured scheduled assessment scope: full framework vs single pillar.
+   */
+  scheduledAssessmentMode: 'full' | 'pillar' | null;
+
+  /**
+   * When `scheduledAssessmentMode` is `pillar`, the pillar id; otherwise null.
+   */
+  scheduledAssessmentPillar: string | null;
 }
 
 /**
@@ -182,7 +218,7 @@ export interface OperatorStatus {
   trivy: TrivyStatus;
 
   /**
-   * Last scheduled Well-Architected assessment tick summary (bounded; no check result list).
+   * Last scheduled Well-Architected assessment tick summary (counts, schedule, per-check statuses).
    */
   assessment: AssessmentStatusSummary;
 }

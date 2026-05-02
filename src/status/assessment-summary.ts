@@ -1,7 +1,23 @@
 import type { ScheduledAssessmentLastRunSnapshot } from '../assessment/scheduled-tick.js';
-import type { AssessmentStatusSummary } from './types.js';
+import type { Config } from '../config/types.js';
+import type { AssessmentCheckStatusSummary, AssessmentStatusSummary } from './types.js';
 
 const MAX_ASSESSMENT_ERROR_SUMMARY = 200;
+
+/** Operator assessment schedule fields published alongside run summaries. */
+export interface AssessmentScheduleStatusContext {
+  schedulingEnabled: boolean;
+  scheduleIntervalSeconds: number | null;
+  scheduledAssessmentMode: 'full' | 'pillar' | null;
+  scheduledAssessmentPillar: string | null;
+}
+
+export const DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT: AssessmentScheduleStatusContext = {
+  schedulingEnabled: false,
+  scheduleIntervalSeconds: null,
+  scheduledAssessmentMode: null,
+  scheduledAssessmentPillar: null,
+};
 
 /**
  * Default assessment summary before any scheduled tick has completed in-process.
@@ -19,20 +35,65 @@ export const DEFAULT_ASSESSMENT_STATUS_SUMMARY: AssessmentStatusSummary = {
     warningChecks: 0,
   },
   lastScheduledError: null,
+  lastScheduledChecks: [],
+  ...DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT,
 };
 
 const ZERO_TOTALS = DEFAULT_ASSESSMENT_STATUS_SUMMARY.lastScheduledTotals;
 
 /**
+ * Derives published schedule fields from loaded operator configuration.
+ */
+export function buildAssessmentScheduleContextFromConfig(
+  config: Config
+): AssessmentScheduleStatusContext {
+  return {
+    schedulingEnabled: config.assessmentEnabled,
+    scheduleIntervalSeconds: config.assessmentEnabled ? config.assessmentIntervalSeconds : null,
+    scheduledAssessmentMode: config.assessmentEnabled
+      ? config.assessmentMode === 'pillar'
+        ? 'pillar'
+        : 'full'
+      : null,
+    scheduledAssessmentPillar:
+      config.assessmentEnabled && config.assessmentMode === 'pillar'
+        ? config.assessmentPillar ?? null
+        : null,
+  };
+}
+
+function mapCheckSummaries(
+  rows: ScheduledAssessmentLastRunSnapshot['checkSummaries']
+): AssessmentCheckStatusSummary[] {
+  if (!rows || rows.length === 0) {
+    return [];
+  }
+  return rows.map((r) => ({
+    checkId: r.checkId,
+    checkName: r.checkName,
+    pillar: r.pillar,
+    status: r.status,
+  }));
+}
+
+/**
  * Maps the in-memory scheduled assessment snapshot into a bounded status payload.
+ *
+ * @param snap - Last tick snapshot, or null before any tick in this process
+ * @param schedule - Current operator assessment schedule configuration for status consumers
  */
 export function buildAssessmentStatusSummary(
-  snap: ScheduledAssessmentLastRunSnapshot | null
+  snap: ScheduledAssessmentLastRunSnapshot | null,
+  schedule: AssessmentScheduleStatusContext = DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT
 ): AssessmentStatusSummary {
+  const sched: AssessmentScheduleStatusContext = { ...schedule };
+
   if (!snap) {
     return {
       ...DEFAULT_ASSESSMENT_STATUS_SUMMARY,
       lastScheduledTotals: { ...ZERO_TOTALS },
+      lastScheduledChecks: [],
+      ...sched,
     };
   }
 
@@ -50,6 +111,8 @@ export function buildAssessmentStatusSummary(
       lastScheduledRunId: null,
       lastScheduledTotals: { ...ZERO_TOTALS },
       lastScheduledError,
+      lastScheduledChecks: [],
+      ...sched,
     };
   }
 
@@ -66,5 +129,7 @@ export function buildAssessmentStatusSummary(
       warningChecks: snap.warningChecks ?? 0,
     },
     lastScheduledError: null,
+    lastScheduledChecks: mapCheckSummaries(snap.checkSummaries),
+    ...sched,
   };
 }

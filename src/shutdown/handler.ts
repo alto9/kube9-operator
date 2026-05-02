@@ -10,7 +10,12 @@ import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
 import { argocdStatusTracker } from '../argocd/state.js';
 import { trivyStatusTracker } from '../trivy/state.js';
-import { buildAssessmentStatusSummary } from '../status/assessment-summary.js';
+import {
+  buildAssessmentScheduleContextFromConfig,
+  buildAssessmentStatusSummary,
+  DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT,
+} from '../status/assessment-summary.js';
+import { getConfig } from '../config/loader.js';
 import { getScheduledAssessmentLastRunSnapshot } from '../assessment/scheduled-tick.js';
 
 /**
@@ -88,7 +93,16 @@ export async function gracefulShutdown(
     const collectionStats = collectionStatsTracker.getStats();
     const argocdStatus = argocdStatusTracker.getStatus();
     const trivyStatus = trivyStatusTracker.getStatus();
-    const assessmentSummary = buildAssessmentStatusSummary(getScheduledAssessmentLastRunSnapshot());
+    let assessmentSchedule = DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT;
+    try {
+      assessmentSchedule = buildAssessmentScheduleContextFromConfig(getConfig());
+    } catch {
+      // ignore
+    }
+    const assessmentSummary = buildAssessmentStatusSummary(
+      getScheduledAssessmentLastRunSnapshot(),
+      assessmentSchedule
+    );
     const finalStatus: OperatorStatus = {
       mode: 'operated',
       version: OPERATOR_VERSION,
@@ -107,6 +121,7 @@ export async function gracefulShutdown(
       assessment: {
         ...assessmentSummary,
         lastScheduledTotals: { ...assessmentSummary.lastScheduledTotals },
+        lastScheduledChecks: assessmentSummary.lastScheduledChecks.map((c) => ({ ...c })),
       },
     };
 

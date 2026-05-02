@@ -1,7 +1,12 @@
 import * as k8s from '@kubernetes/client-node';
 import { kubernetesClient, KubernetesClient } from '../kubernetes/client.js';
 import { calculateStatus } from './calculator.js';
-import { buildAssessmentStatusSummary } from './assessment-summary.js';
+import {
+  buildAssessmentScheduleContextFromConfig,
+  buildAssessmentStatusSummary,
+  DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT,
+} from './assessment-summary.js';
+import { getConfig } from '../config/loader.js';
 import type { OperatorStatus } from './types.js';
 import { getScheduledAssessmentLastRunSnapshot } from '../assessment/scheduled-tick.js';
 import { logger } from '../logging/logger.js';
@@ -159,7 +164,16 @@ export class StatusWriter {
       const collectionStats = collectionStatsTracker.getStats();
       const argocdStatus = argocdStatusTracker.getStatus();
       const trivyStatus = trivyStatusTracker.getStatus();
-      const assessmentSummary = buildAssessmentStatusSummary(getScheduledAssessmentLastRunSnapshot());
+      let assessmentSchedule = DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT;
+      try {
+        assessmentSchedule = buildAssessmentScheduleContextFromConfig(getConfig());
+      } catch {
+        // Config not initialized (unlikely in production); omit schedule fields
+      }
+      const assessmentSummary = buildAssessmentStatusSummary(
+        getScheduledAssessmentLastRunSnapshot(),
+        assessmentSchedule
+      );
 
       const status = calculateStatus(
         this.lastWriteError,

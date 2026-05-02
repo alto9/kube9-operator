@@ -10,7 +10,7 @@
 import type { Config } from '../config/types.js';
 import type { KubernetesClient } from '../kubernetes/client.js';
 import type { Logger } from 'winston';
-import type { TrivyStatus } from '../status/types.js';
+import type { AssessmentCheckStatusSummary, TrivyStatus } from '../status/types.js';
 import { AssessmentRunner } from './runner.js';
 import { bootstrapAssessmentRegistry } from './bootstrap.js';
 import { getRegistry } from './registry.js';
@@ -33,9 +33,38 @@ export interface ScheduledAssessmentLastRunSnapshot {
   failedChecks?: number;
   warningChecks?: number;
   errorMessage?: string;
+  /** Present after a successful tick with persisted per-check rows */
+  checkSummaries?: AssessmentCheckStatusSummary[];
 }
 
 let lastRunSnapshot: ScheduledAssessmentLastRunSnapshot | null = null;
+
+function collectCheckSummariesFromRun(
+  storage: AssessmentRepository,
+  runId: string
+): AssessmentCheckStatusSummary[] {
+  const rows = storage.queryHistory({ filters: { run_id: runId }, limit: 512 });
+  const byCheckId = new Map<string, (typeof rows)[number]>();
+  for (const row of rows) {
+    if (!byCheckId.has(row.check_id)) {
+      byCheckId.set(row.check_id, row);
+    }
+  }
+  const summaries: AssessmentCheckStatusSummary[] = Array.from(byCheckId.values()).map((row) => ({
+    checkId: row.check_id,
+    checkName: row.check_name ?? row.check_id,
+    pillar: row.pillar,
+    status: row.status,
+  }));
+  summaries.sort((a, b) => {
+    const byPillar = a.pillar.localeCompare(b.pillar);
+    if (byPillar !== 0) {
+      return byPillar;
+    }
+    return a.checkName.localeCompare(b.checkName);
+  });
+  return summaries;
+}
 
 /** @internal */
 export function resetScheduledAssessmentStateForTests(): void {
@@ -114,6 +143,8 @@ export async function runScheduledAssessmentTick(deps: ScheduledAssessmentTickDe
       timeoutMs,
     });
 
+    const checkSummaries = collectCheckSummariesFromRun(storage, record.run_id);
+
     lastRunSnapshot = {
       startedAt,
       completedAt: new Date().toISOString(),
@@ -125,6 +156,7 @@ export async function runScheduledAssessmentTick(deps: ScheduledAssessmentTickDe
       passedChecks: record.passed_checks,
       failedChecks: record.failed_checks,
       warningChecks: record.warning_checks,
+      checkSummaries,
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);

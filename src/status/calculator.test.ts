@@ -52,6 +52,7 @@ describe('calculateStatus', () => {
       expect(status.assessment).toEqual({
         ...DEFAULT_ASSESSMENT_STATUS_SUMMARY,
         lastScheduledTotals: { ...DEFAULT_ASSESSMENT_STATUS_SUMMARY.lastScheduledTotals },
+        lastScheduledChecks: [],
       });
     });
   });
@@ -187,6 +188,8 @@ describe('calculateStatus', () => {
         failedChecks: 0,
         warningChecks: 0,
       });
+      expect(status.assessment.lastScheduledChecks).toEqual([]);
+      expect(status.assessment.schedulingEnabled).toBe(false);
     });
 
     it('should include provided assessment summary in status', async () => {
@@ -207,6 +210,13 @@ describe('calculateStatus', () => {
           warningChecks: 1,
         },
         lastScheduledError: null,
+        lastScheduledChecks: [
+          { checkId: 'a', checkName: 'A', pillar: 'security', status: 'passing' },
+        ],
+        schedulingEnabled: true,
+        scheduleIntervalSeconds: 3600,
+        scheduledAssessmentMode: 'full',
+        scheduledAssessmentPillar: null,
       };
 
       const status = calculateStatus(
@@ -236,6 +246,7 @@ describe('calculateStatus', () => {
       expect(status.assessment).toEqual({
         ...summary,
         lastScheduledTotals: { ...summary.lastScheduledTotals },
+        lastScheduledChecks: [{ ...summary.lastScheduledChecks[0] }],
       });
     });
 
@@ -265,6 +276,26 @@ describe('calculateStatus', () => {
       expect(fromFail.lastScheduledOutcome).toBe('failed');
       expect(fromFail.lastScheduledError).toBe('boom');
       expect(fromFail.lastScheduledTotals.totalChecks).toBe(0);
+      expect(fromFail.lastScheduledChecks).toEqual([]);
+
+      const withChecks = buildAssessmentStatusSummary({
+        startedAt: '2025-06-01T11:00:00Z',
+        completedAt: '2025-06-01T12:00:00Z',
+        outcome: 'success',
+        runId: 'r1',
+        state: 'completed',
+        totalChecks: 1,
+        completedChecks: 1,
+        passedChecks: 1,
+        failedChecks: 0,
+        warningChecks: 0,
+        checkSummaries: [
+          { checkId: 'c1', checkName: 'Check One', pillar: 'security', status: 'passing' },
+        ],
+      });
+      expect(withChecks.lastScheduledChecks).toEqual([
+        { checkId: 'c1', checkName: 'Check One', pillar: 'security', status: 'passing' },
+      ]);
     });
   });
 

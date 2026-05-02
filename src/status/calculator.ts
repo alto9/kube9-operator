@@ -106,6 +106,7 @@ export function calculateStatus(
     assessment: {
       ...assessmentSummary,
       lastScheduledTotals: { ...assessmentSummary.lastScheduledTotals },
+      lastScheduledChecks: assessmentSummary.lastScheduledChecks.map((c) => ({ ...c })),
     },
   };
 }
