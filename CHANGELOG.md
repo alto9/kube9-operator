@@ -1,3 +1,17 @@
+# [2.1.0](https://github.com/alto9/kube9-operator/compare/v2.0.0...v2.1.0) (2026-05-02)
+
+
+### Bug Fixes
+
+* **collection:** align cluster-metadata metrics with validation outcomes ([2ba846c](https://github.com/alto9/kube9-operator/commit/2ba846ca7fe58096530c86860be36bb37dba096f))
+* **config:** validate collection interval env vars as positive integers ([5af694b](https://github.com/alto9/kube9-operator/commit/5af694b0fd19a7e4a697dcb0547b543f1eb72fe7)), closes [#51](https://github.com/alto9/kube9-operator/issues/51)
+
+
+### Features
+
+* **collection:** enforce resource inventory interval and add collector tests ([4c13a35](https://github.com/alto9/kube9-operator/commit/4c13a35641b8068dcb2723194c176acc17c4891f))
+* **collections:** add SQLite persistence and query CLI for M8 ([e1600a5](https://github.com/alto9/kube9-operator/commit/e1600a5a503cb0a05aacd2274881b1df4da1d301))
+
 # [2.0.0](https://github.com/alto9/kube9-operator/compare/v1.9.0...v2.0.0) (2026-04-26)
 
 
