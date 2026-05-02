@@ -11,7 +11,6 @@
 ## Status Schema
 The `status` key contains a JSON string with the following `OperatorStatus` structure:
 - `mode`: Operating mode ("operated" | "enabled")
-- `tier`: User-facing tier ("free" | "pro")
 - `version`: Operator version (semantic versioning, e.g., "1.0.0")
 - `health`: Health status ("healthy" | "degraded" | "unhealthy")
 - `lastUpdate`: ISO 8601 timestamp of last status update
@@ -32,10 +31,11 @@ The `status` key contains a JSON string with the following `OperatorStatus` stru
   - `serverUrl`: Base URL when detected (or null)
   - `version`: Trivy server version when available (or null)
   - `lastChecked`: ISO 8601 timestamp of last detection check
+- `assessment`: Bounded summary of the last scheduled assessment tick (counts and metadata)
 
 ## Extension Flow
 1. Extension checks for ConfigMap `kube9-operator-status` in operator namespace
 2. Reads `status` key and parses JSON string to `OperatorStatus` object
 3. Uses `namespace` field from status for subsequent operations (exec, pod discovery)
 4. Validates freshness: checks `lastUpdate` timestamp (typically updated every 60 seconds)
-5. Determines available features based on `tier` and `health` status
+5. Determines available features based on operator presence, optional integrations (for example ArgoCD/Trivy signals), and `health`

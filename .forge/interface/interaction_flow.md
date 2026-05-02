@@ -16,9 +16,8 @@
    - Status is considered fresh if updated within last 5 minutes
    - Stale status may indicate operator issues
 5. Extension determines capabilities:
-   - Uses `tier` to determine available features (free vs pro)
-   - Uses `health` to determine if operator is operational
-   - Uses `registered` to determine if server features are available
+   - Uses presence of valid status and `health` to determine if operator-driven features are available
+   - Uses integration signals in status (for example `argocd`, `trivy`, `assessment`) for conditional UI
 
 ## CLI Query Flow
 1. Extension resolves operator pod:

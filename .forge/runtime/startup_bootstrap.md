@@ -69,7 +69,7 @@ The operator follows a strict initialization sequence defined in `src/operator.t
 - Creates `StatusWriter` instance with Kubernetes client and update interval
 - Starts periodic status update loop
 - Updates ConfigMap with operator status every `statusUpdateIntervalSeconds` (default: 60s)
-- Status includes: mode, tier, version, health, collection stats, ArgoCD status, Trivy detection status
+- Status includes: mode, version, health, collection stats, ArgoCD status, Trivy detection status, assessment summary
 
 ### 9. Initialize Collection Scheduler
 - Creates `CollectionScheduler` instance

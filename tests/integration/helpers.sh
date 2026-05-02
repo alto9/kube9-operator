@@ -7,7 +7,6 @@ RELEASE_NAME="kube9-operator"
 CONFIGMAP_NAME="kube9-operator-status"
 SECRET_NAME="kube9-operator-config"
 CHART_DIR="charts/kube9-operator"
-TEST_API_KEY="kdy_test_12345"
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -165,48 +164,23 @@ setup_cleanup_trap() {
     trap 'cleanup' EXIT INT TERM
 }
 
-# Deploy operator using Helm
+# Deploy operator using Helm (default chart values; no chart-managed credentials)
 deploy_operator() {
-    local api_key="${1:-}"
-    local namespace="${2:-$NAMESPACE}"
-    local release_name="${3:-$RELEASE_NAME}"
-    local chart_dir="${4:-$CHART_DIR}"
-    
-    local helm_args=(
-        "install" "$release_name" "$chart_dir"
-        "--namespace" "$namespace"
-        "--create-namespace"
-        "--wait"
-        "--timeout" "5m"
-    )
-    
-    if [ -n "$api_key" ]; then
-        helm_args+=("--set" "apiKey=$api_key")
-    else
-        helm_args+=("--set" "apiKey=")
-    fi
-    
-    info "Deploying operator (tier: ${api_key:+pro}${api_key:-free})..."
-    
-    if helm "${helm_args[@]}" &>/dev/null; then
+    local namespace="${1:-$NAMESPACE}"
+    local release_name="${2:-$RELEASE_NAME}"
+    local chart_dir="${3:-$CHART_DIR}"
+
+    info "Deploying operator with default chart values..."
+
+    if helm install "$release_name" "$chart_dir" \
+        --namespace "$namespace" \
+        --create-namespace \
+        --wait \
+        --timeout 5m &>/dev/null; then
         success "Operator deployed successfully"
         return 0
     else
         error "Failed to deploy operator"
-        return 1
-    fi
-}
-
-# Verify Secret exists
-verify_secret_exists() {
-    local namespace="${1:-$NAMESPACE}"
-    local secret_name="${2:-$SECRET_NAME}"
-    
-    if kubectl get secret "$secret_name" -n "$namespace" &>/dev/null; then
-        success "Secret $secret_name exists"
-        return 0
-    else
-        error "Secret $secret_name not found"
         return 1
     fi
 }

@@ -127,19 +127,10 @@ export interface AssessmentStatusSummary {
  */
 export interface OperatorStatus {
   /**
-   * Operating mode of the operator
-   * - operated: Standard operator mode
-   * - enabled: Reserved for future use
+   * Operating mode of the operator (published for client compatibility).
    */
   mode: "operated" | "enabled";
-  
-  /**
-   * User-facing tier name
-   * - free: Open source tier
-   * - pro: Reserved for future use
-   */
-  tier: "free" | "pro";
-  
+
   /**
    * Operator version (semantic versioning)
    * @example "1.0.0"

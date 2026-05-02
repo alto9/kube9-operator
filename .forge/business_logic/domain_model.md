@@ -1,15 +1,15 @@
 # Domain Model
 
-## Tier Modes
+## Operator presence (extension UX)
 
-| Mode | Tier | Conditions | Extension Behavior |
-|------|------|------------|-------------------|
-| basic | — | No operator installed | kubectl-only, limited features |
-| operated | free | Operator installed | Local webviews, status via ConfigMap |
+| UX mode | Conditions | Extension behavior |
+|---------|------------|-------------------|
+| basic | No operator installed | kubectl-focused workflows; install prompts when appropriate |
+| operated | Operator installed | Reads status ConfigMap, dashboards, assessments, and optional integrations |
 
-**Transitions**: Operator starts → operated. No registration or server communication.
+**Transitions**: Operator starts → publishes `mode: "operated"` in status JSON. No registration or remote sign-in through this chart.
 
-**Implementation**: Status calculator (`src/status/calculator.ts`) always returns `mode: "operated"` and `tier: "free"` when operator is running. The "basic" mode is detected by the extension when the ConfigMap is not found.
+**Implementation**: Status calculator (`src/status/calculator.ts`) publishes `mode: "operated"` when the operator is running. The extension treats missing status ConfigMap as basic mode.
 
 ## Assessment Lifecycle
 

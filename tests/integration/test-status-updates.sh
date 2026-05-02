@@ -22,9 +22,9 @@ echo ""
 # Check prerequisites
 check_prerequisites
 
-# Deploy operator (free tier for simplicity)
-step "Deploying operator (free tier)"
-deploy_operator "" || exit 1
+# Deploy operator (default install)
+step "Deploying operator"
+deploy_operator || exit 1
 
 # Wait for pod to be ready
 step "Waiting for operator pod to be ready"

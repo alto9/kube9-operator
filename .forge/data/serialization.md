@@ -86,16 +86,15 @@ All CLI commands support `--format`:
 Extension reads `status` key from ConfigMap `kube9-operator-status` in operator namespace. JSON schema matches `OperatorStatus` interface in `src/status/types.ts`:
 
 - `mode`: `"operated" | "enabled"`
-- `tier`: `"free" | "pro"`
 - `version`: string (semver)
 - `health`: `"healthy" | "degraded" | "unhealthy"`
 - `lastUpdate`: string (ISO 8601)
-- `registered`: boolean
 - `error`: string | null
 - `namespace`: string
-- `clusterId`: string | undefined (optional)
 - `collectionStats`: CollectionStats object
 - `argocd`: ArgoCDStatus object
+- `trivy`: TrivyStatus object
+- `assessment`: AssessmentStatusSummary object
 
 ## Collection Payloads
 

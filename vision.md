@@ -16,7 +16,7 @@ kube9-operator will become the **standard way for clusters to participate in the
 
 1. **Well-Architected Framework Validation**: Scheduled assessment across all 6 framework pillars
 2. **Zero-Trust Security**: No ingress required, all communication is outbound
-3. **Tier Detection**: Enables VS Code extension and UI components to adapt features based on cluster capabilities
+3. **Operator status signals**: Enables VS Code extension and UI components to adapt features based on cluster capabilities (operator installed, health, optional integrations)
 4. **Health Monitoring**: Continuous cluster health assessment and status reporting
 5. **Ecosystem integration**: Deep, optional integration with kube9 desktop tooling while keeping the default cluster footprint self-contained
 6. **Minimal Footprint**: Lightweight operator that doesn't impact cluster performance
@@ -56,11 +56,11 @@ kube9-operator will become the **standard way for clusters to participate in the
 - No impact on cluster performance
 - Graceful degradation under resource constraints
 
-### 3. Tier-Aware Architecture
-- Supports multiple tiers (basic, operated, enabled, degraded)
-- Clear status exposure for VS Code extension
+### 3. Mode-aware status architecture
+- Clear **basic** vs **operated** semantics for consumers (extension detects missing status vs installed operator)
+- Status exposes health, optional integration signals (ArgoCD, Trivy), and bounded assessment summaries
 - Graceful degradation when optional integrations are unavailable
-- Transparent tier detection and reporting
+- Transparent reporting via the status ConfigMap (no subscription gates in this open-source operator)
 
 ### 4. Operational Excellence
 - Simple installation via Helm
@@ -79,7 +79,7 @@ kube9-operator will become the **standard way for clusters to participate in the
 ### Competitive Advantages
 
 1. **Zero Ingress Architecture**: Unlike other operators, requires no ingress - all communication is outbound
-2. **Tier Detection**: Enables progressive enhancement in VS Code extension based on cluster capabilities
+2. **Operator status signals**: Enables progressive enhancement in the VS Code extension based on whether the operator is present, healthy, and which optional integrations are detected
 3. **Minimal Footprint**: Lightweight design that doesn't impact cluster performance
 4. **Security Model**: Transparent security model with minimal permissions and no sensitive data collection
 5. **Progressive Enhancement**: Works with the operator alone; optional integrations add richer signals when present
@@ -94,13 +94,13 @@ kube9-operator will become the **standard way for clusters to participate in the
 
 ## Kubernetes Well-Architected Framework
 
-### Free Tier Framework Validation
+### Open-source framework validation
 
-**Role**: The kube9-operator is the foundation for implementing the Kubernetes Well-Architected Framework, providing validation for all 6 framework pillars in-cluster for every supported install path.
+**Role**: The kube9-operator implements the Kubernetes Well-Architected Framework in-cluster for every supported install path of this repository.
 
 **Framework Documentation**: Complete framework documentation with all criteria: https://alto9.github.io/kube9/well-architected-framework.html
 
-**Free Tier Responsibilities:**
+**Operator responsibilities:**
 
 The operator performs validation checks that require real resource names and cluster access:
 
@@ -155,7 +155,7 @@ The operator stores assessment inputs, events, and derived data **inside the clu
 2. **AI-Powered Troubleshooting**: Analyze deployment failures and provide actionable recommendations
 3. **VS Code Native Views**: View ArgoCD Applications and sync status directly in VS Code
 4. **Conditional Integration**: Automatically detects ArgoCD presence - works with or without it
-5. **Free Tier Feature**: ArgoCD integration available in free tier to drive adoption
+5. **Open-source path**: ArgoCD awareness and related signals ship with the operator for adoption and GitOps workflows
 
 ### How It Works
 
@@ -164,7 +164,7 @@ The operator stores assessment inputs, events, and derived data **inside the clu
 - Monitors ArgoCD Applications and their sync status
 - Collects drift information and deployment events
 
-**Enhancement Phase (Free Tier)**:
+**Enhancement Phase (open-source operator path)**:
 - Visualize ArgoCD data in VS Code with native UI
 - View sync status, drift alerts, and deployment history
 - Access basic drift detection summaries
@@ -195,7 +195,7 @@ The operator stores assessment inputs, events, and derived data **inside the clu
 - **Easy Integration**: Simple Helm install to enable kube9 features
 - **Security Confidence**: Transparent security model with minimal permissions
 - **Performance Assurance**: Lightweight operator that doesn't impact cluster performance
-- **Tier Flexibility**: Start with the open-source operator path; add optional integrations when you need them
+- **Composable integrations**: Start with the open-source operator; add optional integrations (ArgoCD probes, Trivy, and related signals) when you need them. Paid kube9 experiences are separate products (for example **kube9-desktop**), not subscription tiers on this operator.
 
 ### For Developers
 - **Seamless Experience**: Operator enables VS Code extension features automatically
@@ -428,15 +428,12 @@ kubectl exec -n kube9-system deploy/kube9-operator -- \
 The operator maintains a SQLite database at `/data/kube9.db`:
 
 ```sql
--- Operator status (single row, updated frequently)
+-- Operator status cache (illustrative; published status today is primarily ConfigMap-driven)
 CREATE TABLE operator_status (
   id INTEGER PRIMARY KEY CHECK (id = 1),
-  mode TEXT NOT NULL,           -- 'operated' | 'enabled'
-  tier TEXT NOT NULL,           -- 'free' | 'pro'
+  mode TEXT NOT NULL,           -- 'operated' | 'enabled' (compatibility)
   version TEXT NOT NULL,
   health TEXT NOT NULL,         -- 'healthy' | 'degraded' | 'unhealthy'
-  registered BOOLEAN NOT NULL,
-  cluster_id TEXT,
   error TEXT,
   last_update TEXT NOT NULL
 );
@@ -604,14 +601,12 @@ All CLI commands support `--format` flag:
 Example JSON output for `query status`:
 ```json
 {
-  "mode": "enabled",
-  "tier": "pro",
+  "mode": "operated",
   "version": "1.2.0",
   "health": "healthy",
-  "registered": true,
-  "clusterId": "cls_abc123def456",
   "error": null,
-  "lastUpdate": "2025-11-27T10:30:00Z"
+  "lastUpdate": "2025-11-27T10:30:00Z",
+  "namespace": "kube9-system"
 }
 ```
 

@@ -10,9 +10,8 @@ The kube9-operator runs in your Kubernetes cluster and publishes status and asse
 
 - **Basic mode** (no operator) — kubectl-focused workflows
 - **Operated mode** (operator installed) — scheduled assessments, local persistence, and ConfigMap status for the extension
-- **Enabled mode** — richer server-connected experiences when registration succeeds (not configured through Helm API key values in this chart)
 
-The operator is installed via Helm and requires no ingress for the control plane path this chart installs. The chart does not configure API keys, credentials, or remote product sign-in.
+The operator is installed via Helm and requires no ingress for the control plane path this chart installs. The chart does not configure API keys, credentials, or remote product sign-in. Optional commercial tooling (for example **kube9-desktop**) is separate from this chart.
 
 ### What This Chart Installs
 
@@ -46,7 +45,7 @@ helm install kube9-operator kube9/kube9-operator \
 ```
 
 After installation, the operator will:
-- Start in "operated" (free tier) mode
+- Run in **operated** mode (`mode` in status JSON)
 - Create a status ConfigMap for the VS Code extension to read
 - Provide basic cluster status information
 

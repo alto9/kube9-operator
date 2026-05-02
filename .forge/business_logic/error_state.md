@@ -21,7 +21,7 @@
 - `healthy`: all other cases
 
 ## Extension Behavior
-- **healthy** → enable all tier features, normal operation
+- **healthy** → enable operator-backed features, normal operation
 - **degraded** → reserved for future operator-side semantics
 - **unhealthy** → show error message, fall back to basic mode (kubectl-only)
 

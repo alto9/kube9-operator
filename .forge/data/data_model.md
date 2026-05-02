@@ -6,8 +6,7 @@ Exposed via ConfigMap `kube9-operator-status` in operator namespace.
 
 | Property | Type | Description |
 |----------|------|-------------|
-| mode | `operated` \| `enabled` | Operating mode (`operated` is standard, `enabled` reserved for future) |
-| tier | `free` \| `pro` | User-facing tier (`free` is open source, `pro` reserved for future) |
+| mode | `operated` \| `enabled` | Published mode (`operated` is standard; `enabled` retained for older clients only) |
 | version | string | Semantic version (e.g., "1.0.0") |
 | health | `healthy` \| `degraded` \| `unhealthy` | Current health status |
 | lastUpdate | string | ISO 8601 timestamp |

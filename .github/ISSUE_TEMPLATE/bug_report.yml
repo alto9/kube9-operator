@@ -85,13 +85,14 @@ body:
       default: 0
 
   - type: dropdown
-    id: tier
+    id: surface
     attributes:
-      label: Operator Tier
-      description: Which tier is the operator running in?
+      label: Where are you seeing this?
+      description: Which part of the open-source kube9 stack is affected?
       options:
-        - Free Tier (no API key)
-        - Pro Tier (with API key)
+        - kube9-operator (cluster / Helm)
+        - kube9-vscode extension
+        - Both / unsure
       default: 0
 
   - type: textarea
@@ -117,11 +118,10 @@ body:
     id: helm-values
     attributes:
       label: Helm Values
-      description: What Helm values were used for installation? (redact API keys)
+      description: What Helm values were used for installation?
       render: yaml
       placeholder: |
         logLevel: "info"
-        serverUrl: "https://api.kube9.io"
 
   - type: textarea
     id: additional

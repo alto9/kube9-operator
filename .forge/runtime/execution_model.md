@@ -79,11 +79,11 @@ The kube9-operator binary supports multiple execution modes via Commander.js CLI
 - **Interval**: Every `statusUpdateIntervalSeconds` (default: 60 seconds)
 - **Action**: Updates ConfigMap with current operator status
 - **Status Includes**:
-  - Mode (operated), tier (free), version
-  - Health status (healthy/unhealthy)
-  - Registration state (registered, clusterId)
+  - Mode (operated), version
+  - Health status (healthy/degraded/unhealthy)
   - Collection statistics (success/failure counts, last success time)
-  - ArgoCD status (detected, namespace, version)
+  - ArgoCD and Trivy awareness blocks
+  - Bounded assessment summary (`assessment`)
   - Last update timestamp
   - Error message (if unhealthy)
 

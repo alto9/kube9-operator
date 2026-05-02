@@ -190,7 +190,6 @@ export class StatusWriter {
 
       logger.info('Status updated', {
         mode: status.mode,
-        tier: status.tier,
         health: status.health,
       });
     } catch (error) {

@@ -276,8 +276,7 @@ Integration tests require a running Kubernetes cluster:
 # Run integration tests
 cd tests/integration
 ./test-status-updates.sh
-./test-free-tier.sh
-./test-pro-tier.sh
+./test-operator-install.sh
 ```
 
 ### Writing Tests

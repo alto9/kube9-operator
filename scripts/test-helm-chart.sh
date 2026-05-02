@@ -199,18 +199,11 @@ if [ "$SKIP_CLUSTER" = false ]; then
         success "Status ConfigMap exists"
         
         STATUS_MODE=$(kubectl get configmap kube9-operator-status -n "$NAMESPACE" -o jsonpath='{.data.status}' | jq -r '.mode' 2>/dev/null || echo "")
-        STATUS_TIER=$(kubectl get configmap kube9-operator-status -n "$NAMESPACE" -o jsonpath='{.data.status}' | jq -r '.tier' 2>/dev/null || echo "")
         
         if [ "$STATUS_MODE" = "operated" ]; then
             success "Status mode is correct: $STATUS_MODE"
         else
             error "Status mode incorrect. Expected: operated, Got: $STATUS_MODE"
-        fi
-        
-        if [ "$STATUS_TIER" = "free" ]; then
-            success "Status tier is correct: $STATUS_TIER"
-        else
-            error "Status tier incorrect. Expected: free, Got: $STATUS_TIER"
         fi
     else
         warning "Status ConfigMap not found yet (may need more time)"

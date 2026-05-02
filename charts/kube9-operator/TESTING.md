@@ -52,8 +52,8 @@ Run the automated test script:
    # Expected: "operated"
 
    kubectl get configmap kube9-operator-status -n kube9-system \
-     -o jsonpath='{.data.status}' | jq -r '.tier'
-   # Expected: "free"
+     -o jsonpath='{.data.status}' | jq -r '.health'
+   # Expected: "healthy" (when RBAC and runtime are OK)
    ```
 
 5. **Verify no chart-managed operator credential Secret:**
@@ -130,7 +130,7 @@ The operator detects its namespace via the downward API and advertises it in the
    ```bash
    kubectl get configmap kube9-operator-status -n kube9-system \
      -o jsonpath='{.data.status}' | jq '.'
-   # Expect mode "operated", tier "free", health "healthy" by default
+   # Expect mode `operated`, health `healthy` by default (inspect full JSON with jq `.`)
    ```
 
 ### Phase 3: Helm commands
@@ -224,10 +224,10 @@ kind delete cluster --name kube9-test
 ## Expected results summary
 
 - No chart-managed Secret named `kube9-operator-config` and no `API_KEY` environment variable in rendered manifests for default values
-- Status ConfigMap reports `mode="operated"` and `tier="free"` for default install when healthy
+- Status ConfigMap reports `mode="operated"` and healthy status by default when RBAC and runtime are OK
 - Pod reaches Ready without crash loops; operator does **not** log kube9-server registration or `/v1/collections` transmission
 - `helm lint` passes; upgrade with `--reuse-values` preserves prior values
-- Optional API key / custom values (when the chart exposes them): deployment updates apply, pod **Ready**, status fields unchanged for default product constants
+- Optional custom values: deployment updates apply, pod **Ready**, status fields reflect current operator version and health
 
 ## Troubleshooting
 

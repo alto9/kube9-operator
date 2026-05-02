@@ -17,7 +17,7 @@
     },
     {
       "title": "Status ConfigMap",
-      "description": "kube9-operator-status ConfigMap with mode, tier, version, health, lastUpdate, namespace. No registered, clusterId.",
+      "description": "kube9-operator-status ConfigMap JSON (`OperatorStatus`): mode, version, health, lastUpdate, namespace, collectionStats, argocd, trivy, assessment. Legacy fields like registered/clusterId/tier are not published.",
       "context_sources": [".forge/data/data_model.md"]
     },
     {

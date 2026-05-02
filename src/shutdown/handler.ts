@@ -91,7 +91,6 @@ export async function gracefulShutdown(
     const assessmentSummary = buildAssessmentStatusSummary(getScheduledAssessmentLastRunSnapshot());
     const finalStatus: OperatorStatus = {
       mode: 'operated',
-      tier: 'free',
       version: OPERATOR_VERSION,
       health: 'unhealthy',
       lastUpdate: new Date().toISOString(),

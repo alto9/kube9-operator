@@ -34,7 +34,6 @@ describe('calculateStatus', () => {
 
       expect(status).toMatchObject({
         mode: 'operated',
-        tier: 'free',
         version: '1.0.0',
         health: 'healthy',
         error: null,
@@ -42,7 +41,6 @@ describe('calculateStatus', () => {
       });
 
       expect(status.mode).toBe('operated');
-      expect(status.tier).toBe('free');
       expect(status.version).toBe('1.0.0');
       expect(status.health).toBe('healthy');
       expect(status.error).toBe(null);

@@ -51,7 +51,7 @@
 
 **ConfigMap Read**:
 - `get` on `configmaps` named `kube9-operator-status` in operator namespace
-- Used for tier detection and status monitoring
+- Used for operator presence detection and status monitoring
 
 **Pod Discovery**:
 - `get` on `deployments` in operator namespace
@@ -127,5 +127,5 @@ rules:
 **Benefits**:
 - No ingress controller required
 - No external IPs or load balancers needed
-- Works in air-gapped environments (free tier)
+- Works in air-gapped environments (open-source operator path)
 - Simplified network security (egress-only)

@@ -44,7 +44,7 @@ const DEFAULT_TRIVY_STATUS: TrivyStatus = {
 
 /**
  * Calculate the current operator status from runtime signals.
- * `mode` and `tier` are fixed product constants (not derived from config or secrets).
+ * `mode` is a fixed product constant for published JSON compatibility (not derived from secrets).
  *
  * @param lastError - Optional error message from last operation
  * @param canWriteConfigMap - Whether the operator can write to ConfigMap (defaults to true)
@@ -67,9 +67,8 @@ export function calculateStatus(
   trivyStatus: TrivyStatus = DEFAULT_TRIVY_STATUS,
   assessmentSummary: AssessmentStatusSummary = DEFAULT_ASSESSMENT_STATUS_SUMMARY
 ): OperatorStatus {
-  // Published status uses fixed mode/tier; this function does not read config or credentials.
+  // Published status uses fixed mode; this function does not read config or credentials.
   const mode: 'operated' | 'enabled' = 'operated';
-  const tier: 'free' | 'pro' = 'free';
 
   const health = calculateHealth(canWriteConfigMap, lastError);
 
@@ -91,7 +90,6 @@ export function calculateStatus(
 
   return {
     mode,
-    tier,
     version: OPERATOR_VERSION,
     health,
     lastUpdate: new Date().toISOString(),

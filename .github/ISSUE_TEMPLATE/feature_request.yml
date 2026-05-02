@@ -57,15 +57,16 @@ body:
         - When troubleshooting issues, I need detailed resource usage data
 
   - type: dropdown
-    id: tier
+    id: scope
     attributes:
-      label: Tier
-      description: Should this feature be available in Free tier, Pro tier, or both?
+      label: Primary scope
+      description: Which area does this feature mainly concern?
       options:
-        - Free Tier
-        - Pro Tier
-        - Both
-      default: 2
+        - Operator runtime / assessments
+        - Helm chart / packaging
+        - Documentation
+        - Other / cross-cutting
+      default: 0
 
   - type: textarea
     id: additional

@@ -19,7 +19,7 @@ describe('formatOutput', () => {
   });
 
   it('formats single object as key-value table', () => {
-    const data = { status: 'healthy', tier: 'pro', version: '1.0.0' };
+    const data = { status: 'healthy', version: '1.0.0' };
     const result = formatOutput(data, 'table');
     
     expect(result).toContain('status');

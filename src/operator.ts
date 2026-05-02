@@ -66,7 +66,6 @@ async function initializeConfig(): Promise<Config> {
     logger.info('Configuration loaded', {
       logLevel: config.logLevel,
       statusUpdateIntervalSeconds: config.statusUpdateIntervalSeconds,
-      tier: 'free',
     });
     
     return config;

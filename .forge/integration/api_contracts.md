@@ -10,8 +10,7 @@
 **JSON Schema**: `OperatorStatus`
 
 **Schema Fields**:
-- `mode`: `"operated"` | `"enabled"` - Operating mode
-- `tier`: `"free"` | `"pro"` - User-facing tier
+- `mode`: `"operated"` | `"enabled"` - Published operating mode
 - `version`: string - Semantic version (e.g., `"1.0.0"`)
 - `health`: `"healthy"` | `"degraded"` | `"unhealthy"` - Current health status
 - `lastUpdate`: string - ISO 8601 timestamp
@@ -25,7 +24,7 @@
 1. Extension checks default namespace (`kube9-system`) for ConfigMap
 2. If found, reads `status` key and parses JSON
 3. Uses `status.namespace` field for all subsequent operator interactions
-4. If ConfigMap not found in default namespace, operator is not installed (basic tier)
+4. If ConfigMap not found in default namespace, operator is not installed (basic mode)
 
 ### CLI Exec Contract
 

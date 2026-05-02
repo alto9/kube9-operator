@@ -107,13 +107,12 @@ Exposed in ConfigMap `kube9-operator-status` under `status.argocd`:
 
 **Integration Points**:
 
-1. **Tier Detection**:
-   - Reads `kube9-operator-status` ConfigMap to determine cluster tier
-   - `basic`: No operator installed
-   - `free`: Operator installed in operated mode
-   - `pro`: Operator installed and registered (future)
+1. **Operator detection**:
+   - Reads `kube9-operator-status` ConfigMap to determine whether the operator is installed and healthy
+   - `basic`: No operator / no status ConfigMap
+   - `operated`: Operator installed; extension uses status JSON for dashboards and workflows
 
-2. **Status Monitoring**:
+2. **Status monitoring**:
    - Reads ConfigMap for operator health status
    - Uses `status.namespace` to discover operator location
    - Monitors `status.health` for operator health state

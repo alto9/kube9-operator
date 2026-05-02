@@ -1,6 +1,5 @@
 #!/bin/bash
-# Integration test for free tier deployment
-# Verifies operator works correctly without API key
+# Integration test: operator install with default chart values
 
 set -e
 
@@ -15,16 +14,16 @@ source "$SCRIPT_DIR/helpers.sh"
 setup_cleanup_trap
 
 echo "=========================================="
-echo "Free Tier Integration Test"
+echo "Operator integration test (default install)"
 echo "=========================================="
 echo ""
 
 # Check prerequisites
 check_prerequisites
 
-# Deploy operator without API key
-step "Deploying operator without API key (free tier)"
-deploy_operator "" || exit 1
+# Deploy operator with default chart values
+step "Deploying operator (default chart values)"
+deploy_operator || exit 1
 
 # Wait for pod to be ready
 step "Waiting for operator pod to be ready"
@@ -41,10 +40,6 @@ sleep 5
 step "Verifying status mode is 'operated'"
 verify_status_field "mode" "operated" || exit 1
 
-# Verify status shows tier="free"
-step "Verifying status tier is 'free'"
-verify_status_field "tier" "free" || exit 1
-
 # Verify Secret does NOT exist
 step "Verifying Secret does NOT exist"
 verify_secret_not_exists || exit 1
@@ -54,6 +49,5 @@ step "Status ConfigMap contents:"
 get_status_json | jq '.' || true
 
 echo ""
-success "Free tier test passed!"
+success "Operator integration test passed!"
 echo ""
-

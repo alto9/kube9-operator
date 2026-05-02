@@ -17,7 +17,7 @@ The operator works with the kube9 VS Code extension and optional Helm-based UI c
 
 The operator is installed via Helm and requires no ingress. It is **fully open source and self-contained**: assessments, storage, and status run inside the cluster using the Kubernetes API, optional outbound HTTP for Trivy detection when configured, and local SQLite. This operator does **not** register with kube9-server or transmit collections to it.
 
-**Pro tier** naming remains reserved for future ecosystem capabilities; the chart does not require a kube9-server URL for core operation.
+Paid kube9 experiences are offered separately (for example **kube9-desktop**); this repository’s chart and operator remain open source without subscription gates.
 
 ## Features
 
@@ -58,7 +58,7 @@ The operator automatically detects if ArgoCD is installed in your cluster and ex
 │  │  └─────────────────────────┘  │  │
 │  │  ┌─────────────────────────┐  │  │
 │  │  │ Status ConfigMap        │  │  │
-│  │  │ - mode / tier / health  │  │  │
+│  │  │ - mode / health / …    │  │  │
 │  │  └─────────────────────────┘  │  │
 │  └───────────────────────────────┘  │
 └─────────────────────────────────────┘
@@ -413,7 +413,6 @@ data:
   status: |
     {
       "mode": "operated",
-      "tier": "free",
       "version": "1.0.0",
       "health": "healthy",
       "lastUpdate": "2025-11-10T15:30:00Z",
@@ -436,6 +435,20 @@ data:
         "serverUrl": null,
         "version": null,
         "lastChecked": "2025-11-10T15:30:00Z"
+      },
+      "assessment": {
+        "lastScheduledCompletedAt": null,
+        "lastScheduledOutcome": "none",
+        "lastScheduledRunState": null,
+        "lastScheduledRunId": null,
+        "lastScheduledTotals": {
+          "totalChecks": 0,
+          "completedChecks": 0,
+          "passedChecks": 0,
+          "failedChecks": 0,
+          "warningChecks": 0
+        },
+        "lastScheduledError": null
       }
     }
 ```
@@ -449,7 +462,7 @@ The VS Code extension reads this ConfigMap to discover where the operator runs, 
 | **basic** | Not installed | kubectl-focused workflows; prompts to install the operator when appropriate |
 | **operated** | Installed | Extension reads local status and cluster signals published by the operator |
 
-Published `mode` / `tier` fields exist for compatibility with older clients; the open-source chart path is fully in-cluster.
+Published `mode` reflects client compatibility; status matches `OperatorStatus` in `src/status/types.ts`.
 
 ### Security
 

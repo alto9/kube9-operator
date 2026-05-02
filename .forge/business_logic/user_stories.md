@@ -10,8 +10,7 @@
 - **Stale threshold**: 5 minutes - extension treats status as degraded/unhealthy if `lastUpdate` > 5 minutes old
 
 ### Status Schema
-- `mode`: "operated" (always when operator running)
-- `tier`: "free" (always in current implementation)
+- `mode`: "operated" (standard when operator running; `"enabled"` retained only for client compatibility)
 - `version`: Operator semantic version
 - `health`: "healthy" | "degraded" | "unhealthy"
 - `lastUpdate`: ISO 8601 timestamp
@@ -21,7 +20,7 @@
 - `argocd`: ArgoCD detection status
 
 ### Extension Behavior
-- Extension queries operator status → returns operated, tier free
+- Extension queries operator status → operated cluster capabilities when ConfigMap is present
 - Extension detects operator not installed → basic mode, installation prompts
 - Extension reads ConfigMap from default namespace, then uses `namespace` field for subsequent operations
 

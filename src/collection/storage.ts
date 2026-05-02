@@ -1,5 +1,5 @@
 /**
- * Local storage implementation for free tier data collection
+ * Local SQLite storage for operator-collected cluster data (in-cluster only).
  * Stores collections in memory with size limits and retrieval capabilities
  */
 
@@ -14,7 +14,7 @@ const DEFAULT_MAX_COLLECTIONS = 100;
 
 /**
  * LocalStorage provides in-memory storage for collection payloads.
- * Used by free tier operators to store collected data locally without transmission.
+ * Used by the operator to store collected data locally without transmission.
  * 
  * Storage is limited to prevent memory issues and maintains collections
  * in insertion order (most recent first) for efficient retrieval.

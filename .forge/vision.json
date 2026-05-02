@@ -3,7 +3,7 @@
     "title": "kube9-operator: Kubernetes Well-Architected validation and cluster insights",
     "mission": "Provide Kubernetes Well-Architected Framework validation and cluster insights for the kube9 ecosystem. The operator runs in clusters, performing scheduled framework assessments and enabling integration with the kube9 VS Code extension through kubectl exec and ConfigMap status—no external server or ingress required.",
     "core_purpose": "Kubernetes clusters need continuous Well-Architected Framework validation and intelligent cluster management. The operator performs framework checks on a schedule, stores results in SQLite, and exposes them via CLI and ConfigMap. It is fully open-source and self-contained, serving as the foundation for the kube9 ecosystem.",
-    "key_architecture": "Single-tier model: operated (free) only. Zero-ingress architecture—all communication is outbound to in-cluster services (Prometheus, ArgoCD, Kubernetes API). Single Node.js binary with serve (operator loop) and query (CLI) modes. SQLite at /data/kube9.db (configurable via DB_PATH, defaults to /data) for events, assessments, and collections; ConfigMap (kube9-operator-status) for status. Extensions query via kubectl exec: `kubectl exec -n <namespace> deploy/kube9-operator -- kube9-operator query <command>`.",
+    "key_architecture": "Open-source operator path only: basic (no operator) vs operated (installed). Zero-ingress architecture—all communication is outbound to in-cluster services (Kubernetes API; optional Prometheus scrape; optional ArgoCD/Trivy probes). Single Node.js binary with serve (operator loop) and query (CLI) modes. SQLite at /data/kube9.db (configurable via DB_PATH, defaults to /data) for events, assessments, and collections; ConfigMap (kube9-operator-status) for status. Extensions query via kubectl exec: `kubectl exec -n <namespace> deploy/kube9-operator -- kube9-operator query <command>`. Paid kube9 products (for example kube9-desktop) are separate from this repository.",
     "last_validated": "2026-03-15",
     "long_term_vision": {
       "strategic_goals": {
@@ -15,14 +15,14 @@
     "key_principles": [
       "Security First: No ingress, minimal RBAC, non-root execution, read-only filesystem.",
       "Minimal Resource Footprint: ~100m CPU, 128Mi RAM; no impact on cluster performance.",
-      "Tier-Aware Architecture: basic (no operator) and operated (installed); clear status exposure for VS Code extension via ConfigMap.",
+      "Mode-aware architecture: basic (no operator) and operated (installed); clear status exposure for VS Code extension via ConfigMap.",
       "Operational Excellence: Helm install, clear status reporting, graceful degradation under failure.",
       "Privacy & Compliance: RBAC-controlled access; no secrets or credentials collected; audit trail for operations."
     ],
     "market_strategy": {
       "competitive_advantages": [
         "Zero Ingress Architecture: No ingress required—all communication is outbound to in-cluster services (Prometheus, ArgoCD, Kubernetes API).",
-        "Tier Detection: Enables progressive enhancement in VS Code extension based on cluster capabilities (basic vs operated).",
+        "Operator status signals: Progressive enhancement in VS Code based on operator presence, health, and optional integrations.",
         "Minimal Footprint: Lightweight design that does not impact cluster performance.",
         "Fully Self-Contained: Open-source, no API keys or registration required; runs entirely within the cluster."
       ],

@@ -33,8 +33,7 @@ logLevel: "info"
 # Status update interval in seconds
 statusUpdateIntervalSeconds: 60
 
-# Optional API key for Pro-tier ecosystem features (chart may expose as Secret / env when supported)
-# apiKey: ""
+# Paid kube9 experiences ship in kube9-desktop; this chart does not bundle API keys or registration.
 
 # ArgoCD integration configuration
 argocd:
