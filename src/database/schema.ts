@@ -7,7 +7,7 @@ import Database from 'better-sqlite3';
 import { logger } from '../logging/logger.js';
 
 /** Latest schema version - bump when adding migrations */
-const LATEST_SCHEMA_VERSION = 4;
+const LATEST_SCHEMA_VERSION = 5;
 
 /**
  * SchemaManager handles database schema initialization and migrations
@@ -57,6 +57,10 @@ export class SchemaManager {
       {
         version: 4,
         apply: () => this.migrateToV4(),
+      },
+      {
+        version: 5,
+        apply: () => this.migrateToV5(),
       },
     ];
 
@@ -183,6 +187,26 @@ export class SchemaManager {
       CREATE INDEX IF NOT EXISTS idx_collections_cluster_id ON collections(cluster_id);
       CREATE INDEX IF NOT EXISTS idx_collections_type ON collections(type);
       CREATE INDEX IF NOT EXISTS idx_collections_collected_at ON collections(collected_at DESC);
+    `);
+  }
+
+  /**
+   * Migration v5: persisted Argo CD Application snapshots (M9).
+   */
+  private migrateToV5(): void {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS argocd_apps (
+        cluster_id TEXT NOT NULL,
+        app_namespace TEXT NOT NULL,
+        app_name TEXT NOT NULL,
+        collected_at TEXT NOT NULL,
+        status_json TEXT NOT NULL,
+        drift_json TEXT,
+        PRIMARY KEY (cluster_id, app_namespace, app_name)
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_argocd_apps_cluster_id ON argocd_apps(cluster_id);
+      CREATE INDEX IF NOT EXISTS idx_argocd_apps_collected_at ON argocd_apps(collected_at DESC);
     `);
   }
 

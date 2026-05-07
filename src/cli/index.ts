@@ -14,6 +14,7 @@ import {
 } from './commands/assess.js';
 import { listVulnerabilities, summarizeVulnerabilities } from './commands/vulnerabilities.js';
 import { listCollections, getCollection } from './commands/collections.js';
+import { listArgoCDApplications, getArgoCDApplication } from './commands/argocd-apps.js';
 
 /**
  * Create the assess command structure
@@ -164,6 +165,33 @@ export function createQueryCommands(): Command {
     .description('Get full collection payload by id')
     .option('--format <format>', 'Output format (json|yaml|table|compact)', 'json')
     .action(getCollection);
+
+  const argocd = query
+    .command('argocd')
+    .description('Query persisted Argo CD Application snapshots (SQLite)');
+
+  const argocdApps = argocd
+    .command('apps')
+    .description('List or get stored Application snapshots');
+
+  argocdApps
+    .command('list')
+    .description('List stored Argo CD Applications from argocd_apps')
+    .option('--cluster-id <id>', 'Filter by cluster id')
+    .option('--namespace <ns>', 'Filter by application namespace')
+    .option('--name <name>', 'Filter by application name')
+    .option('--since <date>', 'Collected on/after (ISO 8601)')
+    .option('--until <date>', 'Collected before (ISO 8601)')
+    .option('--limit <number>', 'Limit number of results', '50')
+    .option('--offset <number>', 'Skip number of results', '0')
+    .option('--format <format>', 'Output format (json|yaml|table|compact)', 'json')
+    .action(listArgoCDApplications);
+
+  argocdApps
+    .command('get <clusterId> <namespace> <name>')
+    .description('Get one persisted Application snapshot by primary key')
+    .option('--format <format>', 'Output format (json|yaml|table|compact)', 'json')
+    .action(getArgoCDApplication);
 
   return query;
 }

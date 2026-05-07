@@ -116,7 +116,7 @@ describe('SchemaManager', () => {
     
     expect(versions.length).toBeGreaterThanOrEqual(1);
     expect(versions[0]?.version).toBe(1);
-    expect(schema.getVersion()).toBeGreaterThanOrEqual(4);
+    expect(schema.getVersion()).toBeGreaterThanOrEqual(5);
   });
 
   it('schema version has correct fields', () => {
@@ -256,7 +256,7 @@ describe('SchemaManager', () => {
     const versionAfter = schema.getVersion();
     
     expect(versionBefore).toBe(versionAfter);
-    expect(versionAfter).toBeGreaterThanOrEqual(4);
+    expect(versionAfter).toBeGreaterThanOrEqual(5);
   });
 
   it('creates image_scans and image_vulnerabilities when migrating to v3', () => {
@@ -311,12 +311,39 @@ describe('SchemaManager', () => {
     );
   });
 
+  it('creates argocd_apps table when migrating to v5', () => {
+    const schema = new SchemaManager();
+    schema.initialize();
+
+    const manager = DatabaseManager.getInstance();
+    const db = manager.getDatabase();
+
+    const result = db
+      .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='argocd_apps'`)
+      .get() as { name: string } | undefined;
+
+    expect(result?.name).toBe('argocd_apps');
+
+    const columns = db.prepare(`PRAGMA table_info(argocd_apps)`).all() as Array<{ name: string }>;
+    const columnNames = columns.map((col) => col.name);
+    expect(columnNames).toEqual(
+      expect.arrayContaining([
+        'cluster_id',
+        'app_namespace',
+        'app_name',
+        'collected_at',
+        'status_json',
+        'drift_json',
+      ])
+    );
+  });
+
   it('migration runs cleanly on fresh database', () => {
     DatabaseManager.reset();
     const schema = new SchemaManager();
     schema.initialize();
     
-    expect(schema.getVersion()).toBeGreaterThanOrEqual(4);
+    expect(schema.getVersion()).toBeGreaterThanOrEqual(5);
 
     const manager = DatabaseManager.getInstance();
     const db = manager.getDatabase();

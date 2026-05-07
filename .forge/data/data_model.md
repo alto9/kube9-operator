@@ -33,6 +33,16 @@ Exposed via ConfigMap `kube9-operator-status` in operator namespace.
 | namespace | string \| null | Namespace where ArgoCD is installed (null if not detected) |
 | version | string \| null | ArgoCD version extracted from deployment (null if not detected) |
 | lastChecked | string | ISO 8601 timestamp of last detection check |
+| applications | object \| *omitted* | When `argocd_apps` has rows: bounded summary (see below); omitted when none |
+
+#### ArgoCDApplicationsPersistedSummary (nested under `argocd.applications`)
+
+| Property | Type | Description |
+|----------|------|-------------|
+| storedCount | number | Number of rows in `argocd_apps` |
+| lastCollectedAt | string \| null | ISO 8601 `MAX(collected_at)` over stored Applications |
+| syncStatusCounts | `Record<string, number>` | Counts by `status.sync.status` (keys from each `status_json`) |
+| healthStatusCounts | `Record<string, number>` | Counts by `status.health.status` (keys from each `status_json`) |
 
 ## Collection Models (M8)
 
@@ -185,4 +195,21 @@ Stores serialized periodic collection payloads (`ClusterMetadata`, `ResourceInve
 
 **Status:** Target schema and CLI read path captured in [issue #53](https://github.com/alto9/kube9-operator/issues/53); implement before or with collector tickets (#50–#54, #51).
 
-**Note:** The `argocd_apps` table remains planned for a later milestone (e.g. M9); see integration docs.
+### argocd_apps (M9)
+
+Durable snapshots of Argo CD Applications (one row per `cluster_id` + `app_namespace` + `app_name`).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| cluster_id | TEXT | PRIMARY KEY (1/3) | Cluster identifier |
+| app_namespace | TEXT | PRIMARY KEY (2/3) | Application resource namespace |
+| app_name | TEXT | PRIMARY KEY (3/3) | Application resource name |
+| collected_at | TEXT | NOT NULL | ISO 8601 when the snapshot was stored |
+| status_json | TEXT | NOT NULL | Canonical Application status payload (JSON) |
+| drift_json | TEXT | NULL | Optional drift detail when present (JSON) |
+
+**Indexes:** `idx_argocd_apps_cluster_id`, `idx_argocd_apps_collected_at` (DESC).
+
+**CLI:** `kube9-operator query argocd apps list|get …`
+
+**Note:** Writers populate this table from the Argo CD collector path (see milestone M9 issues).

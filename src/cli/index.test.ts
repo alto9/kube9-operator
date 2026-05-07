@@ -19,6 +19,7 @@ describe('createQueryCommands', () => {
     const queryCmd = createQueryCommands();
     const names = queryCmd.commands.map((c) => c.name());
     expect(names).toContain('collections');
+    expect(names).toContain('argocd');
     expect(names).toContain('events');
     expect(names).toContain('vulnerabilities');
   });

@@ -150,6 +150,12 @@ describe('calculateStatus', () => {
         namespace: 'argocd',
         version: 'v2.8.0',
         lastChecked: '2025-01-01T00:00:00Z',
+        applications: {
+          storedCount: 2,
+          lastCollectedAt: '2025-01-02T00:00:00Z',
+          syncStatusCounts: { Synced: 2 },
+          healthStatusCounts: { Healthy: 2 },
+        },
       };
 
       const status = calculateStatus(

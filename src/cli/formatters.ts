@@ -49,6 +49,20 @@ function formatTable(data: any, format: string = 'table'): string {
     return renderTable(headers, rows, isCompact);
   }
 
+  // Argo CD applications list (argocd_apps summaries)
+  if (data.applications && Array.isArray(data.applications)) {
+    const headers = ['CLUSTER_ID', 'NAMESPACE', 'NAME', 'SYNC', 'HEALTH', 'COLLECTED_AT'];
+    const rows = data.applications.map((a: any) => [
+      truncate(a.cluster_id, isCompact ? 18 : 32),
+      truncate(a.app_namespace, isCompact ? 16 : 28),
+      truncate(a.app_name, isCompact ? 20 : 32),
+      truncate(a.sync_status ?? '', isCompact ? 12 : 16),
+      truncate(a.health_status ?? '', isCompact ? 12 : 16),
+      formatDate(a.collected_at),
+    ]);
+    return renderTable(headers, rows, isCompact);
+  }
+
   // Handle assessments list
   if (data.assessments && Array.isArray(data.assessments)) {
     const headers = ['RUN_ID', 'MODE', 'STATE', 'TOTAL', 'PASSED', 'FAILED', 'REQUESTED'];

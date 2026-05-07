@@ -10,6 +10,7 @@ import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
 import { argocdStatusTracker } from '../argocd/state.js';
 import { trivyStatusTracker } from '../trivy/state.js';
+import { withPersistedArgoApplicationsSummary } from '../status/argocd-for-status.js';
 import {
   buildAssessmentScheduleContextFromConfig,
   buildAssessmentStatusSummary,
@@ -93,7 +94,7 @@ export async function gracefulShutdown(
     await stopHealthServer();
 
     const collectionStats = collectionStatsTracker.getStats();
-    const argocdStatus = argocdStatusTracker.getStatus();
+    const argocdStatus = withPersistedArgoApplicationsSummary(argocdStatusTracker.getStatus());
     const trivyStatus = trivyStatusTracker.getStatus();
     let assessmentSchedule = DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT;
     try {
