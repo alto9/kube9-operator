@@ -64,8 +64,8 @@ Exposed in ConfigMap `kube9-operator-status` under `status.argocd`:
 - `lastChecked`: string - ISO 8601 timestamp of last detection check
 
 **Future (M9)**:
-- Application sync status tracking
-- Drift detection results
+- Application sync status tracking (HTTP API client and collector — issue #55)
+- Drift classification from Application snapshots — issue #56; persistence — issue #57
 
 ## Trivy (optional, M3)
 
