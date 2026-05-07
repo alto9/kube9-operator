@@ -185,4 +185,21 @@ Stores serialized periodic collection payloads (`ClusterMetadata`, `ResourceInve
 
 **Status:** Target schema and CLI read path captured in [issue #53](https://github.com/alto9/kube9-operator/issues/53); implement before or with collector tickets (#50–#54, #51).
 
-**Note:** The `argocd_apps` table remains planned for a later milestone (e.g. M9); see integration docs.
+### argocd_apps (M9)
+
+Stores normalized Argo CD **Application** sync/health snapshots keyed by cluster and Application object identity. The HTTP collector lives in [issue #55](https://github.com/alto9/kube9-operator/issues/55); `status_json` holds the full normalized payload. Optional `drift_json` is reserved for drift classification ([issue #56](https://github.com/alto9/kube9-operator/issues/56)).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| cluster_id | TEXT | NOT NULL, PK | Cluster identifier `cls_*` |
+| app_namespace | TEXT | NOT NULL, PK | Kubernetes namespace of the Application CR |
+| app_name | TEXT | NOT NULL, PK | Name of the Application CR |
+| observed_at | TEXT | NOT NULL | ISO 8601 when this snapshot was observed |
+| status_json | TEXT | NOT NULL | Full normalized Application status document (JSON object); validated at write time |
+| drift_json | TEXT | NULL | Optional drift classification JSON for downstream logic |
+
+**Primary key:** `(cluster_id, app_namespace, app_name)`.
+
+**Indexes:** `idx_argocd_apps_cluster_observed` on `(cluster_id, observed_at DESC)` for recent snapshots per cluster.
+
+**Repository:** `ArgoCDAppsRepository` (`src/database/argocd-apps-repository.ts`); contracts in `src/database/argocd-apps-contracts.ts`.

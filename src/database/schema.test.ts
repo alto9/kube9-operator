@@ -116,7 +116,7 @@ describe('SchemaManager', () => {
     
     expect(versions.length).toBeGreaterThanOrEqual(1);
     expect(versions[0]?.version).toBe(1);
-    expect(schema.getVersion()).toBeGreaterThanOrEqual(4);
+    expect(schema.getVersion()).toBeGreaterThanOrEqual(5);
   });
 
   it('schema version has correct fields', () => {
@@ -256,7 +256,7 @@ describe('SchemaManager', () => {
     const versionAfter = schema.getVersion();
     
     expect(versionBefore).toBe(versionAfter);
-    expect(versionAfter).toBeGreaterThanOrEqual(4);
+    expect(versionAfter).toBeGreaterThanOrEqual(5);
   });
 
   it('creates image_scans and image_vulnerabilities when migrating to v3', () => {
@@ -311,21 +311,48 @@ describe('SchemaManager', () => {
     );
   });
 
+  it('creates argocd_apps table when migrating to v5', () => {
+    const schema = new SchemaManager();
+    schema.initialize();
+
+    const manager = DatabaseManager.getInstance();
+    const db = manager.getDatabase();
+
+    const table = db
+      .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='argocd_apps'`)
+      .get() as { name: string } | undefined;
+    expect(table?.name).toBe('argocd_apps');
+
+    const indexes = db
+      .prepare(
+        `SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='argocd_apps' AND name NOT LIKE 'sqlite_%'`
+      )
+      .all() as Array<{ name: string }>;
+    expect(indexes.map((i) => i.name)).toContain('idx_argocd_apps_cluster_observed');
+
+    const meta = db
+      .prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='argocd_apps'`)
+      .get() as { sql: string } | undefined;
+    expect(meta?.sql).toContain('PRIMARY KEY (cluster_id, app_namespace, app_name)');
+  });
+
   it('migration runs cleanly on fresh database', () => {
     DatabaseManager.reset();
     const schema = new SchemaManager();
     schema.initialize();
-    
-    expect(schema.getVersion()).toBeGreaterThanOrEqual(4);
+
+    expect(schema.getVersion()).toBeGreaterThanOrEqual(5);
 
     const manager = DatabaseManager.getInstance();
     const db = manager.getDatabase();
-    
-    const tables = db.prepare(`
-      SELECT name FROM sqlite_master 
+
+    const tables = db
+      .prepare(`
+      SELECT name FROM sqlite_master
       WHERE type='table' AND name IN ('assessments', 'assessment_history')
-    `).all() as Array<{ name: string }>;
-    
+    `)
+      .all() as Array<{ name: string }>;
+
     expect(tables.length).toBe(2);
   });
 });
