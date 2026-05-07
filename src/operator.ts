@@ -18,6 +18,8 @@ import { recordCollection } from './collection/metrics.js';
 import { collectionStatsTracker } from './collection/stats-tracker.js';
 import { logger } from './logging/logger.js';
 import { detectArgoCDWithTimeout, parseArgoCDConfigFromEnv } from './argocd/detection.js';
+import { collectApplicationSnapshots } from './argocd/application-snapshot-collect.js';
+import { runApplicationDriftCycle } from './argocd/application-drift-cycle.js';
 import { argocdStatusTracker } from './argocd/state.js';
 import { ArgoCDDetectionManager } from './argocd/detection-manager.js';
 import { detectTrivyWithTimeout } from './trivy/detection.js';
@@ -315,6 +317,26 @@ export async function startOperator() {
           collectionStatsTracker.recordFailure('resource-configuration-patterns');
           // Don't throw - scheduler will retry on next interval
         }
+      }
+    );
+
+    collectionScheduler.register(
+      'argocd-application-status',
+      config.argoCdApplicationStatusIntervalSeconds,
+      1800,
+      1800,
+      async () => {
+        const startTime = Date.now();
+        if (!argocdStatusTracker.getStatus().detected) {
+          const durationSeconds = (Date.now() - startTime) / 1000;
+          recordCollection('argocd-application-status', 'success', durationSeconds);
+          collectionStatsTracker.recordSuccess('argocd-application-status');
+          return;
+        }
+        await runApplicationDriftCycle(collectApplicationSnapshots);
+        const durationSeconds = (Date.now() - startTime) / 1000;
+        recordCollection('argocd-application-status', 'success', durationSeconds);
+        collectionStatsTracker.recordSuccess('argocd-application-status');
       }
     );
 

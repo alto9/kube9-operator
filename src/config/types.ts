@@ -38,6 +38,13 @@ export interface Config {
   workloadImageScanIntervalSeconds: number;
 
   /**
+   * Argo CD Application snapshot collection + drift classification interval (seconds).
+   * Runs only when Argo CD is detected. Minimum: 1800 (30 minutes).
+   * Default: 3600 (1 hour).
+   */
+  argoCdApplicationStatusIntervalSeconds: number;
+
+  /**
    * Event retention for info/warning severity (days)
    * Default: 7 days
    */

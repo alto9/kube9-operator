@@ -30,6 +30,12 @@
           "minimum": 1,
           "maximum": 24,
           "default": 6
+        },
+        "applicationStatusIntervalSeconds": {
+          "type": "integer",
+          "description": "Interval in seconds for Argo CD Application snapshot collection and drift classification (minimum 1800 enforced by operator)",
+          "minimum": 1800,
+          "default": 3600
         }
       }
     },

@@ -69,6 +69,8 @@ spec:
         {{- end }}
         - name: ARGOCD_DETECTION_INTERVAL
           value: {{ .Values.argocd.detectionInterval | default 6 | quote }}
+        - name: ARGOCD_APPLICATION_STATUS_INTERVAL_SECONDS
+          value: {{ .Values.argocd.applicationStatusIntervalSeconds | default 3600 | quote }}
         # Optional Trivy server detection
         - name: TRIVY_AUTO_DETECT
           value: {{ .Values.trivy.autoDetect | quote }}

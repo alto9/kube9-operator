@@ -52,6 +52,10 @@ argocd:
   # Detection check interval in hours (default: 6)
   detectionInterval: 6
 
+  # Application snapshot collection + drift classification interval (seconds).
+  # Minimum enforced by operator: 1800. Only runs when Argo CD is detected.
+  applicationStatusIntervalSeconds: 3600
+
 # Optional Trivy server detection (does not install Trivy; set serverUrl to probe)
 trivy:
   autoDetect: true
