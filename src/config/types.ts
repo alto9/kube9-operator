@@ -38,6 +38,12 @@ export interface Config {
   workloadImageScanIntervalSeconds: number;
 
   /**
+   * Argo CD Application API status collection interval in seconds.
+   * Default: 3600 (1 hour), Minimum: 1800 (30 minutes)
+   */
+  argocdApplicationStatusIntervalSeconds: number;
+
+  /**
    * Event retention for info/warning severity (days)
    * Default: 7 days
    */

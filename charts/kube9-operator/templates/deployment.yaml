@@ -69,6 +69,25 @@ spec:
         {{- end }}
         - name: ARGOCD_DETECTION_INTERVAL
           value: {{ .Values.argocd.detectionInterval | default 6 | quote }}
+        {{- $argapi := .Values.argocd.api | default dict }}
+        - name: ARGOCD_API_COLLECTION_ENABLED
+          value: {{ $argapi.collectionEnabled | default true | quote }}
+        {{- if $argapi.baseUrl }}
+        - name: ARGOCD_API_BASE_URL
+          value: {{ $argapi.baseUrl | quote }}
+        {{- end }}
+        - name: ARGOCD_API_TIMEOUT_MS
+          value: {{ $argapi.timeoutMs | default 30000 | quote }}
+        - name: ARGOCD_API_TLS_INSECURE
+          value: {{ $argapi.tlsInsecure | default false | quote }}
+        - name: ARGOCD_API_SERVER_SERVICE_NAME
+          value: {{ $argapi.serverServiceName | default "argocd-server" | quote }}
+        {{- if $argapi.tokenFile }}
+        - name: ARGOCD_API_TOKEN_FILE
+          value: {{ $argapi.tokenFile | quote }}
+        {{- end }}
+        - name: ARGOCD_APPLICATION_STATUS_INTERVAL_SECONDS
+          value: {{ .Values.metrics.intervals.argocdApplicationStatus | default 3600 | quote }}
         # Optional Trivy server detection
         - name: TRIVY_AUTO_DETECT
           value: {{ .Values.trivy.autoDetect | quote }}
