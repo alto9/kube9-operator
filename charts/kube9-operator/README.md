@@ -136,7 +136,6 @@ The following table lists the configurable parameters and their default values:
 | `trivy.vulnMaxHigh` | `VULN_MAX_HIGH` | `1000000` |
 | `trivy.vulnMaxMedium` | `VULN_MAX_MEDIUM` | `1000000` |
 | `metrics.intervals.workloadImageScan` | Seconds between workload image collection / scan cycles | `86400` |
-| `metrics.intervals.argocdApplicationStatus` | Seconds between Argo CD Application API status collection runs | `3600` |
 
 ### Configuration Details
 

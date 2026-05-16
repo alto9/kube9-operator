@@ -397,12 +397,12 @@ export async function startOperator() {
               argocdStatusTracker.getStatus()
             );
             const durationSeconds = (Date.now() - startTime) / 1000;
-            if (outcome === 'failed') {
-              recordCollection('argocd-application-status', 'failed', durationSeconds);
-              collectionStatsTracker.recordFailure('argocd-application-status');
-            } else {
+            if (outcome === 'success') {
               recordCollection('argocd-application-status', 'success', durationSeconds);
               collectionStatsTracker.recordSuccess('argocd-application-status');
+            } else if (outcome === 'failed') {
+              recordCollection('argocd-application-status', 'failed', durationSeconds);
+              collectionStatsTracker.recordFailure('argocd-application-status');
             }
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : String(error);
