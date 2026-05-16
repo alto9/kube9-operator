@@ -3,6 +3,7 @@ import type {
   ApplicationSnapshot,
   ApplicationSyncPhase,
 } from './application-snapshot-types.js';
+import type { ArgoCdApplicationStatusRecord } from './application-status-types.js';
 
 const SYNC: Record<string, ApplicationSyncPhase> = {
   synced: 'Synced',
@@ -133,5 +134,21 @@ export function normalizeApplicationSnapshot(raw: unknown): ApplicationSnapshot 
     ...(resourcesOutOfSyncCount !== undefined
       ? { resourcesOutOfSyncCount }
       : {}),
+  };
+}
+
+/**
+ * Maps a normalized Application status record from the REST collector into
+ * {@link ApplicationSnapshot} for drift classification.
+ */
+export function applicationSnapshotFromStatusRecord(
+  r: ArgoCdApplicationStatusRecord
+): ApplicationSnapshot {
+  return {
+    namespace: r.namespace,
+    name: r.name,
+    observedRevision: r.revision,
+    syncStatus: normSync(r.syncStatus),
+    healthStatus: normHealth(r.healthStatus),
   };
 }

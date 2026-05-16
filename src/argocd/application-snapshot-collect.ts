@@ -1,11 +1,15 @@
 import type { ApplicationSnapshot } from './application-snapshot-types.js';
+import { applicationSnapshotFromStatusRecord } from './application-snapshot-normalize.js';
+import { getLastArgoCdApplicationStatusBatch } from './application-status-sink.js';
 
 /**
- * Loads normalized Application snapshots for drift processing.
- *
- * Issue #55 replaces this stub with Argo CD API collection; until then the cycle
- * runs on an empty list so scheduler wiring and classification stay stable.
+ * Loads normalized Application snapshots for drift from the last successful
+ * Application status batch ({@link runArgoCdApplicationStatusCycle}).
  */
 export async function collectApplicationSnapshots(): Promise<ApplicationSnapshot[]> {
-  return [];
+  const batch = getLastArgoCdApplicationStatusBatch();
+  if (!batch) {
+    return [];
+  }
+  return batch.applications.map(applicationSnapshotFromStatusRecord);
 }

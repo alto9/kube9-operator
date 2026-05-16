@@ -24,6 +24,8 @@ import { argocdStatusTracker } from './argocd/state.js';
 import { ArgoCDDetectionManager } from './argocd/detection-manager.js';
 import { detectTrivyWithTimeout } from './trivy/detection.js';
 import { parseTrivyDetectionConfigFromEnv } from './trivy/env-config.js';
+import { parseArgoCdApiCollectionConfigFromEnv } from './argocd/application-status-env.js';
+import { runArgoCdApplicationStatusCycle } from './argocd/application-status-cycle.js';
 import { trivyStatusTracker } from './trivy/state.js';
 import { TrivyDetectionManager } from './trivy/detection-manager.js';
 import { runWorkloadImageScanCycle } from './trivy/workload-scan-cycle.js';
@@ -321,26 +323,6 @@ export async function startOperator() {
     );
 
     collectionScheduler.register(
-      'argocd-application-status',
-      config.argoCdApplicationStatusIntervalSeconds,
-      1800,
-      1800,
-      async () => {
-        const startTime = Date.now();
-        if (!argocdStatusTracker.getStatus().detected) {
-          const durationSeconds = (Date.now() - startTime) / 1000;
-          recordCollection('argocd-application-status', 'success', durationSeconds);
-          collectionStatsTracker.recordSuccess('argocd-application-status');
-          return;
-        }
-        await runApplicationDriftCycle(collectApplicationSnapshots);
-        const durationSeconds = (Date.now() - startTime) / 1000;
-        recordCollection('argocd-application-status', 'success', durationSeconds);
-        collectionStatsTracker.recordSuccess('argocd-application-status');
-      }
-    );
-
-    collectionScheduler.register(
       'workload-image-scan',
       config.workloadImageScanIntervalSeconds,
       3600, // 1 hour minimum interval
@@ -404,8 +386,47 @@ export async function startOperator() {
       );
     }
     
-      // Start scheduler
-      collectionScheduler.start();
+    if (parseArgoCdApiCollectionConfigFromEnv().collectionEnabled) {
+      collectionScheduler.register(
+        'argocd-application-status',
+        config.argocdApplicationStatusIntervalSeconds,
+        1800,
+        1800,
+        async () => {
+          const startTime = Date.now();
+          if (!argocdStatusTracker.getStatus().detected) {
+            const durationSeconds = (Date.now() - startTime) / 1000;
+            recordCollection('argocd-application-status', 'success', durationSeconds);
+            collectionStatsTracker.recordSuccess('argocd-application-status');
+            return;
+          }
+          try {
+            const outcome = await runArgoCdApplicationStatusCycle(() =>
+              argocdStatusTracker.getStatus()
+            );
+            await runApplicationDriftCycle(collectApplicationSnapshots);
+            const durationSeconds = (Date.now() - startTime) / 1000;
+            if (outcome === 'failed') {
+              recordCollection('argocd-application-status', 'failed', durationSeconds);
+              collectionStatsTracker.recordFailure('argocd-application-status');
+            } else {
+              recordCollection('argocd-application-status', 'success', durationSeconds);
+              collectionStatsTracker.recordSuccess('argocd-application-status');
+            }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            logger.error('Argo CD application status collection failed unexpectedly', {
+              error: errorMessage,
+            });
+            const durationSeconds = (Date.now() - startTime) / 1000;
+            recordCollection('argocd-application-status', 'failed', durationSeconds);
+            collectionStatsTracker.recordFailure('argocd-application-status');
+          }
+        }
+      );
+    }
+
+    collectionScheduler.start();
 
       // Store reference for shutdown handler
       collectionSchedulerInstance = collectionScheduler;

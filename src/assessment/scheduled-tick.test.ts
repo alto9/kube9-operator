@@ -21,7 +21,7 @@ const baseConfig = {
   resourceInventoryIntervalSeconds: 21600,
   resourceConfigurationPatternsIntervalSeconds: 43200,
   workloadImageScanIntervalSeconds: 86400,
-  argoCdApplicationStatusIntervalSeconds: 3600,
+  argocdApplicationStatusIntervalSeconds: 3600,
   eventRetentionInfoWarningDays: 7,
   eventRetentionErrorCriticalDays: 30,
   assessmentEnabled: true,

@@ -31,11 +31,18 @@
           "maximum": 24,
           "default": 6
         },
-        "applicationStatusIntervalSeconds": {
-          "type": "integer",
-          "description": "Interval in seconds for Argo CD Application snapshot collection and drift classification (minimum 1800 enforced by operator)",
-          "minimum": 1800,
-          "default": 3600
+        "api": {
+          "type": "object",
+          "description": "Argo CD Application API collection (in-cluster REST; no ingress)",
+          "properties": {
+            "collectionEnabled": { "type": "boolean", "default": true },
+            "baseUrl": { "type": "string", "default": "" },
+            "timeoutMs": { "type": "integer", "minimum": 1000, "default": 30000 },
+            "tlsInsecure": { "type": "boolean", "default": false },
+            "serverServiceName": { "type": "string", "default": "argocd-server" },
+            "tokenFile": { "type": "string" }
+          },
+          "additionalProperties": false
         }
       }
     },
@@ -70,6 +77,12 @@
               "description": "Workload image collection and optional Trivy scan cycle interval in seconds. Default: 86400 (24 hours). Minimum: 3600 (1 hour).",
               "minimum": 3600,
               "default": 86400
+            },
+            "argocdApplicationStatus": {
+              "type": "integer",
+              "description": "Argo CD Application API status collection interval in seconds. Default: 3600 (1 hour). Minimum: 1800 (30 minutes).",
+              "minimum": 1800,
+              "default": 3600
             }
           },
           "additionalProperties": false

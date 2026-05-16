@@ -185,4 +185,24 @@ Stores serialized periodic collection payloads (`ClusterMetadata`, `ResourceInve
 
 **Status:** Target schema and CLI read path captured in [issue #53](https://github.com/alto9/kube9-operator/issues/53); implement before or with collector tickets (#50–#54, #51).
 
-**Note:** The `argocd_apps` table remains planned for a later milestone (e.g. M9); see integration docs.
+### argocd_apps (M9)
+
+Stores the latest **Argo CD Application** snapshot per cluster + Application identity, produced by the collector ([#55](https://github.com/alto9/kube9-operator/issues/55)) and optional drift classification ([#56](https://github.com/alto9/kube9-operator/issues/56)). CLI/status exposure is ([#58](https://github.com/alto9/kube9-operator/issues/58)).
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| cluster_id | TEXT | NOT NULL, PK part | Cluster identifier `cls_*` (same convention as `collections`) |
+| app_namespace | TEXT | NOT NULL, PK part | Application `metadata.namespace` |
+| app_name | TEXT | NOT NULL, PK part | Application `metadata.name` |
+| observed_at | TEXT | NOT NULL | ISO 8601 when this snapshot was collected |
+| sync_status | TEXT | NULL | Normalized sync phase/status (align names with [#55](https://github.com/alto9/kube9-operator/issues/55) contract) |
+| health_status | TEXT | NULL | Normalized health aggregate |
+| revision | TEXT | NULL | Target/live revision from Argo CD when available |
+| status_json | TEXT | NOT NULL | Full normalized Application payload JSON from [#55](https://github.com/alto9/kube9-operator/issues/55) (forward-compatible extension point) |
+| drift_json | TEXT | NULL | Structured drift output from [#56](https://github.com/alto9/kube9-operator/issues/56) when present |
+
+**Primary key:** `(cluster_id, app_namespace, app_name)` — one current row per Application per cluster; collector/repository uses upsert (`INSERT ... ON CONFLICT` or equivalent).
+
+**Indexes:** `idx_argocd_apps_observed_at` ON `argocd_apps(observed_at DESC)` for recent-first queries.
+
+**Implementation:** SQLite migration (next schema version after current `LATEST_SCHEMA_VERSION` in `src/database/schema.ts`), plus a repository class under `src/database/` following `CollectionRepository` / `ImageScanRepository` patterns; tests in `schema.test.ts` and repository tests.

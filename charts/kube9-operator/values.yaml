@@ -52,9 +52,19 @@ argocd:
   # Detection check interval in hours (default: 6)
   detectionInterval: 6
 
-  # Application snapshot collection + drift classification interval (seconds).
-  # Minimum enforced by operator: 1800. Only runs when Argo CD is detected.
-  applicationStatusIntervalSeconds: 3600
+  # Argo CD REST API (Application sync/health collection; in-cluster, no ingress)
+  api:
+    # When false, the operator does not schedule Application status pulls
+    collectionEnabled: true
+    # Explicit API base URL, e.g. https://argocd-server.argocd.svc.cluster.local (optional)
+    baseUrl: ""
+    timeoutMs: 30000
+    # Only for labs / mis-signed certs — prefer proper CA trust in production
+    tlsInsecure: false
+    # Kubernetes Service name segment for derived URL when baseUrl is empty and Argo CD is detected
+    serverServiceName: argocd-server
+    # Optional bearer token file (defaults to in-cluster SA token path when readable)
+    # tokenFile: ""
 
 # Optional Trivy server detection (does not install Trivy; set serverUrl to probe)
 trivy:
@@ -88,6 +98,8 @@ metrics:
     # Workload image collection + optional Trivy scan cycle (default: 86400 = 24 hours)
     # Minimum: 3600 seconds (1 hour)
     workloadImageScan: 86400
+    # Argo CD Application API collection (default 3600 = 1h, minimum 1800 = 30m)
+    argocdApplicationStatus: 3600
 
 # Periodic Well-Architected assessment scheduling (operator reads these at startup)
 assessment:
