@@ -323,6 +323,19 @@ describe('SchemaManager', () => {
       .get() as { name: string } | undefined;
     expect(table?.name).toBe('argocd_apps');
 
+    const columns = db.prepare(`PRAGMA table_info(argocd_apps)`).all() as Array<{ name: string }>;
+    const columnNames = columns.map((col) => col.name);
+    expect(columnNames).toEqual(
+      expect.arrayContaining([
+        'cluster_id',
+        'app_namespace',
+        'app_name',
+        'observed_at',
+        'status_json',
+        'drift_json',
+      ])
+    );
+
     const indexes = db
       .prepare(
         `SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='argocd_apps' AND name NOT LIKE 'sqlite_%'`

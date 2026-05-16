@@ -25,6 +25,16 @@ export interface CollectionStats {
 }
 
 /**
+ * Aggregate counts from persisted Argo CD Application rows (`argocd_apps`), for status ConfigMap only.
+ */
+export interface ArgoCDApplicationsPersistedSummary {
+  storedCount: number;
+  lastCollectedAt: string | null;
+  syncStatusCounts: Record<string, number>;
+  healthStatusCounts: Record<string, number>;
+}
+
+/**
  * ArgoCD Status
  * Represents the current state of ArgoCD detection in the cluster
  */
@@ -52,6 +62,11 @@ export interface ArgoCDStatus {
    * @example "2025-11-20T15:30:00Z"
    */
   lastChecked: string;
+
+  /**
+   * Optional summary derived from SQLite `argocd_apps` when snapshots exist (omitted when none).
+   */
+  applications?: ArgoCDApplicationsPersistedSummary;
 }
 
 /**

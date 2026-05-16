@@ -33,6 +33,16 @@ Exposed via ConfigMap `kube9-operator-status` in operator namespace.
 | namespace | string \| null | Namespace where ArgoCD is installed (null if not detected) |
 | version | string \| null | ArgoCD version extracted from deployment (null if not detected) |
 | lastChecked | string | ISO 8601 timestamp of last detection check |
+| applications | object \| *omitted* | When `argocd_apps` has rows: bounded summary (see below); omitted when none |
+
+#### ArgoCDApplicationsPersistedSummary (nested under `argocd.applications`)
+
+| Property | Type | Description |
+|----------|------|-------------|
+| storedCount | number | Number of rows in `argocd_apps` |
+| lastCollectedAt | string \| null | ISO 8601 `MAX(observed_at)` over stored Applications |
+| syncStatusCounts | `Record<string, number>` | Counts by `status.sync.status` (keys from each `status_json`) |
+| healthStatusCounts | `Record<string, number>` | Counts by `status.health.status` (keys from each `status_json`) |
 
 ## Collection Models (M8)
 
@@ -187,7 +197,7 @@ Stores serialized periodic collection payloads (`ClusterMetadata`, `ResourceInve
 
 ### argocd_apps (M9)
 
-Stores the latest **Argo CD Application** snapshot per cluster and Application identity. The HTTP collector lives in [issue #55](https://github.com/alto9/kube9-operator/issues/55); `status_json` holds the full normalized payload (sync/health/revision details live there until a future migration extracts indexed columns). Optional `drift_json` is reserved for drift classification ([issue #56](https://github.com/alto9/kube9-operator/issues/56)). CLI and operator status exposure for this data is tracked in [issue #58](https://github.com/alto9/kube9-operator/issues/58).
+Stores the latest **Argo CD Application** snapshot per cluster and Application identity (one row per `cluster_id` + `app_namespace` + `app_name`). The HTTP collector lives in [issue #55](https://github.com/alto9/kube9-operator/issues/55); `status_json` holds the full normalized payload (sync/health/revision details live there until a future migration extracts indexed columns). Optional `drift_json` is reserved for drift classification ([issue #56](https://github.com/alto9/kube9-operator/issues/56)). CLI read paths and operator status summaries are in [issue #58](https://github.com/alto9/kube9-operator/issues/58).
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
@@ -200,6 +210,8 @@ Stores the latest **Argo CD Application** snapshot per cluster and Application i
 
 **Primary key:** `(cluster_id, app_namespace, app_name)` — one current row per Application per cluster; `ArgoCDAppsRepository` upserts via `INSERT ... ON CONFLICT`.
 
-**Indexes:** `idx_argocd_apps_cluster_observed` on `(cluster_id, observed_at DESC)` for recent snapshots per cluster.
+**Indexes:** `idx_argocd_apps_cluster_observed` on `(cluster_id, observed_at DESC)`.
+
+**CLI:** `query argocd apps list|get …`
 
 **Implementation:** SQLite migration v5 in `src/database/schema.ts`, `ArgoCDAppsRepository` (`src/database/argocd-apps-repository.ts`), contracts in `src/database/argocd-apps-contracts.ts`; tests in `schema.test.ts` and repository tests (patterns consistent with `CollectionRepository` / `ImageScanRepository`).

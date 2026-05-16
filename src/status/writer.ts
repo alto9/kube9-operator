@@ -15,6 +15,7 @@ import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
 import { argocdStatusTracker } from '../argocd/state.js';
 import { trivyStatusTracker } from '../trivy/state.js';
+import { withPersistedArgoApplicationsSummary } from './argocd-for-status.js';
 
 /**
  * ConfigMap name for operator status
@@ -164,7 +165,7 @@ export class StatusWriter {
       const canWriteConfigMap = true;
 
       const collectionStats = collectionStatsTracker.getStats();
-      const argocdStatus = argocdStatusTracker.getStatus();
+      const argocdStatus = withPersistedArgoApplicationsSummary(argocdStatusTracker.getStatus());
       const trivyStatus = trivyStatusTracker.getStatus();
       let assessmentSchedule = DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT;
       try {

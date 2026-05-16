@@ -101,7 +101,7 @@ export function calculateStatus(
       collectionsStoredCount: collectionStats.collectionsStoredCount,
       lastSuccessTime: collectionStats.lastSuccessTime,
     },
-    argocd: argocdStatus,
+    argocd: { ...argocdStatus },
     trivy: trivyStatus,
     assessment: {
       ...assessmentSummary,
