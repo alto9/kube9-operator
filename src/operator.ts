@@ -404,7 +404,9 @@ export async function startOperator() {
             const outcome = await runArgoCdApplicationStatusCycle(() =>
               argocdStatusTracker.getStatus()
             );
-            await runApplicationDriftCycle(collectApplicationSnapshots);
+            if (outcome === 'success') {
+              await runApplicationDriftCycle(collectApplicationSnapshots);
+            }
             const durationSeconds = (Date.now() - startTime) / 1000;
             if (outcome === 'failed') {
               recordCollection('argocd-application-status', 'failed', durationSeconds);

@@ -144,6 +144,7 @@ export function normalizeApplicationSnapshot(raw: unknown): ApplicationSnapshot 
 export function applicationSnapshotFromStatusRecord(
   r: ArgoCdApplicationStatusRecord
 ): ApplicationSnapshot {
+  // When ArgoCdApplicationStatusRecord gains resourcesOutOfSyncCount (#55), forward it here.
   return {
     namespace: r.namespace,
     name: r.name,
