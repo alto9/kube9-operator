@@ -118,6 +118,13 @@ The following table lists the configurable parameters and their default values:
 | `argocd.namespace` | Custom namespace where ArgoCD is installed | `"argocd"` |
 | `argocd.selector` | Custom label selector for ArgoCD server deployment | `app.kubernetes.io/name=argocd-server` |
 | `argocd.detectionInterval` | Detection check interval in hours (valid range: 1–24) | `6` |
+| `argocd.api.collectionEnabled` | When `true`, schedule periodic pulls of Application sync/health from the Argo CD API | `true` |
+| `argocd.api.baseUrl` | Explicit Argo CD API base URL (HTTPS). Empty uses `https://{serverServiceName}.{argocd.namespace}.svc.cluster.local` when Argo CD is detected | `""` |
+| `argocd.api.timeoutMs` | HTTP timeout for each Argo CD API request | `30000` |
+| `argocd.api.tlsInsecure` | Skip TLS verification (not recommended for production) | `false` |
+| `argocd.api.serverServiceName` | Kubernetes Service name for derived in-cluster API URL | `argocd-server` |
+| `argocd.api.tokenFile` | Optional path to a bearer token file (defaults to the pod SA token path when omitted and readable) | (unset) |
+| `metrics.intervals.argocdApplicationStatus` | Argo CD Application API collection interval (seconds); minimum 1800 | `3600` |
 | `trivy.autoDetect` | Probe `trivy.serverUrl` periodically for Trivy HTTP health | `true` |
 | `trivy.serverUrl` | Trivy server base URL (required for detection and scans) | (unset) |
 | `trivy.healthPath` | Health probe path (e.g. `/healthz`) | `"/healthz"` |
@@ -223,6 +230,15 @@ The operator can detect and integrate with ArgoCD installations in your cluster.
 - **namespace** (default: `"argocd"`): The namespace where ArgoCD is installed. Override when using a custom namespace (e.g. `gitops`).
 - **selector** (default: `app.kubernetes.io/name=argocd-server`): Kubernetes label selector used to find the ArgoCD server deployment. Override only if your ArgoCD uses different labels.
 - **detectionInterval** (default: `6`): How often the operator re-checks for ArgoCD installation changes, in hours. Valid range: 1–24 hours.
+
+**Argo CD Application API (`argocd.api.*`)** — periodic collection of Application sync and health via the in-cluster Argo CD REST API (no ingress):
+
+- **collectionEnabled** (default: `true`): Registers the scheduled collection task. When `true`, cycles are **skipped** (not failed) when no API base URL can be resolved—set **`baseUrl`** or ensure Argo CD **detection** succeeds so the operator can derive `https://{serverServiceName}.{namespace}.svc.cluster.local`.
+- **baseUrl** (optional): Explicit HTTPS API base (for example `https://argocd-server.argocd.svc.cluster.local`). Overrides derived URL when set.
+- **timeoutMs** (default: `30000`): Timeout for listing applications.
+- **tlsInsecure** (default: `false`): Skip TLS verification (labs only).
+- **serverServiceName** (default: `argocd-server`): Kubernetes Service DNS name segment used for the derived URL.
+- **tokenFile** (optional): Bearer token path. If unset, the operator reads the pod service-account token when `/var/run/secrets/kubernetes.io/serviceaccount/token` exists. Grant this identity **Argo CD RBAC** to read Applications (chart does not modify Argo CD `AppProject` / roles).
 
 **When to use `enabled` vs `autoDetect`:**
 
@@ -582,6 +598,13 @@ Complete reference of all configurable values:
 | `argocd.namespace` | Custom namespace where ArgoCD is installed | `"argocd"` |
 | `argocd.selector` | Custom label selector for ArgoCD server deployment | `app.kubernetes.io/name=argocd-server` |
 | `argocd.detectionInterval` | Detection check interval in hours (valid range: 1–24) | `6` |
+| `argocd.api.collectionEnabled` | When `true`, schedule periodic pulls of Application sync/health from the Argo CD API | `true` |
+| `argocd.api.baseUrl` | Explicit Argo CD API base URL (HTTPS). Empty uses `https://{serverServiceName}.{argocd.namespace}.svc.cluster.local` when Argo CD is detected | `""` |
+| `argocd.api.timeoutMs` | HTTP timeout for each Argo CD API request | `30000` |
+| `argocd.api.tlsInsecure` | Skip TLS verification (not recommended for production) | `false` |
+| `argocd.api.serverServiceName` | Kubernetes Service name for derived in-cluster API URL | `argocd-server` |
+| `argocd.api.tokenFile` | Optional path to a bearer token file (defaults to the pod SA token path when omitted and readable) | (unset) |
+| `metrics.intervals.argocdApplicationStatus` | Argo CD Application API collection interval (seconds); minimum 1800 | `3600` |
 
 ## Additional Resources
 
