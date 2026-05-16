@@ -187,19 +187,19 @@ Stores serialized periodic collection payloads (`ClusterMetadata`, `ResourceInve
 
 ### argocd_apps (M9)
 
-Stores normalized Argo CD **Application** sync/health snapshots keyed by cluster and Application object identity. The HTTP collector lives in [issue #55](https://github.com/alto9/kube9-operator/issues/55); `status_json` holds the full normalized payload. Optional `drift_json` is reserved for drift classification ([issue #56](https://github.com/alto9/kube9-operator/issues/56)).
+Stores the latest **Argo CD Application** snapshot per cluster and Application identity. The HTTP collector lives in [issue #55](https://github.com/alto9/kube9-operator/issues/55); `status_json` holds the full normalized payload (sync/health/revision details live there until a future migration extracts indexed columns). Optional `drift_json` is reserved for drift classification ([issue #56](https://github.com/alto9/kube9-operator/issues/56)). CLI and operator status exposure for this data is tracked in [issue #58](https://github.com/alto9/kube9-operator/issues/58).
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
-| cluster_id | TEXT | NOT NULL, PK | Cluster identifier `cls_*` |
-| app_namespace | TEXT | NOT NULL, PK | Kubernetes namespace of the Application CR |
-| app_name | TEXT | NOT NULL, PK | Name of the Application CR |
+| cluster_id | TEXT | NOT NULL, PK part | Cluster identifier `cls_*` (same convention as `collections`) |
+| app_namespace | TEXT | NOT NULL, PK part | Application `metadata.namespace` |
+| app_name | TEXT | NOT NULL, PK part | Application `metadata.name` |
 | observed_at | TEXT | NOT NULL | ISO 8601 when this snapshot was observed |
-| status_json | TEXT | NOT NULL | Full normalized Application status document (JSON object); validated at write time |
-| drift_json | TEXT | NULL | Optional drift classification JSON for downstream logic |
+| status_json | TEXT | NOT NULL | Full normalized Application status document (JSON object); validated at write time; aligns with [#55](https://github.com/alto9/kube9-operator/issues/55) |
+| drift_json | TEXT | NULL | Optional drift classification JSON ([#56](https://github.com/alto9/kube9-operator/issues/56)) |
 
-**Primary key:** `(cluster_id, app_namespace, app_name)`.
+**Primary key:** `(cluster_id, app_namespace, app_name)` — one current row per Application per cluster; `ArgoCDAppsRepository` upserts via `INSERT ... ON CONFLICT`.
 
 **Indexes:** `idx_argocd_apps_cluster_observed` on `(cluster_id, observed_at DESC)` for recent snapshots per cluster.
 
-**Repository:** `ArgoCDAppsRepository` (`src/database/argocd-apps-repository.ts`); contracts in `src/database/argocd-apps-contracts.ts`.
+**Implementation:** SQLite migration v5 in `src/database/schema.ts`, `ArgoCDAppsRepository` (`src/database/argocd-apps-repository.ts`), contracts in `src/database/argocd-apps-contracts.ts`; tests in `schema.test.ts` and repository tests (patterns consistent with `CollectionRepository` / `ImageScanRepository`).
