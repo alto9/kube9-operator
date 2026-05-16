@@ -397,6 +397,14 @@ npm run deploy:minikube
 npm run clean:minikube
 ```
 
+### Publishing via GitHub Actions
+
+This repo is **not** hosted as a web app; shipping the container image and Helm chart is **manual** from the Actions tab after a **semver tag** exists.
+
+1. **Release** — run the **Release** workflow on the branch you want to cut from. [semantic-release](https://semantic-release.gitbook.io/) creates the version tag and GitHub Release when [Conventional Commits](https://www.conventionalcommits.org/) warrant a bump.
+2. **Release Docker Image** — run with **git_tag** set to that tag (for example `v2.1.0`) to push to `ghcr.io`.
+3. **Release Helm Chart** — run with the same **git_tag** to package `charts/kube9-operator` and publish to the chart repository (S3 + CloudFront).
+
 ## How It Works
 
 ### Status Exposure

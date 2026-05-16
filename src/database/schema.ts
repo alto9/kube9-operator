@@ -191,7 +191,7 @@ export class SchemaManager {
   }
 
   /**
-   * Migration v5: persisted Argo CD Application snapshots (M9).
+   * Migration v5: M9 Argo CD Application snapshots (`argocd_apps`).
    */
   private migrateToV5(): void {
     this.db.exec(`
@@ -199,14 +199,14 @@ export class SchemaManager {
         cluster_id TEXT NOT NULL,
         app_namespace TEXT NOT NULL,
         app_name TEXT NOT NULL,
-        collected_at TEXT NOT NULL,
+        observed_at TEXT NOT NULL,
         status_json TEXT NOT NULL,
         drift_json TEXT,
         PRIMARY KEY (cluster_id, app_namespace, app_name)
       );
 
-      CREATE INDEX IF NOT EXISTS idx_argocd_apps_cluster_id ON argocd_apps(cluster_id);
-      CREATE INDEX IF NOT EXISTS idx_argocd_apps_collected_at ON argocd_apps(collected_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_argocd_apps_cluster_observed
+        ON argocd_apps(cluster_id, observed_at DESC);
     `);
   }
 

@@ -10,6 +10,8 @@ const ASSESSMENT_TIMEOUT_MIN_SECONDS = 60;
 const ASSESSMENT_TIMEOUT_MAX_SECONDS = 7 * 24 * 3600;
 /** Matches operator scheduler minimum for `resource-inventory` (30 minutes). */
 const RESOURCE_INVENTORY_INTERVAL_MIN_SECONDS = 1800;
+/** Minimum interval for Argo CD Application API collection (30 minutes). */
+const ARGOCD_APP_STATUS_INTERVAL_MIN_SECONDS = 1800;
 
 /**
  * Parses a positive base-10 integer from env or a default string.
@@ -90,6 +92,12 @@ export async function loadConfig(): Promise<Config> {
     process.env.WORKLOAD_IMAGE_SCAN_INTERVAL_SECONDS,
     '86400'
   );
+  const argocdApplicationStatusIntervalSeconds = parsePositiveInt(
+    'ARGOCD_APPLICATION_STATUS_INTERVAL_SECONDS',
+    process.env.ARGOCD_APPLICATION_STATUS_INTERVAL_SECONDS,
+    '3600',
+    ARGOCD_APP_STATUS_INTERVAL_MIN_SECONDS
+  );
   const eventRetentionInfoWarningDays = parsePositiveInt(
     'EVENT_RETENTION_INFO_WARNING_DAYS',
     process.env.EVENT_RETENTION_INFO_WARNING_DAYS,
@@ -152,6 +160,7 @@ export async function loadConfig(): Promise<Config> {
     resourceInventoryIntervalSeconds,
     resourceConfigurationPatternsIntervalSeconds,
     workloadImageScanIntervalSeconds,
+    argocdApplicationStatusIntervalSeconds,
     eventRetentionInfoWarningDays,
     eventRetentionErrorCriticalDays,
     assessmentEnabled,
@@ -172,6 +181,8 @@ export async function loadConfig(): Promise<Config> {
     resourceConfigurationPatternsOverridden: process.env.RESOURCE_CONFIGURATION_PATTERNS_INTERVAL_SECONDS !== undefined,
     workloadImageScanIntervalSeconds: config.workloadImageScanIntervalSeconds,
     workloadImageScanOverridden: process.env.WORKLOAD_IMAGE_SCAN_INTERVAL_SECONDS !== undefined,
+    argocdApplicationStatusIntervalSeconds: config.argocdApplicationStatusIntervalSeconds,
+    argocdApplicationStatusOverridden: process.env.ARGOCD_APPLICATION_STATUS_INTERVAL_SECONDS !== undefined,
   });
 
   logger.info('Assessment schedule configured', {

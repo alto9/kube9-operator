@@ -1,18 +1,20 @@
 /**
- * SQLite read path for persisted Argo CD Application rows (argocd_apps).
+ * SQLite persistence and read paths for Argo CD Application snapshots (M9).
  */
 
 import Database from 'better-sqlite3';
 import { DatabaseManager } from './manager.js';
 import { logger } from '../logging/logger.js';
 import type { ArgoCDApplicationsPersistedSummary } from '../status/types.js';
+import { ArgoCdAppUpsertSchema } from './argocd-apps-contracts.js';
+import { ZodError } from 'zod';
 
 export interface ArgoCDAppFilters {
   cluster_id?: string;
   app_namespace?: string;
   app_name?: string;
-  collected_at_gte?: string;
-  collected_at_lt?: string;
+  observed_at_gte?: string;
+  observed_at_lt?: string;
 }
 
 export interface ArgoCDAppQueryOptions {
@@ -25,7 +27,7 @@ export interface ArgoCDAppListRow {
   cluster_id: string;
   app_namespace: string;
   app_name: string;
-  collected_at: string;
+  observed_at: string;
   sync_status: string;
   health_status: string;
 }
@@ -34,9 +36,18 @@ export interface ArgoCDAppSnapshot {
   cluster_id: string;
   app_namespace: string;
   app_name: string;
-  collected_at: string;
+  observed_at: string;
   status: unknown;
   drift: unknown | null;
+}
+
+export interface ArgoCdAppRow {
+  cluster_id: string;
+  app_namespace: string;
+  app_name: string;
+  observed_at: string;
+  status_json: string;
+  drift_json: string | null;
 }
 
 const EMPTY_SUMMARY: ArgoCDApplicationsPersistedSummary = {
@@ -94,30 +105,30 @@ export class ArgoCDAppsRepository {
       conditions.push('app_name = ?');
       params.push(filters.app_name);
     }
-    if (filters.collected_at_gte) {
-      conditions.push('collected_at >= ?');
-      params.push(filters.collected_at_gte);
+    if (filters.observed_at_gte) {
+      conditions.push('observed_at >= ?');
+      params.push(filters.observed_at_gte);
     }
-    if (filters.collected_at_lt) {
-      conditions.push('collected_at < ?');
-      params.push(filters.collected_at_lt);
+    if (filters.observed_at_lt) {
+      conditions.push('observed_at < ?');
+      params.push(filters.observed_at_lt);
     }
 
     let query = `
-      SELECT cluster_id, app_namespace, app_name, collected_at, status_json
+      SELECT cluster_id, app_namespace, app_name, observed_at, status_json
       FROM argocd_apps
     `;
     if (conditions.length > 0) {
       query += ' WHERE ' + conditions.join(' AND ');
     }
-    query += ' ORDER BY collected_at DESC LIMIT ? OFFSET ?';
+    query += ' ORDER BY observed_at DESC LIMIT ? OFFSET ?';
     params.push(limit, offset);
 
     const rows = this.db.prepare(query).all(...params) as Array<{
       cluster_id: string;
       app_namespace: string;
       app_name: string;
-      collected_at: string;
+      observed_at: string;
       status_json: string;
     }>;
 
@@ -127,7 +138,7 @@ export class ArgoCDAppsRepository {
         cluster_id: r.cluster_id,
         app_namespace: r.app_namespace,
         app_name: r.app_name,
-        collected_at: r.collected_at,
+        observed_at: r.observed_at,
         sync_status: sync,
         health_status: health,
       };
@@ -150,13 +161,13 @@ export class ArgoCDAppsRepository {
       conditions.push('app_name = ?');
       params.push(filters.app_name);
     }
-    if (filters.collected_at_gte) {
-      conditions.push('collected_at >= ?');
-      params.push(filters.collected_at_gte);
+    if (filters.observed_at_gte) {
+      conditions.push('observed_at >= ?');
+      params.push(filters.observed_at_gte);
     }
-    if (filters.collected_at_lt) {
-      conditions.push('collected_at < ?');
-      params.push(filters.collected_at_lt);
+    if (filters.observed_at_lt) {
+      conditions.push('observed_at < ?');
+      params.push(filters.observed_at_lt);
     }
 
     let q = 'SELECT COUNT(*) as count FROM argocd_apps';
@@ -174,7 +185,7 @@ export class ArgoCDAppsRepository {
   ): ArgoCDAppSnapshot | null {
     const row = this.db
       .prepare(
-        `SELECT cluster_id, app_namespace, app_name, collected_at, status_json, drift_json           
+        `SELECT cluster_id, app_namespace, app_name, observed_at, status_json, drift_json
          FROM argocd_apps
          WHERE cluster_id = ? AND app_namespace = ? AND app_name = ?`
       )
@@ -183,7 +194,7 @@ export class ArgoCDAppsRepository {
           cluster_id: string;
           app_namespace: string;
           app_name: string;
-          collected_at: string;
+          observed_at: string;
           status_json: string;
           drift_json: string | null;
         }
@@ -203,7 +214,7 @@ export class ArgoCDAppsRepository {
         cluster_id: row.cluster_id,
         app_namespace: row.app_namespace,
         app_name: row.app_name,
-        collected_at: row.collected_at,
+        observed_at: row.observed_at,
         status,
         drift,
       };
@@ -227,7 +238,7 @@ export class ArgoCDAppsRepository {
     }
 
     const countRow = this.db
-      .prepare(`SELECT COUNT(*) as c, MAX(collected_at) as last FROM argocd_apps`)
+      .prepare(`SELECT COUNT(*) as c, MAX(observed_at) as last FROM argocd_apps`)
       .get() as { c: number; last: string | null };
 
     if (countRow.c === 0) {
@@ -271,5 +282,74 @@ export class ArgoCDAppsRepository {
       syncStatusCounts,
       healthStatusCounts,
     };
+  }
+
+  /**
+   * Insert or replace the snapshot for (cluster_id, app_namespace, app_name).
+   */
+  public upsertSnapshot(input: unknown): boolean {
+    try {
+      const v = ArgoCdAppUpsertSchema.parse(input);
+      const statusStr = JSON.stringify(v.status_json);
+      const driftStr =
+        v.drift_json === null || v.drift_json === undefined ? null : JSON.stringify(v.drift_json);
+
+      const stmt = this.db.prepare(`
+        INSERT INTO argocd_apps (
+          cluster_id, app_namespace, app_name, observed_at, status_json, drift_json
+        ) VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(cluster_id, app_namespace, app_name) DO UPDATE SET
+          observed_at = excluded.observed_at,
+          status_json = excluded.status_json,
+          drift_json = excluded.drift_json
+      `);
+
+      stmt.run(
+        v.cluster_id,
+        v.app_namespace,
+        v.app_name,
+        v.observed_at,
+        statusStr,
+        driftStr
+      );
+      return true;
+    } catch (error: unknown) {
+      if (error instanceof ZodError) {
+        logger.warn('Argo CD app snapshot validation failed', { issues: error.issues });
+        return false;
+      }
+      logger.error('Failed to upsert argocd_apps row', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+      return false;
+    }
+  }
+
+  public getByKey(
+    clusterId: string,
+    appNamespace: string,
+    appName: string
+  ): ArgoCdAppRow | null {
+    const row = this.db
+      .prepare(
+        `SELECT cluster_id, app_namespace, app_name, observed_at, status_json, drift_json
+         FROM argocd_apps
+         WHERE cluster_id = ? AND app_namespace = ? AND app_name = ?`
+      )
+      .get(clusterId, appNamespace, appName) as ArgoCdAppRow | undefined;
+    return row ?? null;
+  }
+
+  public listByCluster(clusterId: string, limit = 100): ArgoCdAppRow[] {
+    const rows = this.db
+      .prepare(
+        `SELECT cluster_id, app_namespace, app_name, observed_at, status_json, drift_json
+         FROM argocd_apps
+         WHERE cluster_id = ?
+         ORDER BY observed_at DESC
+         LIMIT ?`
+      )
+      .all(clusterId, limit) as ArgoCdAppRow[];
+    return rows;
   }
 }

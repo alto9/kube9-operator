@@ -62,10 +62,10 @@ export async function listArgoCDApplications(options: Record<string, unknown>) {
       filters.app_name = validated.name;
     }
     if (validated.since) {
-      filters.collected_at_gte = validated.since;
+      filters.observed_at_gte = validated.since;
     }
     if (validated.until) {
-      filters.collected_at_lt = validated.until;
+      filters.observed_at_lt = validated.until;
     }
 
     const repo = new ArgoCDAppsRepository();

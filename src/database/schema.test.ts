@@ -318,11 +318,10 @@ describe('SchemaManager', () => {
     const manager = DatabaseManager.getInstance();
     const db = manager.getDatabase();
 
-    const result = db
+    const table = db
       .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='argocd_apps'`)
       .get() as { name: string } | undefined;
-
-    expect(result?.name).toBe('argocd_apps');
+    expect(table?.name).toBe('argocd_apps');
 
     const columns = db.prepare(`PRAGMA table_info(argocd_apps)`).all() as Array<{ name: string }>;
     const columnNames = columns.map((col) => col.name);
@@ -331,28 +330,42 @@ describe('SchemaManager', () => {
         'cluster_id',
         'app_namespace',
         'app_name',
-        'collected_at',
+        'observed_at',
         'status_json',
         'drift_json',
       ])
     );
+
+    const indexes = db
+      .prepare(
+        `SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='argocd_apps' AND name NOT LIKE 'sqlite_%'`
+      )
+      .all() as Array<{ name: string }>;
+    expect(indexes.map((i) => i.name)).toContain('idx_argocd_apps_cluster_observed');
+
+    const meta = db
+      .prepare(`SELECT sql FROM sqlite_master WHERE type='table' AND name='argocd_apps'`)
+      .get() as { sql: string } | undefined;
+    expect(meta?.sql).toContain('PRIMARY KEY (cluster_id, app_namespace, app_name)');
   });
 
   it('migration runs cleanly on fresh database', () => {
     DatabaseManager.reset();
     const schema = new SchemaManager();
     schema.initialize();
-    
+
     expect(schema.getVersion()).toBeGreaterThanOrEqual(5);
 
     const manager = DatabaseManager.getInstance();
     const db = manager.getDatabase();
-    
-    const tables = db.prepare(`
-      SELECT name FROM sqlite_master 
+
+    const tables = db
+      .prepare(`
+      SELECT name FROM sqlite_master
       WHERE type='table' AND name IN ('assessments', 'assessment_history')
-    `).all() as Array<{ name: string }>;
-    
+    `)
+      .all() as Array<{ name: string }>;
+
     expect(tables.length).toBe(2);
   });
 });
