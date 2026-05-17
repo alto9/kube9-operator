@@ -1,3 +1,20 @@
+# [2.2.0](https://github.com/alto9/kube9-operator/compare/v2.1.0...v2.2.0) (2026-05-17)
+
+
+### Bug Fixes
+
+* **argocd:** run drift cycle only after successful status collection ([7d1e265](https://github.com/alto9/kube9-operator/commit/7d1e2655648f4a0a24d1e4295ea0c6b41c8e1889)), closes [#56](https://github.com/alto9/kube9-operator/issues/56)
+* **argocd:** skip cycles must not record collection success ([bf5191f](https://github.com/alto9/kube9-operator/commit/bf5191ffd7349682987011959c14f36eb6686fb6))
+
+
+### Features
+
+* add query argocd apps CLI and status summary for persisted snapshots ([44c8dc3](https://github.com/alto9/kube9-operator/commit/44c8dc3b709688ca60a128d3e20d531d2b2f8cde)), closes [#58](https://github.com/alto9/kube9-operator/issues/58)
+* **argocd:** add application drift classification and status cycle ([3613fa6](https://github.com/alto9/kube9-operator/commit/3613fa6b57b5f06c8de48ee1eed58cd2db277893)), closes [#55](https://github.com/alto9/kube9-operator/issues/55) [#57](https://github.com/alto9/kube9-operator/issues/57) [#55](https://github.com/alto9/kube9-operator/issues/55) [#56](https://github.com/alto9/kube9-operator/issues/56)
+* **argocd:** add Argo CD Application status API collector ([d042773](https://github.com/alto9/kube9-operator/commit/d042773d076211b4ce0389dc463473f3b6c403d9)), closes [#55](https://github.com/alto9/kube9-operator/issues/55) [#57](https://github.com/alto9/kube9-operator/issues/57)
+* **db:** add argocd_apps migration and ArgoCDAppsRepository ([#57](https://github.com/alto9/kube9-operator/issues/57)) ([3952798](https://github.com/alto9/kube9-operator/commit/3952798a636a73ac5ac31beb6b53c8d1613a4a0e))
+* implement Argo CD Application API integration for status collection ([2717692](https://github.com/alto9/kube9-operator/commit/27176922daefd06f15ca00c81f8f39cf1d2c9cca)), closes [#55](https://github.com/alto9/kube9-operator/issues/55) [#56](https://github.com/alto9/kube9-operator/issues/56) [#57](https://github.com/alto9/kube9-operator/issues/57)
+
 # [2.1.0](https://github.com/alto9/kube9-operator/compare/v2.0.0...v2.1.0) (2026-05-02)
 
 
