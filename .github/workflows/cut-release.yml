@@ -1,12 +1,12 @@
-# Run semantic-release on main, then publish the Docker image and Helm chart for the new tag.
-# Fails if semantic-release does not create a tag.
-name: Deploy (Production)
+# Manual release: semantic-release on the default branch, then push image to GHCR and chart to charts.kube9.io.
+# No staging environment for this repo. Fails if semantic-release creates no new tag.
+name: Cut Release
 
 on:
   workflow_dispatch:
 
 concurrency:
-  group: deploy-operator-production
+  group: cut-release-operator
   cancel-in-progress: false
 
 env:
