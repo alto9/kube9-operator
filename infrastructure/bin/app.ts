@@ -20,7 +20,7 @@ if (!hostedZoneId) {
   throw new Error('CHARTS_HOSTED_ZONE_ID environment variable is required');
 }
 
-new ChartsStack(app, 'ChartsStack', {
+new ChartsStack(app, 'kube9-operator-charts', {
   env,
   description: 'Infrastructure for hosting Helm charts at charts.kube9.io',
   certificateArn,

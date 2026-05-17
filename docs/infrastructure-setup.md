@@ -284,7 +284,7 @@ Required for the `release-chart.yml` workflow. This policy is more restrictive a
         "arn:aws:s3:::kube9-charts-*",
         "arn:aws:s3:::kube9-charts-*/*",
         "arn:aws:cloudfront::*:distribution/*",
-        "arn:aws:cloudformation:us-east-1:*:stack/ChartsStack/*"
+        "arn:aws:cloudformation:us-east-1:*:stack/kube9-operator-charts/*"
       ]
     }
   ]
@@ -467,7 +467,7 @@ Before using in production, test the permissions:
 
 ```bash
 # Test infrastructure deployment permissions
-aws cloudformation describe-stacks --stack-name ChartsStack --region us-east-1
+aws cloudformation describe-stacks --stack-name kube9-operator-charts --region us-east-1
 
 # Test chart publishing permissions
 aws s3 ls s3://kube9-charts-123456789012/
@@ -569,7 +569,7 @@ For additional troubleshooting, see the [Troubleshooting](#troubleshooting) sect
 
 **Chart publishing fails**:
 - Ensure infrastructure is deployed first (S3 bucket and CloudFront distribution must exist)
-- Verify the CloudFormation stack name matches `ChartsStack`
+- Verify the CloudFormation stack name matches `kube9-operator-charts` (CDK construct: `ChartsStack`)
 - Check that the bucket name can be retrieved from stack outputs
 
 ## Verification

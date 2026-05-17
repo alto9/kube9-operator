@@ -53,7 +53,7 @@ jobs:
       - name: Get bucket name from stack
         run: |
           BUCKET_NAME=$(aws cloudformation describe-stacks \
-            --stack-name ChartsStack \
+            --stack-name kube9-operator-charts \
             --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
             --output text)
           echo "BUCKET_NAME=$BUCKET_NAME" >> $GITHUB_ENV
@@ -98,7 +98,7 @@ jobs:
       - name: Get CloudFront distribution ID
         run: |
           DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
-            --stack-name ChartsStack \
+            --stack-name kube9-operator-charts \
             --query 'Stacks[0].Outputs[?OutputKey==`DistributionId`].OutputValue' \
             --output text)
           echo "DISTRIBUTION_ID=$DISTRIBUTION_ID" >> $GITHUB_ENV
