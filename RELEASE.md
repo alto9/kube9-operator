@@ -1,14 +1,20 @@
 # Release process
 
-Versioning and GitHub releases use [semantic-release](https://semantic-release.gitbook.io/) with [Conventional Commits](https://www.conventionalcommits.org/). **Publishing a new version is manual:** merge work to `main` as usual, then start the workflow when you are ready to release.
+Versioning and GitHub releases use [semantic-release](https://semantic-release.gitbook.io/) with [Conventional Commits](https://www.conventionalcommits.org/).
 
-## Run a release
+## Workflows
 
-1. Confirm the branch you will release from (typically `main`) is in a good state and CI is green.
-2. GitHub → **Actions** → **Release** → **Run workflow**.
-3. Choose the branch (e.g. `main`). semantic-release analyzes commits since the last release, bumps version / changelog if needed, creates a tag and GitHub release, and pushes the release commit using the GitHub App token.
+| Workflow | When | What |
+|----------|------|------|
+| **[Deploy (Staging)](.github/workflows/deploy-staging.yml)** | After **CI** on **`main`** / **manual** | Build and push **`ghcr.io`…:main** (rolling staging image). |
+| **[Deploy (Production)](.github/workflows/deploy-production.yml)** | **Manual** only | **semantic-release** on the default branch (GitHub App token); **fails** if no new tag. Then **publish Docker image** and **publish Helm chart** for **`refs/tags/<tag>`** in parallel. |
+| **[Deploy Chart Repository Infrastructure](.github/workflows/deploy-infrastructure.yml)** | CI on `infrastructure/` or **manual** | CDK for **`charts.kube9.io`** hosting (S3 + CloudFront). Rare. |
 
-**Downstream:** **Release Docker Image** and **Release Helm Chart** still trigger when a GitHub Release is published or when a `v*` tag is pushed—same as before—so images and charts publish after semantic-release completes.
+## Run a production release
+
+1. Merge to **`main`**; **CI** green.
+2. GitHub → **Actions** → **Deploy (Production)** → **Run workflow**.
+3. Approve **environment** jobs if configured. Image publishes to **GHCR**; chart publishes to the chart repo bucket.
 
 ## Preview locally
 
@@ -18,10 +24,11 @@ npm run release -- --dry-run
 
 ## Secrets
 
-- **`GH_APP_ID`** / **`GH_APP_PRIVATE_KEY`**: GitHub App installation token so semantic-release can push commits and tags.
-- Other registry/AWS secrets are used by image and chart workflows, not by the Release workflow itself.
+- **`GH_APP_ID`** / **`GH_APP_PRIVATE_KEY`**: GitHub App token for semantic-release in **Deploy (Production)**.
+- **`AWS_ACCESS_KEY_ID`** / **`AWS_SECRET_ACCESS_KEY`**: Chart upload (**`production`** environment on publish_chart job).
+- **`GITHUB_TOKEN`**: Docker login to GHCR (default).
 
 ## Configuration
 
-- `.releaserc.json` — semantic-release plugins and rules
-- `.github/workflows/release.yml` — manual `workflow_dispatch` only
+- `.releaserc.json` — semantic-release plugins and Helm `exec` prepare  
+- `.github/workflows/deploy-production.yml` — release + image + chart  
