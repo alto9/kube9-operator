@@ -10,7 +10,7 @@
 - **Chart Storage**: Helm charts stored in S3 bucket, served via CloudFront
 
 ### Chart Distribution
-- Charts are automatically published when a GitHub Release is created (or a matching `v*` tag is pushed), after the **Release** workflow has been run manually so semantic-release can publish that release
+- Charts are automatically published when a GitHub Release is created (or a matching `v*` tag is pushed), after **[Cut Release](../../.github/workflows/cut-release.yml)** has been run manually so semantic-release can publish that release
 - Repository index is updated automatically
 - Charts are accessible via standard Helm commands:
   ```bash
@@ -27,7 +27,7 @@
 - **Visibility**: Public repository, publicly accessible images
 
 ### Build Process
-- **Trigger**: Image and chart workflows run when a release exists (published GitHub Release or `v*` tag), typically after maintainers run the **Release** workflow on `main`
+- **Trigger**: Image and chart workflows run when a release exists (published GitHub Release or `v*` tag), typically after maintainers run **Cut Release** on `main`
 - **Multi-Platform**: Supports multiple architectures (amd64, arm64)
 - **Tagging Strategy**: 
   - Release tags match semantic version (e.g., `1.3.0`)
