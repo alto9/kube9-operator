@@ -2,6 +2,9 @@
   "name": "kube9-operator",
   "description": "Kubernetes Well-Architected Framework validation and cluster insights operator for the kube9 ecosystem",
   "type": "opensource",
+  "metadata_path": ".ai",
+  "code_path": ".",
   "github_url": "https://github.com/alto9/kube9-operator",
-  "github_board": "https://github.com/orgs/alto9/projects/9"
+  "github_board": "https://github.com/orgs/alto9/projects/9",
+  "github_board_type": "scrum"
 }

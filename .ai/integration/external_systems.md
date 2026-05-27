@@ -76,7 +76,7 @@ Exposed in ConfigMap `kube9-operator-status` under `status.argocd`:
 - **Scanning**: Run or request scans **only when** Trivy is detected and usable. No background scan loops that assume Trivy exists.
 - **Resilience**: Trivy errors, timeouts, or disappearance after detection must be handled gracefully (degraded scan status, structured logging, no crash loops).
 
-**Consumption**: Scan results feed SQLite persistence, security assessment checks, operator CLI query commands, and Prometheus metrics (see `.forge/data/data_model.md` and `.forge/operations/observability.md` as those contracts are extended for M3).
+**Consumption**: Scan results feed SQLite persistence, security assessment checks, operator CLI query commands, and Prometheus metrics (see `.ai/data/data_model.md` and `.ai/operations/observability.md` as those contracts are extended for M3).
 
 ## Prometheus
 

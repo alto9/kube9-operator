@@ -591,7 +591,7 @@ Example output when ArgoCD is not detected:
 
 ```
 kube9-operator/
-├── ai/                          # Forge design documentation
+├── ai/                          # LLM design documentation
 │   ├── actors/                  # System and user actors
 │   ├── contexts/                # Implementation guidance
 │   ├── diagrams/                # Architecture diagrams
@@ -646,13 +646,6 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - Our code style and conventions
 - How to submit pull requests
 - Testing and deployment
-
-This project uses [Forge](https://github.com/alto9/forge) for structured context engineering:
-
-1. Review design docs in `ai/` folder
-2. Check implementation stories in `ai/sessions/mvp/tickets/`
-3. Follow specs and contexts for implementation guidance
-4. Update story status as work progresses
 
 ### Quick Start for Contributors
 

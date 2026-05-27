@@ -83,7 +83,7 @@ kubectl port-forward -n kube9-system deploy/kube9-operator 8080:8080
 curl -s http://127.0.0.1:8080/metrics | grep kube9_operator_assessment_
 ```
 
-You should see series such as `kube9_operator_assessment_runs_total`, `kube9_operator_assessment_checks_total`, and gauges/histograms named with the `kube9_operator_assessment_` prefix. Full definitions and label cardinality notes live in `.forge/operations/observability.md` in the application repository.
+You should see series such as `kube9_operator_assessment_runs_total`, `kube9_operator_assessment_checks_total`, and gauges/histograms named with the `kube9_operator_assessment_` prefix. Full definitions and label cardinality notes live in `.ai/operations/observability.md` in the application repository.
 
 ## Configuration
 

@@ -66,7 +66,7 @@ Documentation for installing and configuring the operator no longer describes AP
 ### Documentation
 
 * **docs:** remove API key and remote-server install flows from README and Helm chart guide; align status and troubleshooting with self-contained operation ([#28](https://github.com/alto9/kube9-operator/issues/28))
-* **tests/docs:** remove obsolete Pro-tier integration script; rename default install test to `test-operator-install.sh`; refresh `.forge`, `vision.md`, chart testing notes, and GitHub issue templates for open-source-only positioning (paid surface is kube9-desktop).
+* **tests/docs:** remove obsolete Pro-tier integration script; rename default install test to `test-operator-install.sh`; refresh `.ai`, `vision.md`, chart testing notes, and GitHub issue templates for open-source-only positioning (paid surface is kube9-desktop).
 
 # [1.9.0](https://github.com/alto9/kube9-operator/compare/v1.8.0...v1.9.0) (2026-04-15)
 

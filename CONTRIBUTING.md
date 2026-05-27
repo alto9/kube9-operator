@@ -156,7 +156,7 @@ kube9-operator/
 ├── scripts/               # Helper scripts
 ├── tests/                 # Test files
 │   └── integration/      # Integration tests
-└── ai/                    # Forge design documentation
+└── ai/                    # LLM design documentation
 ```
 
 ### Local Development
@@ -371,21 +371,6 @@ npm run clean:minikube
 - [ ] No console.logs or debug code
 - [ ] Commit messages follow conventional commits
 - [ ] PR description is clear and complete
-
-## Design Documentation
-
-This project uses [Forge](https://github.com/alto9/forge) for structured context engineering:
-
-- **Features** (`ai/features/`) - Feature definitions with Gherkin scenarios
-- **Specs** (`ai/specs/`) - Technical specifications
-- **Sessions** (`ai/sessions/`) - Design session tracking
-- **Contexts** (`ai/contexts/`) - Implementation guidance
-
-When implementing features:
-1. Check `ai/features/` for feature definitions
-2. Review `ai/specs/` for technical details
-3. Follow patterns in existing code
-4. Update documentation if needed
 
 ## Questions?
 
