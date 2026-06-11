@@ -39,3 +39,43 @@ export {
   selectChecklistForCluster,
 } from './checklist/selector.js';
 export type { ChecklistSelectionInput } from './checklist/selector.js';
+
+export {
+  AiConformanceRunStateSchema,
+  AiConformanceRequirementStatusSchema,
+  AiConformanceTotalsSchema,
+  AiConformanceCategorySummarySchema,
+  AiConformanceRequirementSummarySchema,
+  AiConformanceLatestSummarySchema,
+  EvaluatedRequirementResultSchema,
+  boundConformanceText,
+  CONFORMANCE_STATUS_FIELD_MAX,
+  CONFORMANCE_FAILURE_REASON_MAX,
+} from './contracts.js';
+export type {
+  AiConformanceRunState,
+  AiConformanceRequirementStatus,
+  AiConformanceTotals,
+  AiConformanceCategorySummary,
+  AiConformanceRequirementSummary,
+  AiConformanceLatestSummary,
+  EvaluatedRequirementResult,
+} from './contracts.js';
+
+export {
+  evaluateRequirement,
+  evaluateChecklistRequirements,
+} from './evaluator.js';
+export type {
+  AiConformanceEvaluatorContext,
+  RequirementEvaluator,
+} from './evaluator.js';
+
+export { AiConformanceRunner } from './runner.js';
+export type { AiConformanceRunInput, AiConformanceRunnerDeps } from './runner.js';
+
+export {
+  buildTotalsFromResults,
+  buildCategoryRollups,
+  buildBoundedRequirementSummaries,
+} from './summary.js';
