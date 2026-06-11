@@ -19,12 +19,45 @@
 - `collectionStats`: object - Collection activity statistics
 - `argocd`: object - ArgoCD detection status (`detected`, `namespace`, `version`, `lastChecked`)
 - `trivy`: object - Trivy detection status (`detected`, `serverUrl`, `version`, `lastChecked`)
+- `assessment`: object - Bounded Well-Architected assessment status summary
+- `aiConformance`: object - Bounded Kubernetes AI Conformance readiness status summary
 
 **Discovery Flow**:
 1. Extension checks default namespace (`kube9-system`) for ConfigMap
 2. If found, reads `status` key and parses JSON
 3. Uses `status.namespace` field for all subsequent operator interactions
 4. If ConfigMap not found in default namespace, operator is not installed (basic mode)
+
+### Kubernetes AI Conformance Status Contract
+
+The operator publishes `OperatorStatus.aiConformance` for kube9-vscode and kube9-desktop. This block is the only required client integration point for issue #141.
+
+**Producer**: kube9-operator status writer  
+**Consumers**: kube9-vscode and kube9-desktop operator-status parsers  
+**Semantics**: Kube9 readiness assessment against bundled Kubernetes AI Conformance checklist data, not official CNCF certification
+
+**Required fields**:
+- `checklistVersion`: string - selected checklist document/version
+- `kubernetesMinor`: string - Kubernetes minor used for deterministic checklist selection
+- `sourceRevision`: string | null - checklist source revision, release tag, or package bundle identifier
+- `lastCompletedAt`: string | null - latest completed run timestamp
+- `lastOutcome`: `"none" | "success" | "failed"` - publication state
+- `runState`: `"completed" | "failed" | "partial" | null` - persisted run state
+- `runId`: string | null - persisted run id
+- `totals`: object - counts for total, MUST, SHOULD, passed, failed, warning, not-applicable, not-evaluated, and needs-evidence
+- `categories`: object - rollups by checklist category
+- `requirements`: array - bounded per-requirement rows with `id`, `category`, `level`, `title`, `status`, `rationale`, and optional `evidenceRef`
+- `error`: string | null - bounded failure reason when the latest run failed
+
+**Requirement statuses**:
+- `passed`: Observable cluster signal satisfies the requirement.
+- `failed`: Observable cluster signal violates the requirement.
+- `warning`: Observable signal is partially ready or advisory.
+- `not-applicable`: Requirement does not apply to the current cluster context.
+- `not-evaluated`: Kube9 has no objective signal for the requirement.
+- `needs-evidence`: Requirement needs user, vendor, or policy evidence outside cluster-observable signals.
+
+Clients must tolerate an absent `aiConformance` block until operator versions that include this feature are deployed.
 
 ### CLI Exec Contract
 

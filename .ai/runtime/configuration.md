@@ -41,6 +41,20 @@
   - Minimum enforced: `3600` (1 hour)
   - Random offset range: 0-1 hour
 
+### Kubernetes AI Conformance Environment Variables
+- **AI_CONFORMANCE_ENABLED**: Enable scheduled Kubernetes AI Conformance readiness evaluation
+  - Default: `true` once the M10 feature is shipped
+  - When false, on-demand CLI evaluation remains available if implemented
+
+- **AI_CONFORMANCE_INTERVAL_SECONDS**: Scheduled conformance evaluation interval
+  - Default: `86400` (24 hours)
+  - Minimum enforced: `3600` (1 hour)
+  - Random offset should be applied to avoid thundering herd behavior
+
+- **AI_CONFORMANCE_CHECKLIST_SOURCE**: Optional packaged checklist source selector
+  - Default: bundled operator checklist data
+  - Used only to select among packaged/supported sources; the operator must not fetch arbitrary remote YAML at runtime by default
+
 ### Event Retention Environment Variables
 - **EVENT_RETENTION_INFO_WARNING_DAYS**: Retention period for info/warning events
   - Default: `7` days
@@ -143,6 +157,17 @@ metrics:
 ```
 - Maps to `*_INTERVAL_SECONDS` environment variables
 - Operator enforces minimum intervals to prevent abuse
+
+### Kubernetes AI Conformance Configuration
+```yaml
+aiConformance:
+  enabled: true
+  intervalSeconds: 86400
+  checklistSource: bundled
+```
+- Maps to `AI_CONFORMANCE_*` environment variables.
+- Controls scheduled readiness evaluation only; the status writer can still publish the last persisted result.
+- The checklist source is packaged with the operator image/chart. Runtime network fetch is out of scope unless explicitly added by a future contract.
 
 ### Event Storage Configuration
 ```yaml

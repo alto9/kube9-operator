@@ -4,7 +4,17 @@
 
 **Dual storage**:
 - **ConfigMap**: Status only. Simple, cacheable, backward compatible.
-- **SQLite**: Events, assessments, ArgoCD data (M9). Rich queries via CLI.
+- **SQLite**: Events, assessments, ArgoCD data (M9), and Kubernetes AI Conformance readiness runs (M10). Rich queries via CLI.
+
+## Kubernetes AI Conformance Persistence
+
+Kubernetes AI Conformance uses SQLite as the durable store and the status ConfigMap as the bounded client surface.
+
+- Checklist inputs are bundled or synced into the operator package with a recorded source revision or bundle identifier.
+- Each run records the selected Kubernetes minor, selected checklist version, final lifecycle state, aggregate counts, and bounded failure text.
+- Per-requirement results are stored separately from the run record so CLI and future diagnostics can query by category, status, level, or requirement id.
+- The status writer publishes only the latest completed or failed run summary under `OperatorStatus.aiConformance`; it does not publish unbounded evidence payloads.
+- Requirements that cannot be objectively evaluated from Kubernetes API or existing persisted signals are stored as `not-evaluated` or `needs-evidence`, not inferred.
 
 ## SQLite Configuration
 

@@ -52,6 +52,23 @@ The kube9-operator binary supports multiple execution modes via Commander.js CLI
   - Exits after command completion
 - **Use Case**: On-demand assessment execution via `kubectl exec`
 
+### ai-conformance (Readiness Mode)
+- **Command**: `kube9-operator ai-conformance <subcommand>` or equivalent command namespace chosen during implementation
+- **Purpose**: Kubernetes AI Conformance readiness operations
+- **Subcommands**:
+  - `ai-conformance run` - Run checklist evaluation for the current cluster and persist results
+  - `ai-conformance get <runId>` - Read one persisted conformance run
+  - `ai-conformance latest` - Read the latest persisted conformance summary
+  - `ai-conformance requirements` - List bounded per-requirement results for a run
+- **Behavior**:
+  - Loads configuration and initializes SQLite
+  - Selects bundled checklist data from the detected cluster Kubernetes minor
+  - Evaluates observable requirements with Kubernetes API and existing persisted signals where available
+  - Marks non-observable requirements as `not-evaluated` or `needs-evidence`
+  - Persists run and requirement-result records
+  - Exits after command completion when invoked through CLI
+- **Use Case**: On-demand readiness evaluation and debugging via `kubectl exec`
+
 ## Runtime Environment
 
 ### Node.js 22
@@ -84,6 +101,7 @@ The kube9-operator binary supports multiple execution modes via Commander.js CLI
   - Collection statistics (success/failure counts, last success time)
   - ArgoCD and Trivy awareness blocks
   - Bounded assessment summary (`assessment`)
+  - Bounded Kubernetes AI Conformance readiness summary (`aiConformance`)
   - Last update timestamp
   - Error message (if unhealthy)
 
@@ -110,6 +128,18 @@ The kube9-operator binary supports multiple execution modes via Commander.js CLI
      - Collector: `ResourceConfigurationPatternsCollector`
 - **Randomization**: Random offsets prevent thundering herd when multiple operators run
 - **Error Handling**: Collection failures are logged and metrics recorded, but don't stop scheduler
+
+### Kubernetes AI Conformance Scheduler
+- **Purpose**: Periodically evaluate bundled Kubernetes AI Conformance checklist requirements
+- **Default behavior**: Enabled when configured for M10 implementation; runs at a conservative interval suitable for checklist readiness, not high-frequency monitoring
+- **Inputs**:
+  - Cluster Kubernetes minor from cluster metadata or Kubernetes version discovery
+  - Bundled checklist YAML selected by minor version
+  - Kubernetes API signals and existing persisted operator data where applicable
+- **Outputs**:
+  - SQLite conformance run and requirement-result rows
+  - `OperatorStatus.aiConformance` on the next status writer tick
+- **Error Handling**: Failures are persisted as failed run state with bounded error text and do not stop the operator loop
 
 ### Event Watcher
 - **Component**: `KubernetesEventWatcher`

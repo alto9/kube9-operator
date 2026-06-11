@@ -15,6 +15,8 @@ Exposed via ConfigMap `kube9-operator-status` in operator namespace.
 | collectionStats | object | Collection statistics (see CollectionStats below) |
 | argocd | object | ArgoCD awareness information (see ArgoCDStatus below) |
 | trivy | object | Trivy server detection status (`detected`, `serverUrl`, `version`, `lastChecked`) |
+| assessment | object | Bounded summary of the last scheduled Well-Architected assessment tick |
+| aiConformance | object | Bounded summary of the latest Kubernetes AI Conformance readiness run |
 
 ### CollectionStats
 
@@ -43,6 +45,50 @@ Exposed via ConfigMap `kube9-operator-status` in operator namespace.
 | lastCollectedAt | string \| null | ISO 8601 `MAX(observed_at)` over stored Applications |
 | syncStatusCounts | `Record<string, number>` | Counts by `status.sync.status` (keys from each `status_json`) |
 | healthStatusCounts | `Record<string, number>` | Counts by `status.health.status` (keys from each `status_json`) |
+
+### AiConformanceSummary
+
+Nested under `OperatorStatus.aiConformance`. This is the client-facing readiness summary for Kubernetes AI Conformance checklist evaluation. It is a Kube9 readiness assessment, not proof of official CNCF certification.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| checklistVersion | string | Checklist document version selected for the cluster, e.g. `KubernetesAIConformance-1.31` |
+| kubernetesMinor | string | Cluster Kubernetes minor used for deterministic checklist selection, e.g. `1.31` |
+| sourceRevision | string \| null | Git SHA, release tag, or packaged source identifier for bundled checklist data |
+| lastCompletedAt | string \| null | ISO 8601 completion timestamp for the latest completed conformance run |
+| lastOutcome | `none` \| `success` \| `failed` | Overall latest-run publication state |
+| runState | `completed` \| `failed` \| `partial` \| null | Persisted lifecycle state for the latest run |
+| runId | string \| null | Persisted run identifier for drill-through and debugging |
+| totals | object | Aggregate counts across the selected checklist |
+| categories | `Record<string, AiConformanceCategorySummary>` | Rollups by checklist category/section |
+| requirements | `AiConformanceRequirementSummary[]` | Bounded per-requirement rows for UI clients |
+| error | string \| null | Bounded error text when `lastOutcome` is `failed` |
+
+#### AiConformanceTotals
+
+| Property | Type | Description |
+|----------|------|-------------|
+| totalRequirements | number | Number of requirements in the selected checklist |
+| mustRequirements | number | Number of MUST requirements |
+| shouldRequirements | number | Number of SHOULD requirements |
+| passed | number | Requirements evaluated as satisfied |
+| failed | number | Requirements evaluated as not satisfied |
+| warning | number | Requirements with advisory or partial-readiness findings |
+| notApplicable | number | Requirements not applicable to the cluster context |
+| notEvaluated | number | Requirements not evaluated because Kube9 lacks an objective signal |
+| needsEvidence | number | Requirements requiring user, vendor, or policy evidence outside observable cluster state |
+
+#### AiConformanceRequirementSummary
+
+| Property | Type | Description |
+|----------|------|-------------|
+| id | string | Stable requirement identifier from the checklist |
+| category | string | Checklist category/section |
+| level | `MUST` \| `SHOULD` | Requirement level from the checklist |
+| title | string | Short requirement title or description reference |
+| status | `passed` \| `failed` \| `warning` \| `not-applicable` \| `not-evaluated` \| `needs-evidence` | Kube9 readiness evaluation result |
+| rationale | string | Short bounded explanation suitable for status JSON |
+| evidenceRef | string \| null | Optional reference to the observable signal, check, or required external evidence |
 
 ## Collection Models (M8)
 
@@ -215,3 +261,49 @@ Stores the latest **Argo CD Application** snapshot per cluster and Application i
 **CLI:** `query argocd apps list|get …`
 
 **Implementation:** SQLite migration v5 in `src/database/schema.ts`, `ArgoCDAppsRepository` (`src/database/argocd-apps-repository.ts`), contracts in `src/database/argocd-apps-contracts.ts`; tests in `schema.test.ts` and repository tests (patterns consistent with `CollectionRepository` / `ImageScanRepository`).
+
+### ai_conformance_runs (M10)
+
+Stores Kubernetes AI Conformance readiness run records. Runs are selected by Kubernetes minor and bundled checklist version; they are independent from Well-Architected assessment runs but follow the same SQLite migration and repository patterns.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| run_id | TEXT | PRIMARY KEY | Unique conformance run identifier |
+| checklist_version | TEXT | NOT NULL | Selected checklist document/version |
+| kubernetes_minor | TEXT | NOT NULL | Cluster Kubernetes minor used for selection |
+| source_revision | TEXT | NULL | Packaged checklist source revision, tag, or bundle identifier |
+| state | TEXT | NOT NULL, CHECK IN ('completed', 'failed', 'partial') | Final run state |
+| requested_at | TEXT | NOT NULL | ISO 8601 timestamp when the run was requested |
+| started_at | TEXT | NULL | ISO 8601 timestamp when evaluation started |
+| completed_at | TEXT | NULL | ISO 8601 timestamp when evaluation completed |
+| total_requirements | INTEGER | NOT NULL, DEFAULT 0 | Total requirements in selected checklist |
+| must_requirements | INTEGER | NOT NULL, DEFAULT 0 | MUST requirements in selected checklist |
+| should_requirements | INTEGER | NOT NULL, DEFAULT 0 | SHOULD requirements in selected checklist |
+| passed_count | INTEGER | NOT NULL, DEFAULT 0 | Requirements evaluated as satisfied |
+| failed_count | INTEGER | NOT NULL, DEFAULT 0 | Requirements evaluated as not satisfied |
+| warning_count | INTEGER | NOT NULL, DEFAULT 0 | Requirements with advisory findings |
+| not_applicable_count | INTEGER | NOT NULL, DEFAULT 0 | Requirements not applicable to the cluster context |
+| not_evaluated_count | INTEGER | NOT NULL, DEFAULT 0 | Requirements not objectively evaluated |
+| needs_evidence_count | INTEGER | NOT NULL, DEFAULT 0 | Requirements needing external evidence |
+| failure_reason | TEXT | NULL | Bounded failure explanation when state is `failed` |
+
+**Indexes:** `idx_ai_conformance_runs_completed_at` on `completed_at DESC`, `idx_ai_conformance_runs_kubernetes_minor` on `kubernetes_minor`.
+
+### ai_conformance_requirement_results (M10)
+
+Stores per-requirement results for each conformance run.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| id | TEXT | PRIMARY KEY | Unique result row identifier |
+| run_id | TEXT | NOT NULL, FOREIGN KEY -> `ai_conformance_runs.run_id` ON DELETE CASCADE | Parent run |
+| requirement_id | TEXT | NOT NULL | Stable checklist requirement identifier |
+| category | TEXT | NOT NULL | Checklist section/category |
+| level | TEXT | NOT NULL, CHECK IN ('MUST', 'SHOULD') | Requirement level |
+| title | TEXT | NOT NULL | Short requirement title or description reference |
+| status | TEXT | NOT NULL, CHECK IN ('passed', 'failed', 'warning', 'not-applicable', 'not-evaluated', 'needs-evidence') | Evaluation result |
+| rationale | TEXT | NOT NULL | Short bounded explanation |
+| evidence_ref | TEXT | NULL | Observable signal, related check id, or external-evidence reference |
+| evaluated_at | TEXT | NOT NULL | ISO 8601 timestamp for this result |
+
+**Indexes:** `idx_ai_conformance_requirement_results_run_id`, `idx_ai_conformance_requirement_results_category`, `idx_ai_conformance_requirement_results_status`, and unique `(run_id, requirement_id)`.

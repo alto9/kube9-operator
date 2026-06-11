@@ -61,6 +61,13 @@ The operator requires namespace-scoped permissions via Role:
 - **No Pod Execution**: Operator does not execute commands in other pods
 - **No Cluster Admin**: No cluster-admin or elevated privileges required
 
+### Kubernetes AI Conformance Security
+
+- Checklist data is packaged with the operator image/chart or selected from supported packaged sources. The operator must not fetch arbitrary remote checklist YAML at runtime by default.
+- Readiness evaluation uses Kubernetes API read permissions and existing persisted operator signals. Adding write permissions, secrets access, or pod execution for conformance evaluation is out of scope unless a future contract explicitly justifies it.
+- Requirements that need vendor, user, policy, or attestation evidence are marked `needs-evidence`; the operator must not collect secrets or infer private policy posture to satisfy them.
+- Published `OperatorStatus.aiConformance` data must stay bounded and must not include sensitive object contents, credentials, or large raw evidence payloads.
+
 ### Service Account
 - **Name**: `kube9-operator` (configurable)
 - **Creation**: Automatically created by Helm chart (configurable)

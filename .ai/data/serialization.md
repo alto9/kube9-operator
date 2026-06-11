@@ -70,6 +70,33 @@ kube9-operator assess <subcommand>
     - `--since <date>` - Filter since date (ISO 8601)
     - `--format <json|yaml|table|compact>` (default: json)
 
+### Kubernetes AI Conformance Commands
+
+```
+kube9-operator ai-conformance <subcommand>
+```
+
+**Available subcommands:**
+
+- `kube9-operator ai-conformance run` - Run readiness evaluation for the current cluster
+  - Options:
+    - `--kubernetes-minor <minor>` - Override detected Kubernetes minor for deterministic test runs
+    - `--format <json|yaml|table|compact>` (default: json)
+
+- `kube9-operator ai-conformance latest` - Get the latest persisted readiness summary
+  - Options: `--format <json|yaml|table|compact>` (default: json)
+
+- `kube9-operator ai-conformance get <runId>` - Get one persisted readiness run
+  - Options: `--format <json|yaml|table|compact>` (default: json)
+
+- `kube9-operator ai-conformance requirements` - List requirement results for a run
+  - Options:
+    - `--run-id <runId>` - Run id; defaults to latest completed run when omitted
+    - `--category <category>` - Filter by checklist category
+    - `--status <passed|failed|warning|not-applicable|not-evaluated|needs-evidence>` - Filter by readiness status
+    - `--level <MUST|SHOULD>` - Filter by requirement level
+    - `--format <json|yaml|table|compact>` (default: json)
+
 ## CLI Output Formats
 
 All CLI commands support `--format`:
@@ -95,6 +122,7 @@ Extension reads `status` key from ConfigMap `kube9-operator-status` in operator 
 - `argocd`: ArgoCDStatus object
 - `trivy`: TrivyStatus object
 - `assessment`: AssessmentStatusSummary object
+- `aiConformance`: AiConformanceSummary object
 
 ## Collection Payloads
 

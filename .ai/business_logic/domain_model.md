@@ -39,6 +39,28 @@
 
 **Implementation**: Defined in `src/assessment/types.ts` as `AssessmentRunMode` enum. Check resolution handled by `resolveChecksForRun()` in `src/assessment/runner.ts`.
 
+## Kubernetes AI Conformance Readiness
+
+Kubernetes AI Conformance readiness is a Kube9 evaluation of bundled checklist requirements against observable cluster signals and explicit external-evidence gaps. It complements Well-Architected assessment and does not represent official CNCF certification.
+
+### Checklist Selection
+
+- Select the checklist by cluster Kubernetes minor, using the same cluster metadata path that records Kubernetes version.
+- Bundle or sync checklist YAML from the designated `alto9/ai-conformance` source into the operator package.
+- Record the selected checklist version and source revision or bundle identifier with each run and in the published summary.
+- Selection must be deterministic: the same cluster minor and operator package produce the same checklist version unless the packaged source changes.
+
+### Requirement Outcomes
+
+- **passed**: Kube9 can objectively observe a satisfying cluster signal.
+- **failed**: Kube9 can objectively observe a violating cluster signal.
+- **warning**: Kube9 observes a partial, advisory, or risk-bearing signal that is not a hard failure.
+- **not-applicable**: The requirement does not apply to the current cluster context.
+- **not-evaluated**: Kube9 does not have an objective cluster signal for the requirement.
+- **needs-evidence**: The requirement depends on user, vendor, policy, or attestation evidence outside Kubernetes API observation.
+
+The evaluator must prefer `not-evaluated` or `needs-evidence` over inference when a requirement cannot be proven from observable data.
+
 ### Pillars
 - security
 - reliability
