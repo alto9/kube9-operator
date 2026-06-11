@@ -17,9 +17,16 @@ import {
   DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT,
   loadLatestPersistedAssessment,
 } from '../status/assessment-summary.js';
+import {
+  buildAiConformanceScheduleContextFromConfig,
+  buildAiConformanceStatusSummary,
+  DEFAULT_AI_CONFORMANCE_SCHEDULE_CONTEXT,
+  loadLatestPersistedAiConformanceSummary,
+} from '../status/ai-conformance-summary.js';
 import { getConfig } from '../config/loader.js';
 import { getScheduledAssessmentLastRunSnapshot } from '../assessment/scheduled-tick.js';
 import { AssessmentRepository } from '../database/assessment-repository.js';
+import { AiConformanceRepository } from '../database/ai-conformance-repository.js';
 
 /**
  * Operator version (semver)
@@ -110,6 +117,16 @@ export async function gracefulShutdown(
       latestDbRun,
       dbChecks
     );
+    let aiConformanceSchedule = DEFAULT_AI_CONFORMANCE_SCHEDULE_CONTEXT;
+    try {
+      aiConformanceSchedule = buildAiConformanceScheduleContextFromConfig(getConfig());
+    } catch {
+      // ignore
+    }
+    const aiConformanceSummary = buildAiConformanceStatusSummary(
+      loadLatestPersistedAiConformanceSummary(new AiConformanceRepository()),
+      aiConformanceSchedule
+    );
     const finalStatus: OperatorStatus = {
       mode: 'operated',
       version: OPERATOR_VERSION,
@@ -129,6 +146,14 @@ export async function gracefulShutdown(
         ...assessmentSummary,
         lastScheduledTotals: { ...assessmentSummary.lastScheduledTotals },
         lastScheduledChecks: assessmentSummary.lastScheduledChecks.map((c) => ({ ...c })),
+      },
+      aiConformance: {
+        ...aiConformanceSummary,
+        totals: { ...aiConformanceSummary.totals },
+        categories: Object.fromEntries(
+          Object.entries(aiConformanceSummary.categories).map(([key, value]) => [key, { ...value }])
+        ),
+        requirements: aiConformanceSummary.requirements.map((row) => ({ ...row })),
       },
     };
 

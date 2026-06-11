@@ -7,10 +7,18 @@ import {
   DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT,
   loadLatestPersistedAssessment,
 } from './assessment-summary.js';
+import {
+  buildAiConformanceScheduleContextFromConfig,
+  buildAiConformanceStatusSummary,
+  DEFAULT_AI_CONFORMANCE_SCHEDULE_CONTEXT,
+  DEFAULT_AI_CONFORMANCE_SUMMARY,
+  loadLatestPersistedAiConformanceSummary,
+} from './ai-conformance-summary.js';
 import { getConfig } from '../config/loader.js';
 import type { OperatorStatus } from './types.js';
 import { getScheduledAssessmentLastRunSnapshot } from '../assessment/scheduled-tick.js';
 import { AssessmentRepository } from '../database/assessment-repository.js';
+import { AiConformanceRepository } from '../database/ai-conformance-repository.js';
 import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
 import { argocdStatusTracker } from '../argocd/state.js';
@@ -182,13 +190,40 @@ export class StatusWriter {
         dbChecks
       );
 
+      let aiConformanceSchedule = DEFAULT_AI_CONFORMANCE_SCHEDULE_CONTEXT;
+      try {
+        aiConformanceSchedule = buildAiConformanceScheduleContextFromConfig(getConfig());
+      } catch {
+        // Config not initialized; omit schedule fields
+      }
+      let aiConformanceSummary = DEFAULT_AI_CONFORMANCE_SUMMARY;
+      try {
+        const conformanceRepo = new AiConformanceRepository();
+        aiConformanceSummary = buildAiConformanceStatusSummary(
+          loadLatestPersistedAiConformanceSummary(conformanceRepo),
+          aiConformanceSchedule
+        );
+      } catch (conformanceErr) {
+        logger.warn('Failed to load AI conformance summary for status', {
+          error:
+            conformanceErr instanceof Error ? conformanceErr.message : String(conformanceErr),
+        });
+        aiConformanceSummary = {
+          ...DEFAULT_AI_CONFORMANCE_SUMMARY,
+          schedulingEnabled: aiConformanceSchedule.schedulingEnabled,
+          scheduleIntervalSeconds: aiConformanceSchedule.scheduleIntervalSeconds,
+          checklistSource: aiConformanceSchedule.checklistSource,
+        };
+      }
+
       const status = calculateStatus(
         this.lastWriteError,
         canWriteConfigMap,
         collectionStats,
         argocdStatus,
         trivyStatus,
-        assessmentSummary
+        assessmentSummary,
+        aiConformanceSummary
       );
 
       const statusJson = JSON.stringify(status, null, 2);

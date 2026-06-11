@@ -27,6 +27,9 @@ const baseConfig = {
   assessmentEnabled: true,
   assessmentIntervalSeconds: 86400,
   assessmentMode: 'full' as const,
+  aiConformanceEnabled: false,
+  aiConformanceIntervalSeconds: 86400,
+  aiConformanceChecklistSource: 'bundled' as const,
 } satisfies Config;
 
 const mockKubernetes = {

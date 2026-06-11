@@ -177,6 +177,74 @@ export interface AssessmentStatusSummary {
 }
 
 /**
+ * Aggregate counts for the latest Kubernetes AI Conformance readiness run.
+ */
+export interface AiConformanceTotals {
+  totalRequirements: number;
+  mustRequirements: number;
+  shouldRequirements: number;
+  passed: number;
+  failed: number;
+  warning: number;
+  notApplicable: number;
+  notEvaluated: number;
+  needsEvidence: number;
+}
+
+/**
+ * Rollup counts for one checklist category in the published status payload.
+ */
+export interface AiConformanceCategorySummary {
+  total: number;
+  passed: number;
+  failed: number;
+  warning: number;
+  notApplicable: number;
+  notEvaluated: number;
+  needsEvidence: number;
+}
+
+/**
+ * Bounded per-requirement row for status ConfigMap JSON.
+ */
+export interface AiConformanceRequirementSummary {
+  id: string;
+  category: string;
+  level: 'MUST' | 'SHOULD';
+  title: string;
+  status:
+    | 'passed'
+    | 'failed'
+    | 'warning'
+    | 'not-applicable'
+    | 'not-evaluated'
+    | 'needs-evidence';
+  rationale: string;
+  evidenceRef?: string | null;
+}
+
+/**
+ * Bounded Kubernetes AI Conformance readiness summary for kube9-vscode and kube9-desktop.
+ * Kube9 readiness assessment, not official CNCF certification.
+ */
+export interface AiConformanceSummary {
+  checklistVersion: string;
+  kubernetesMinor: string;
+  sourceRevision: string | null;
+  lastCompletedAt: string | null;
+  lastOutcome: 'none' | 'success' | 'failed';
+  runState: 'completed' | 'failed' | 'partial' | null;
+  runId: string | null;
+  totals: AiConformanceTotals;
+  categories: Record<string, AiConformanceCategorySummary>;
+  requirements: AiConformanceRequirementSummary[];
+  error: string | null;
+  schedulingEnabled: boolean;
+  scheduleIntervalSeconds: number | null;
+  checklistSource: string | null;
+}
+
+/**
  * Operator Status Model
  * Represents the current state and health of the kube9 operator
  */
@@ -240,4 +308,9 @@ export interface OperatorStatus {
    * Last scheduled Well-Architected assessment tick summary (counts, schedule, per-check statuses).
    */
   assessment: AssessmentStatusSummary;
+
+  /**
+   * Latest Kubernetes AI Conformance readiness summary (bounded; not CNCF certification).
+   */
+  aiConformance: AiConformanceSummary;
 }

@@ -85,4 +85,20 @@ export interface Config {
    * When unset, runners use their own defaults.
    */
   assessmentTimeoutSeconds?: number;
+
+  /**
+   * When true, the operator may run periodic Kubernetes AI Conformance readiness evaluation.
+   */
+  aiConformanceEnabled: boolean;
+
+  /**
+   * Seconds between scheduled conformance runs when {@link aiConformanceEnabled} is true.
+   * Default: 86400 (24 hours). Minimum: 3600 (1 hour).
+   */
+  aiConformanceIntervalSeconds: number;
+
+  /**
+   * Checklist source for conformance evaluation. Only bundled data is supported today.
+   */
+  aiConformanceChecklistSource: 'bundled';
 }

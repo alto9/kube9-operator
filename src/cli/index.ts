@@ -15,6 +15,54 @@ import {
 import { listVulnerabilities, summarizeVulnerabilities } from './commands/vulnerabilities.js';
 import { listCollections, getCollection } from './commands/collections.js';
 import { listArgoCDApplications, getArgoCDApplication } from './commands/argocd-apps.js';
+import {
+  aiConformanceRun,
+  aiConformanceLatest,
+  aiConformanceGet,
+  aiConformanceRequirements,
+} from './commands/ai-conformance.js';
+
+/**
+ * Create the ai-conformance command structure
+ */
+export function createAiConformanceCommands(): Command {
+  const aiConformance = new Command('ai-conformance')
+    .description('Kubernetes AI Conformance readiness commands');
+
+  aiConformance
+    .command('run')
+    .description('Run readiness evaluation for the current cluster')
+    .option('--kubernetes-minor <minor>', 'Override detected Kubernetes minor (e.g. 1.31)')
+    .option('--format <format>', 'Output format (json|yaml|table|compact)', 'json')
+    .action(aiConformanceRun);
+
+  aiConformance
+    .command('latest')
+    .description('Get the latest persisted readiness summary')
+    .option('--format <format>', 'Output format (json|yaml|table|compact)', 'json')
+    .action(aiConformanceLatest);
+
+  aiConformance
+    .command('get <runId>')
+    .description('Get one persisted conformance run')
+    .option('--format <format>', 'Output format (json|yaml|table|compact)', 'json')
+    .action(aiConformanceGet);
+
+  aiConformance
+    .command('requirements')
+    .description('List bounded per-requirement results for a run')
+    .option('--run-id <runId>', 'Run id (defaults to latest run when omitted)')
+    .option('--category <category>', 'Filter by checklist category')
+    .option(
+      '--status <status>',
+      'Filter by readiness status (passed|failed|warning|not-applicable|not-evaluated|needs-evidence)'
+    )
+    .option('--level <level>', 'Filter by requirement level (MUST|SHOULD)')
+    .option('--format <format>', 'Output format (json|yaml|table|compact)', 'json')
+    .action(aiConformanceRequirements);
+
+  return aiConformance;
+}
 
 /**
  * Create the assess command structure

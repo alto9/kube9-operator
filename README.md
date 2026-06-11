@@ -457,11 +457,54 @@ data:
           "warningChecks": 0
         },
         "lastScheduledError": null
+      },
+      "aiConformance": {
+        "checklistVersion": "unknown",
+        "kubernetesMinor": "unknown",
+        "sourceRevision": null,
+        "lastCompletedAt": null,
+        "lastOutcome": "none",
+        "runState": null,
+        "runId": null,
+        "totals": {
+          "totalRequirements": 0,
+          "mustRequirements": 0,
+          "shouldRequirements": 0,
+          "passed": 0,
+          "failed": 0,
+          "warning": 0,
+          "notApplicable": 0,
+          "notEvaluated": 0,
+          "needsEvidence": 0
+        },
+        "categories": {},
+        "requirements": [],
+        "error": null,
+        "schedulingEnabled": true,
+        "scheduleIntervalSeconds": 86400,
+        "checklistSource": "bundled"
       }
     }
 ```
 
 The VS Code extension reads this ConfigMap to discover where the operator runs, surface status, and enable optional experiences that depend on in-cluster signals (for example ArgoCD awareness).
+
+`aiConformance` is a **Kube9 readiness assessment** against bundled Kubernetes AI Conformance checklist data. It is **not** proof of official CNCF certification.
+
+### Kubernetes AI Conformance smoke check
+
+After deploy, inspect the published readiness summary:
+
+```bash
+kubectl get configmap kube9-operator-status -n kube9-system -o jsonpath='{.data.status}' | jq '.aiConformance'
+```
+
+Run an on-demand evaluation from the operator pod:
+
+```bash
+kubectl exec -n kube9-system deploy/kube9-operator -- kube9-operator ai-conformance run
+kubectl exec -n kube9-system deploy/kube9-operator -- kube9-operator ai-conformance latest
+```
 
 ### Operating modes (summary)
 
