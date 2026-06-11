@@ -13,6 +13,9 @@ COPY scripts/prepare-husky.cjs scripts/prepare-husky.cjs
 # Install all dependencies (including dev dependencies for TypeScript build)
 RUN npm ci
 
+# Copy build helper for bundled checklist assets
+COPY scripts/copy-checklist-bundle.cjs scripts/copy-checklist-bundle.cjs
+
 # Copy source code
 COPY src/ ./src/
 COPY tsconfig.json ./
