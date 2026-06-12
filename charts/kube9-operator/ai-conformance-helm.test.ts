@@ -4,15 +4,21 @@ import path from 'node:path';
 
 const chartDir = path.join(process.cwd(), 'charts/kube9-operator');
 
+function renderChart(extraArgs = ''): string | undefined {
+  try {
+    return execSync(
+      `helm template kube9-operator ${chartDir} --namespace kube9-system ${extraArgs}`.trim(),
+      { encoding: 'utf8', timeout: 15_000 }
+    );
+  } catch {
+    return undefined;
+  }
+}
+
 describe('kube9-operator Helm chart aiConformance values', () => {
   it('renders AI_CONFORMANCE_* environment variables from values', () => {
-    let rendered: string;
-    try {
-      rendered = execSync(
-        `helm template kube9-operator ${chartDir} --namespace kube9-system`,
-        { encoding: 'utf8' }
-      );
-    } catch {
+    const rendered = renderChart();
+    if (!rendered) {
       // Skip when helm is unavailable in the environment
       return;
     }
@@ -24,17 +30,23 @@ describe('kube9-operator Helm chart aiConformance values', () => {
   });
 
   it('honors disabled aiConformance schedule overrides', () => {
-    let rendered: string;
-    try {
-      rendered = execSync(
-        `helm template kube9-operator ${chartDir} --namespace kube9-system --set aiConformance.enabled=false`,
-        { encoding: 'utf8' }
-      );
-    } catch {
+    const rendered = renderChart('--set aiConformance.enabled=false');
+    if (!rendered) {
       return;
     }
 
     expect(rendered).toContain('name: AI_CONFORMANCE_ENABLED');
     expect(rendered).toContain('value: "false"');
+  });
+
+  it('grants ClusterRole list/watch on networkpolicies for conformance evaluation', () => {
+    const rendered = renderChart();
+    if (!rendered) {
+      return;
+    }
+
+    expect(rendered).toContain('apiGroups: ["networking.k8s.io"]');
+    expect(rendered).toContain('resources: ["networkpolicies"]');
+    expect(rendered).toContain('verbs: ["get", "list", "watch"]');
   });
 });

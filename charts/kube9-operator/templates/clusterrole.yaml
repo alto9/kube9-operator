@@ -31,6 +31,10 @@ rules:
 - apiGroups: ["policy"]
   resources: ["poddisruptionbudgets"]
   verbs: ["get", "list", "watch"]
+# Read NetworkPolicies (ai-conformance security.network-policy-default-deny)
+- apiGroups: ["networking.k8s.io"]
+  resources: ["networkpolicies"]
+  verbs: ["get", "list", "watch"]
 # Read namespace governance resources (assessment checks)
 - apiGroups: [""]
   resources: ["resourcequotas", "limitranges"]
