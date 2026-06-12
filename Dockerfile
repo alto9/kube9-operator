@@ -13,6 +13,9 @@ COPY scripts/prepare-husky.cjs scripts/prepare-husky.cjs
 # Install all dependencies (including dev dependencies for TypeScript build)
 RUN npm ci
 
+# Copy build helper for bundled checklist assets
+COPY scripts/copy-checklist-bundle.cjs scripts/copy-checklist-bundle.cjs
+
 # Copy source code
 COPY src/ ./src/
 COPY tsconfig.json ./
@@ -38,7 +41,7 @@ COPY scripts/prepare-husky.cjs scripts/prepare-husky.cjs
 # better-sqlite3 needs a native build — rebuild it after install.
 RUN npm ci --omit=dev --ignore-scripts && npm rebuild better-sqlite3
 
-# Copy built dist folder from build stage
+# Copy built dist folder from build stage (includes bundled checklist YAML)
 COPY --from=builder /app/dist ./dist
 
 # Link the binary globally (creates /usr/local/bin/kube9-operator).

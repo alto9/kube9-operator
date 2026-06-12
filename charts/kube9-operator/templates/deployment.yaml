@@ -130,6 +130,14 @@ spec:
         - name: ASSESSMENT_TIMEOUT_SECONDS
           value: {{ $assessment.timeoutSeconds | quote }}
         {{- end }}
+        # Periodic AI conformance schedule (see aiConformance.* in values.yaml)
+        {{- $aiConformance := .Values.aiConformance | default dict }}
+        - name: AI_CONFORMANCE_ENABLED
+          value: {{ $aiConformance.enabled | default true | quote }}
+        - name: AI_CONFORMANCE_INTERVAL_SECONDS
+          value: {{ $aiConformance.intervalSeconds | default 86400 | quote }}
+        - name: AI_CONFORMANCE_CHECKLIST_SOURCE
+          value: {{ $aiConformance.checklistSource | default "bundled" | quote }}
         # Event retention configuration
         - name: EVENT_RETENTION_INFO_WARNING_DAYS
           value: {{ .Values.events.retention.infoWarning | default 7 | quote }}

@@ -349,12 +349,76 @@ describe('SchemaManager', () => {
     expect(meta?.sql).toContain('PRIMARY KEY (cluster_id, app_namespace, app_name)');
   });
 
+  it('creates ai_conformance tables when migrating to v6', () => {
+    const schema = new SchemaManager();
+    schema.initialize();
+
+    const manager = DatabaseManager.getInstance();
+    const db = manager.getDatabase();
+
+    const runsTable = db
+      .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name='ai_conformance_runs'`)
+      .get() as { name: string } | undefined;
+    expect(runsTable?.name).toBe('ai_conformance_runs');
+
+    const resultsTable = db
+      .prepare(
+        `SELECT name FROM sqlite_master WHERE type='table' AND name='ai_conformance_requirement_results'`
+      )
+      .get() as { name: string } | undefined;
+    expect(resultsTable?.name).toBe('ai_conformance_requirement_results');
+
+    const runColumns = db
+      .prepare(`PRAGMA table_info(ai_conformance_runs)`)
+      .all() as Array<{ name: string }>;
+    expect(runColumns.map((c) => c.name)).toEqual(
+      expect.arrayContaining([
+        'run_id',
+        'checklist_version',
+        'kubernetes_minor',
+        'source_revision',
+        'state',
+        'failure_reason',
+        'needs_evidence_count',
+      ])
+    );
+
+    const resultColumns = db
+      .prepare(`PRAGMA table_info(ai_conformance_requirement_results)`)
+      .all() as Array<{ name: string }>;
+    expect(resultColumns.map((c) => c.name)).toEqual(
+      expect.arrayContaining([
+        'run_id',
+        'requirement_id',
+        'category',
+        'level',
+        'status',
+        'rationale',
+        'evidence_ref',
+      ])
+    );
+
+    const indexes = db
+      .prepare(
+        `SELECT name FROM sqlite_master WHERE type='index' AND tbl_name='ai_conformance_requirement_results' AND name NOT LIKE 'sqlite_%'`
+      )
+      .all() as Array<{ name: string }>;
+    expect(indexes.map((i) => i.name)).toEqual(
+      expect.arrayContaining([
+        'idx_ai_conformance_requirement_results_run_id',
+        'idx_ai_conformance_requirement_results_category',
+        'idx_ai_conformance_requirement_results_status',
+        'idx_ai_conformance_requirement_results_run_requirement',
+      ])
+    );
+  });
+
   it('migration runs cleanly on fresh database', () => {
     DatabaseManager.reset();
     const schema = new SchemaManager();
     schema.initialize();
 
-    expect(schema.getVersion()).toBeGreaterThanOrEqual(5);
+    expect(schema.getVersion()).toBeGreaterThanOrEqual(6);
 
     const manager = DatabaseManager.getInstance();
     const db = manager.getDatabase();

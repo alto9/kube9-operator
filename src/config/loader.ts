@@ -6,6 +6,7 @@ const ASSESSMENT_MODES = ['full', 'pillar', 'single-check'] as const;
 type AssessmentMode = (typeof ASSESSMENT_MODES)[number];
 
 const ASSESSMENT_INTERVAL_MIN_SECONDS = 3600;
+const AI_CONFORMANCE_INTERVAL_MIN_SECONDS = 3600;
 const ASSESSMENT_TIMEOUT_MIN_SECONDS = 60;
 const ASSESSMENT_TIMEOUT_MAX_SECONDS = 7 * 24 * 3600;
 /** Matches operator scheduler minimum for `resource-inventory` (30 minutes). */
@@ -33,7 +34,11 @@ function parsePositiveInt(
   return n;
 }
 
-function parseEnvBool(raw: string | undefined, defaultValue: boolean): boolean {
+function parseEnvBool(
+  raw: string | undefined,
+  defaultValue: boolean,
+  envName: string = 'environment variable'
+): boolean {
   if (raw === undefined || raw === '') {
     return defaultValue;
   }
@@ -45,7 +50,17 @@ function parseEnvBool(raw: string | undefined, defaultValue: boolean): boolean {
     return false;
   }
   throw new Error(
-    `Invalid boolean for ASSESSMENT_ENABLED: "${raw}" (use true/false, 1/0, yes/no)`
+    `Invalid boolean for ${envName}: "${raw}" (use true/false, 1/0, yes/no)`
+  );
+}
+
+function parseAiConformanceChecklistSource(raw: string | undefined): 'bundled' {
+  const v = (raw ?? 'bundled').trim().toLowerCase();
+  if (v === 'bundled') {
+    return 'bundled';
+  }
+  throw new Error(
+    `AI_CONFORMANCE_CHECKLIST_SOURCE must be "bundled"; got "${raw ?? ''}"`
   );
 }
 
@@ -108,7 +123,7 @@ export async function loadConfig(): Promise<Config> {
     process.env.EVENT_RETENTION_ERROR_CRITICAL_DAYS,
     '30'
   );
-  const assessmentEnabled = parseEnvBool(process.env.ASSESSMENT_ENABLED, true);
+  const assessmentEnabled = parseEnvBool(process.env.ASSESSMENT_ENABLED, true, 'ASSESSMENT_ENABLED');
   const assessmentIntervalSeconds = parsePositiveInt(
     'ASSESSMENT_INTERVAL_SECONDS',
     process.env.ASSESSMENT_INTERVAL_SECONDS,
@@ -153,6 +168,21 @@ export async function loadConfig(): Promise<Config> {
     assessmentPillar = raw;
   }
 
+  const aiConformanceEnabled = parseEnvBool(
+    process.env.AI_CONFORMANCE_ENABLED,
+    true,
+    'AI_CONFORMANCE_ENABLED'
+  );
+  const aiConformanceIntervalSeconds = parsePositiveInt(
+    'AI_CONFORMANCE_INTERVAL_SECONDS',
+    process.env.AI_CONFORMANCE_INTERVAL_SECONDS,
+    '86400',
+    AI_CONFORMANCE_INTERVAL_MIN_SECONDS
+  );
+  const aiConformanceChecklistSource = parseAiConformanceChecklistSource(
+    process.env.AI_CONFORMANCE_CHECKLIST_SOURCE
+  );
+
   const config: Config = {
     logLevel,
     statusUpdateIntervalSeconds,
@@ -170,6 +200,9 @@ export async function loadConfig(): Promise<Config> {
     ...(assessmentTimeoutSeconds !== undefined
       ? { assessmentTimeoutSeconds }
       : {}),
+    aiConformanceEnabled,
+    aiConformanceIntervalSeconds,
+    aiConformanceChecklistSource,
   };
 
   logger.info('Collection intervals configured', {
@@ -196,6 +229,16 @@ export async function loadConfig(): Promise<Config> {
     assessmentModeOverridden: process.env.ASSESSMENT_MODE !== undefined,
     assessmentPillarOverridden: process.env.ASSESSMENT_PILLAR !== undefined,
     assessmentTimeoutOverridden: process.env.ASSESSMENT_TIMEOUT_SECONDS !== undefined,
+  });
+
+  logger.info('AI conformance schedule configured', {
+    aiConformanceEnabled: config.aiConformanceEnabled,
+    aiConformanceIntervalSeconds: config.aiConformanceIntervalSeconds,
+    aiConformanceChecklistSource: config.aiConformanceChecklistSource,
+    aiConformanceEnabledOverridden: process.env.AI_CONFORMANCE_ENABLED !== undefined,
+    aiConformanceIntervalOverridden: process.env.AI_CONFORMANCE_INTERVAL_SECONDS !== undefined,
+    aiConformanceChecklistSourceOverridden:
+      process.env.AI_CONFORMANCE_CHECKLIST_SOURCE !== undefined,
   });
 
   return config;

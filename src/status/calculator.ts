@@ -4,8 +4,10 @@ import type {
   ArgoCDStatus,
   TrivyStatus,
   AssessmentStatusSummary,
+  AiConformanceSummary,
 } from './types.js';
 import { DEFAULT_ASSESSMENT_STATUS_SUMMARY } from './assessment-summary.js';
+import { DEFAULT_AI_CONFORMANCE_SUMMARY } from './ai-conformance-summary.js';
 
 /**
  * Operator version (semver)
@@ -52,6 +54,7 @@ const DEFAULT_TRIVY_STATUS: TrivyStatus = {
  * @param argocdStatus - Optional ArgoCD detection status (defaults to not detected)
  * @param trivyStatus - Optional Trivy detection status (defaults to unavailable)
  * @param assessmentSummary - Bounded last scheduled assessment tick summary (defaults to no-run state)
+ * @param aiConformanceSummary - Bounded latest conformance readiness summary (defaults to no-run state)
  * @returns OperatorStatus object with current operator state
  */
 export function calculateStatus(
@@ -65,7 +68,8 @@ export function calculateStatus(
   },
   argocdStatus: ArgoCDStatus = DEFAULT_ARGOCD_STATUS,
   trivyStatus: TrivyStatus = DEFAULT_TRIVY_STATUS,
-  assessmentSummary: AssessmentStatusSummary = DEFAULT_ASSESSMENT_STATUS_SUMMARY
+  assessmentSummary: AssessmentStatusSummary = DEFAULT_ASSESSMENT_STATUS_SUMMARY,
+  aiConformanceSummary: AiConformanceSummary = DEFAULT_AI_CONFORMANCE_SUMMARY
 ): OperatorStatus {
   // Published status uses fixed mode; this function does not read config or credentials.
   const mode: 'operated' | 'enabled' = 'operated';
@@ -107,6 +111,14 @@ export function calculateStatus(
       ...assessmentSummary,
       lastScheduledTotals: { ...assessmentSummary.lastScheduledTotals },
       lastScheduledChecks: assessmentSummary.lastScheduledChecks.map((c) => ({ ...c })),
+    },
+    aiConformance: {
+      ...aiConformanceSummary,
+      totals: { ...aiConformanceSummary.totals },
+      categories: Object.fromEntries(
+        Object.entries(aiConformanceSummary.categories).map(([key, value]) => [key, { ...value }])
+      ),
+      requirements: aiConformanceSummary.requirements.map((row) => ({ ...row })),
     },
   };
 }

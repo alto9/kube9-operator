@@ -4,7 +4,7 @@
  */
 
 import { program } from 'commander';
-import { createQueryCommands, createAssessCommands } from './cli/index.js';
+import { createQueryCommands, createAssessCommands, createAiConformanceCommands } from './cli/index.js';
 import { getConfig } from './config/loader.js';
 import type { Config } from './config/types.js';
 
@@ -29,6 +29,9 @@ program.addCommand(createQueryCommands());
 
 // Assess command - Well-Architected Framework assessment
 program.addCommand(createAssessCommands());
+
+// AI conformance command - Kubernetes AI Conformance readiness evaluation
+program.addCommand(createAiConformanceCommands());
 
 program.parse(process.argv);
 

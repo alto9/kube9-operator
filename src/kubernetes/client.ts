@@ -15,8 +15,8 @@ export interface ClusterInfo {
  * 
  * Uses in-cluster configuration when running as a pod.
  * Falls back to default kubeconfig (from KUBECONFIG env var or ~/.kube/config) for local development.
- * Provides CoreV1Api, VersionApi, AppsV1Api, PolicyV1Api, AutoscalingV2Api,
- * ApiextensionsV1Api, CustomObjectsApi, and RbacAuthorizationV1Api clients
+ * Provides CoreV1Api, VersionApi, AppsV1Api, PolicyV1Api, NetworkingV1Api,
+ * AutoscalingV2Api, ApiextensionsV1Api, CustomObjectsApi, and RbacAuthorizationV1Api clients
  * for cluster operations.
  */
 export class KubernetesClient {
@@ -25,6 +25,7 @@ export class KubernetesClient {
   public readonly versionApi: k8s.VersionApi;
   public readonly appsApi: k8s.AppsV1Api;
   public readonly policyApi: k8s.PolicyV1Api;
+  public readonly networkingApi: k8s.NetworkingV1Api;
   public readonly autoscalingApi: k8s.AutoscalingV2Api;
   public readonly apiextensionsApi: k8s.ApiextensionsV1Api;
   public readonly customObjectsApi: k8s.CustomObjectsApi;
@@ -69,6 +70,7 @@ export class KubernetesClient {
       this.versionApi = this.kubeConfig.makeApiClient(k8s.VersionApi);
       this.appsApi = this.kubeConfig.makeApiClient(k8s.AppsV1Api);
       this.policyApi = this.kubeConfig.makeApiClient(k8s.PolicyV1Api);
+      this.networkingApi = this.kubeConfig.makeApiClient(k8s.NetworkingV1Api);
       this.autoscalingApi = this.kubeConfig.makeApiClient(k8s.AutoscalingV2Api);
       this.apiextensionsApi = this.kubeConfig.makeApiClient(k8s.ApiextensionsV1Api);
       this.customObjectsApi = this.kubeConfig.makeApiClient(k8s.CustomObjectsApi);

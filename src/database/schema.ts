@@ -7,7 +7,7 @@ import Database from 'better-sqlite3';
 import { logger } from '../logging/logger.js';
 
 /** Latest schema version - bump when adding migrations */
-const LATEST_SCHEMA_VERSION = 5;
+const LATEST_SCHEMA_VERSION = 6;
 
 /**
  * SchemaManager handles database schema initialization and migrations
@@ -61,6 +61,10 @@ export class SchemaManager {
       {
         version: 5,
         apply: () => this.migrateToV5(),
+      },
+      {
+        version: 6,
+        apply: () => this.migrateToV6(),
       },
     ];
 
@@ -207,6 +211,64 @@ export class SchemaManager {
 
       CREATE INDEX IF NOT EXISTS idx_argocd_apps_cluster_observed
         ON argocd_apps(cluster_id, observed_at DESC);
+    `);
+  }
+
+  /**
+   * Migration v6: M10 Kubernetes AI Conformance runs and requirement results.
+   */
+  private migrateToV6(): void {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS ai_conformance_runs (
+        run_id TEXT PRIMARY KEY,
+        checklist_version TEXT NOT NULL,
+        kubernetes_minor TEXT NOT NULL,
+        source_revision TEXT,
+        state TEXT NOT NULL CHECK (state IN ('completed', 'failed', 'partial')),
+        requested_at TEXT NOT NULL,
+        started_at TEXT,
+        completed_at TEXT,
+        total_requirements INTEGER NOT NULL DEFAULT 0,
+        must_requirements INTEGER NOT NULL DEFAULT 0,
+        should_requirements INTEGER NOT NULL DEFAULT 0,
+        passed_count INTEGER NOT NULL DEFAULT 0,
+        failed_count INTEGER NOT NULL DEFAULT 0,
+        warning_count INTEGER NOT NULL DEFAULT 0,
+        not_applicable_count INTEGER NOT NULL DEFAULT 0,
+        not_evaluated_count INTEGER NOT NULL DEFAULT 0,
+        needs_evidence_count INTEGER NOT NULL DEFAULT 0,
+        failure_reason TEXT
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ai_conformance_runs_completed_at
+        ON ai_conformance_runs(completed_at DESC);
+      CREATE INDEX IF NOT EXISTS idx_ai_conformance_runs_kubernetes_minor
+        ON ai_conformance_runs(kubernetes_minor);
+
+      CREATE TABLE IF NOT EXISTS ai_conformance_requirement_results (
+        id TEXT PRIMARY KEY,
+        run_id TEXT NOT NULL,
+        requirement_id TEXT NOT NULL,
+        category TEXT NOT NULL,
+        level TEXT NOT NULL CHECK (level IN ('MUST', 'SHOULD')),
+        title TEXT NOT NULL,
+        status TEXT NOT NULL CHECK (status IN (
+          'passed', 'failed', 'warning', 'not-applicable', 'not-evaluated', 'needs-evidence'
+        )),
+        rationale TEXT NOT NULL,
+        evidence_ref TEXT,
+        evaluated_at TEXT NOT NULL,
+        FOREIGN KEY (run_id) REFERENCES ai_conformance_runs(run_id) ON DELETE CASCADE
+      );
+
+      CREATE INDEX IF NOT EXISTS idx_ai_conformance_requirement_results_run_id
+        ON ai_conformance_requirement_results(run_id);
+      CREATE INDEX IF NOT EXISTS idx_ai_conformance_requirement_results_category
+        ON ai_conformance_requirement_results(category);
+      CREATE INDEX IF NOT EXISTS idx_ai_conformance_requirement_results_status
+        ON ai_conformance_requirement_results(status);
+      CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_conformance_requirement_results_run_requirement
+        ON ai_conformance_requirement_results(run_id, requirement_id);
     `);
   }
 

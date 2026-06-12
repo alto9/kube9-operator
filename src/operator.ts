@@ -37,6 +37,10 @@ import {
   runScheduledAssessmentTick,
   getScheduledAssessmentLastRunSnapshot,
 } from './assessment/scheduled-tick.js';
+import {
+  runScheduledAiConformanceTick,
+  getScheduledAiConformanceLastRunSnapshot,
+} from './ai-conformance/scheduled-tick.js';
 
 // Module-level references for shutdown handler
 let statusWriterInstance: StatusWriter | null = null;
@@ -381,6 +385,46 @@ export async function startOperator() {
             const durationSeconds = (Date.now() - startTime) / 1000;
             recordCollection('well-architected-assessment', 'failed', durationSeconds);
             collectionStatsTracker.recordFailure('well-architected-assessment');
+          }
+        }
+      );
+    }
+
+    if (config.aiConformanceEnabled) {
+      collectionScheduler.register(
+        'kubernetes-ai-conformance',
+        config.aiConformanceIntervalSeconds,
+        3600,
+        3600,
+        async () => {
+          const startTime = Date.now();
+          try {
+            await runScheduledAiConformanceTick({
+              kubernetes: kubernetesClient,
+              config,
+              logger,
+            });
+            const durationSeconds = (Date.now() - startTime) / 1000;
+            const snap = getScheduledAiConformanceLastRunSnapshot();
+            const tickOk = snap?.outcome !== 'failed';
+            recordCollection(
+              'kubernetes-ai-conformance',
+              tickOk ? 'success' : 'failed',
+              durationSeconds
+            );
+            if (tickOk) {
+              collectionStatsTracker.recordSuccess('kubernetes-ai-conformance');
+            } else {
+              collectionStatsTracker.recordFailure('kubernetes-ai-conformance');
+            }
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            logger.error('Scheduled AI conformance tick failed unexpectedly', {
+              error: errorMessage,
+            });
+            const durationSeconds = (Date.now() - startTime) / 1000;
+            recordCollection('kubernetes-ai-conformance', 'failed', durationSeconds);
+            collectionStatsTracker.recordFailure('kubernetes-ai-conformance');
           }
         }
       );

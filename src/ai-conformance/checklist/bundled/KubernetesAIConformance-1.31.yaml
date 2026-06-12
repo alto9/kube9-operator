@@ -1,0 +1,29 @@
+version: KubernetesAIConformance-1.31
+kubernetesMinor: "1.31"
+title: Kubernetes AI Conformance Checklist
+requirements:
+  - id: security.rbac-least-privilege
+    category: security
+    level: MUST
+    title: Enforce least-privilege RBAC
+    description: Cluster roles and bindings should avoid wildcard verbs and resources for routine workloads.
+  - id: security.network-policy-default-deny
+    category: security
+    level: MUST
+    title: Default deny network policies
+    description: Workload namespaces should adopt default-deny network policies unless explicitly exempted.
+  - id: security.secrets-encryption-at-rest
+    category: security
+    level: MUST
+    title: Secrets encryption at rest
+    description: etcd secrets encryption should be configured for clusters handling sensitive workload data.
+  - id: reliability.pod-disruption-budgets
+    category: reliability
+    level: SHOULD
+    title: Pod disruption budgets for critical services
+    description: Stateful or critical services should declare PodDisruptionBudgets before maintenance windows.
+  - id: observability.audit-logging
+    category: operational-excellence
+    level: SHOULD
+    title: Audit logging enabled
+    description: Cluster audit logging should be enabled and retained according to organizational policy.

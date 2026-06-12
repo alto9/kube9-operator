@@ -111,6 +111,14 @@ assessment:
   # Optional per-run timeout in seconds (omit to use runner defaults)
   # timeoutSeconds: 3600
 
+# Periodic Kubernetes AI Conformance readiness evaluation (bundled checklist data)
+aiConformance:
+  enabled: true
+  # Interval between scheduled runs when enabled (seconds). Minimum: 3600
+  intervalSeconds: 86400
+  # Checklist source packaged with the operator image (only bundled is supported today)
+  checklistSource: bundled
+
 # Event storage configuration
 events:
   # PersistentVolume configuration for event database
