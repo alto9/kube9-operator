@@ -1,3 +1,19 @@
+# [2.3.0](https://github.com/alto9/kube9-operator/compare/v2.2.0...v2.3.0) (2026-07-13)
+
+
+### Bug Fixes
+
+* **build:** copy checklist bundle script into Docker builder stage ([1a5e719](https://github.com/alto9/kube9-operator/commit/1a5e719dbccee83ba036cee9518eb830d8598c85))
+* **rbac:** grant NetworkPolicy read access for ai-conformance evaluation ([d321a6c](https://github.com/alto9/kube9-operator/commit/d321a6c13a4ec53d5490d93faebe149c3cdab24d))
+* remove old schema ([3a3342f](https://github.com/alto9/kube9-operator/commit/3a3342feee370fc1c08f9555a582246edc38971f))
+
+
+### Features
+
+* **ai-conformance:** add evaluator and SQLite persistence for runs ([07d2e81](https://github.com/alto9/kube9-operator/commit/07d2e81833f827ddf6c8048f56904a6b2c1f1311)), closes [#147](https://github.com/alto9/kube9-operator/issues/147)
+* **ai-conformance:** bundle checklist data and selection by Kubernetes minor ([f308401](https://github.com/alto9/kube9-operator/commit/f3084015ba4c5bb79b2eb21978d00aa29b8cd867)), closes [#146](https://github.com/alto9/kube9-operator/issues/146)
+* **ai-conformance:** publish readiness summary in OperatorStatus ([#148](https://github.com/alto9/kube9-operator/issues/148)) ([a8e2f54](https://github.com/alto9/kube9-operator/commit/a8e2f54bb41229a616354e3668a28e3b71afc2ac))
+
 # [2.2.0](https://github.com/alto9/kube9-operator/compare/v2.1.0...v2.2.0) (2026-05-17)
 
 
