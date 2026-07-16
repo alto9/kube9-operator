@@ -21,7 +21,7 @@ The `status` key contains a JSON string with the following `OperatorStatus` stru
   - `totalFailureCount`: Number of failed collections
   - `collectionsStoredCount`: Number of collections stored locally
   - `lastSuccessTime`: ISO 8601 timestamp of most recent successful collection (or null)
-- `argocd`: ArgoCD status object
+- `argocd`: ArgoCD status object (includes optional `resourceTreeCapable`, `resourceTreeLastError`)
   - `detected`: Boolean indicating if ArgoCD is detected
   - `namespace`: Namespace where ArgoCD is installed (or null)
   - `version`: ArgoCD version string (or null)

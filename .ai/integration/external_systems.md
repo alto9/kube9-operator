@@ -62,10 +62,18 @@ Exposed in ConfigMap `kube9-operator-status` under `status.argocd`:
 - `namespace`: string | null - Namespace where ArgoCD was detected
 - `version`: string | null - ArgoCD version extracted from deployment
 - `lastChecked`: string - ISO 8601 timestamp of last detection check
+- `resourceTreeCapable`: boolean (optional) - Whether resource-tree enrichment is available
+- `resourceTreeLastError`: object (optional) - Bounded `{ code, message }` when enrichment unavailable
 
-**Future (M9)**:
-- Application sync status tracking (HTTP API client and collector — issue #55)
-- Drift classification from Application snapshots — issue #56; persistence — issue #57
+**Resource-tree HTTP (M17)**:
+- `GET /api/v1/applications/{name}/resource-tree` with `appNamespace` query parameter
+- On-demand fetch at CLI query time; not persisted to SQLite in M17
+- Authenticates with dedicated bearer token (Helm Secret); not operator K8s SA token
+- Consumer: kube9-vscode via `query argocd resource-tree get`
+
+**Application status (M9, existing)**:
+- `GET /api/v1/applications` list collection into SQLite `argocd_apps`
+- CLI: `query argocd apps list|get`
 
 ## Trivy (optional, M3)
 
