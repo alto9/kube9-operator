@@ -7,6 +7,11 @@
 - **Failure behavior**: Returns `detected: false`, logs warning, operator continues normally
 - **Implementation**: `src/argocd/detection.ts` - detection failures never crash operator
 
+### ArgoCD Resource-Tree Enrichment Failures (M17)
+- **Failure behavior**: Structured CLI error envelope; `status.argocd.resourceTreeCapable` set false with bounded `resourceTreeLastError`; operator global `health` stays **healthy**
+- **Distinction from detection**: `detected: true` with enrichment unavailable is a separate signal from `detected: false`
+- **Implementation**: Resource-tree fetch errors must not crash operator main loop or block assessments/collections
+
 ### Storage Write Failures
 - **Collection storage**: Errors logged, metrics recorded, collection retries on next interval
 - **Event storage**: Database write failures logged, events dropped (non-blocking queue)

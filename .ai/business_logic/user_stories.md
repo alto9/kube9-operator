@@ -48,10 +48,16 @@
 
 **Implementation**: Detection logic in `src/argocd/detection.ts`, periodic management in `src/argocd/detection-manager.ts`. Status exposed via `status.argocd` field in ConfigMap.
 
-### Future (M9)
-- Application sync/health status
-- Drift detection
+### Future (M9) — implemented
+- Application sync/health status in SQLite `argocd_apps`
+- CLI `query argocd apps list|get`
 - VS Code extension reads ArgoCD status for conditional features
+
+### M17 — Resource-tree enrichment
+- On-demand `GET /api/v1/applications/{name}/resource-tree` via CLI `query argocd resource-tree get`
+- Raw JSON passthrough to kube9-vscode; no durable tree store
+- Dedicated Argo CD API bearer token via Helm Secret
+- `status.argocd.resourceTreeCapable` gates extension topology tier
 
 ## Event System
 

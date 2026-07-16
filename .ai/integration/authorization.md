@@ -112,7 +112,7 @@ rules:
 **Operator → In-Cluster Services** (outbound only):
 - Kubernetes API: Operator-initiated API calls
 - Prometheus: Metrics endpoint exposed, scraped by Prometheus (no ingress needed)
-- Argo CD: **Today**, detection uses the Kubernetes API only (`src/argocd/detection.ts`). **M9** adds optional **read-only** HTTP calls to in-cluster `argocd-server` (Service URL / configurable base URL—see issue #55) for Application status and drift-related signals; still **zero ingress** (cluster-internal egress only).
+- Argo CD: Detection uses the Kubernetes API (`src/argocd/detection.ts`). **M9** adds read-only HTTP to in-cluster `argocd-server` for Application list/status into SQLite. **M17** adds on-demand `GET /api/v1/applications/{name}/resource-tree` at CLI query time. All Argo CD HTTP is **zero ingress** (cluster-internal egress). M17 requires a **dedicated Argo CD API bearer token** (Helm Secret); operator must not rely on its K8s SA token against argocd-server unless a future story documents opt-in.
 
 **Extension → Operator** (via kubectl):
 - ConfigMap read: Direct Kubernetes API access (no ingress)
