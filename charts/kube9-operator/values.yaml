@@ -63,7 +63,13 @@ argocd:
     tlsInsecure: false
     # Kubernetes Service name segment for derived URL when baseUrl is empty and Argo CD is detected
     serverServiceName: argocd-server
-    # Optional bearer token file (defaults to in-cluster SA token path when readable)
+    # Dedicated Argo CD API bearer token (M17 resource-tree). Platform admin creates the Secret out-of-band.
+    token:
+      # Name of an existing Secret in the release namespace. Empty/unset = no mount (default-off).
+      existingSecret: ""
+      # Key within that Secret holding the bearer token string.
+      existingSecretKey: token
+    # Advanced: override ARGOCD_API_TOKEN_FILE path without chart-managed Secret mount.
     # tokenFile: ""
 
 # Optional Trivy server detection (does not install Trivy; set serverUrl to probe)

@@ -70,6 +70,9 @@ spec:
         - name: ARGOCD_DETECTION_INTERVAL
           value: {{ .Values.argocd.detectionInterval | default 6 | quote }}
         {{- $argapi := .Values.argocd.api | default dict }}
+        {{- $argToken := $argapi.token | default dict }}
+        {{- $argocdApiTokenSecret := $argToken.existingSecret | default "" }}
+        {{- $argocdApiTokenMountPath := "/var/run/secrets/kube9/argocd-api-token" }}
         - name: ARGOCD_API_COLLECTION_ENABLED
           value: {{ $argapi.collectionEnabled | default true | quote }}
         {{- if $argapi.baseUrl }}
@@ -85,6 +88,9 @@ spec:
         {{- if $argapi.tokenFile }}
         - name: ARGOCD_API_TOKEN_FILE
           value: {{ $argapi.tokenFile | quote }}
+        {{- else if $argocdApiTokenSecret }}
+        - name: ARGOCD_API_TOKEN_FILE
+          value: {{ $argocdApiTokenMountPath | quote }}
         {{- end }}
         - name: ARGOCD_APPLICATION_STATUS_INTERVAL_SECONDS
           value: {{ .Values.metrics.intervals.argocdApplicationStatus | default 3600 | quote }}
@@ -164,6 +170,12 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /data
+        {{- if $argocdApiTokenSecret }}
+        - name: argocd-api-token
+          mountPath: {{ $argocdApiTokenMountPath }}
+          subPath: {{ $argToken.existingSecretKey | default "token" }}
+          readOnly: true
+        {{- end }}
       volumes:
       - name: data
         {{- if .Values.events.persistence.enabled }}
@@ -172,4 +184,9 @@ spec:
         {{- else }}
         emptyDir: {}
         {{- end }}
+      {{- if $argocdApiTokenSecret }}
+      - name: argocd-api-token
+        secret:
+          secretName: {{ $argocdApiTokenSecret }}
+      {{- end }}
 
