@@ -43,6 +43,14 @@ The Helm chart supports comprehensive configuration through `values.yaml`:
 - `argocd.namespace`: Custom namespace where ArgoCD is installed (default: `argocd`)
 - `argocd.selector`: Custom label selector for ArgoCD server deployment (optional)
 - `argocd.detectionInterval`: Detection check interval in hours (default: `6`)
+- `argocd.api.collectionEnabled`: Schedule M9 Application status collection (default: `true`)
+- `argocd.api.baseUrl`: Optional explicit HTTPS base URL for argocd-server
+- `argocd.api.timeoutMs`: HTTP timeout for Argo CD API requests (default: `30000`)
+- `argocd.api.tlsInsecure`: Skip TLS verification (default: `false`)
+- `argocd.api.serverServiceName`: Service name for derived URL (default: `argocd-server`)
+- `argocd.api.token.existingSecret`: Name of an existing Secret (release namespace) holding a dedicated Argo CD API bearer; empty/unset = default-off (no mount, no `ARGOCD_API_TOKEN_FILE`)
+- `argocd.api.token.existingSecretKey`: Key within that Secret (default: `token`)
+- When `argocd.api.token.existingSecret` is set, the Deployment mounts the Secret key at `/var/run/secrets/kube9/argocd-api-token` and sets `ARGOCD_API_TOKEN_FILE` to that path. Chart does not create a Secret from plaintext values.
 
 #### Metrics Collection Intervals
 - `metrics.intervals.clusterMetadata`: Cluster metadata collection interval in seconds (default: `86400` = 24 hours, minimum: `3600`)

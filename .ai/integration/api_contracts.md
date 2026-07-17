@@ -203,9 +203,9 @@ kube9-operator query argocd resource-tree get <appName> --namespace=<appNamespac
 Consumers (kube9-vscode) should key primarily on stderr `code`; exit codes are stable for scripts.
 
 **Authentication to argocd-server:**
-- Platform admin supplies a **dedicated Argo CD API bearer token** via Helm-mounted Secret wired as `ARGOCD_API_BEARER_TOKEN` and/or `ARGOCD_API_TOKEN_FILE` (chart onboarding: sibling issue / Helm docs).
+- Platform admin supplies a **dedicated Argo CD API bearer token** by creating a Kubernetes Secret out-of-band and referencing it from Helm: `argocd.api.token.existingSecret` + `argocd.api.token.existingSecretKey` (default key `token`). When set, the chart mounts the key at `/var/run/secrets/kube9/argocd-api-token` and sets `ARGOCD_API_TOKEN_FILE` to that path. Chart does not create a Secret from plaintext values. Unset `existingSecret` is default-off (no mount/env).
 - Resource-tree resolution order: non-empty `ARGOCD_API_BEARER_TOKEN`, else readable `ARGOCD_API_TOKEN_FILE`. **No** fallback to the Kubernetes ServiceAccount token on this path (even if M9 application-status collection still allows SA fallback until a later hardening story).
-- Missing dedicated token → CLI `ARGOCD_TOKEN_MISSING` and `status.argocd.resourceTreeCapable: false`.
+- Missing dedicated token → CLI `ARGOCD_TOKEN_MISSING` and `status.argocd.resourceTreeCapable: false`. Token present but probe RBAC denied → `ARGOCD_RBAC_DENIED` and `resourceTreeCapable: false`.
 
 **Service discovery:** `ARGOCD_API_BASE_URL` when set; otherwise `https://{ARGOCD_API_SERVER_SERVICE_NAME}.{detectedNamespace}.svc.cluster.local` (default service name `argocd-server`). TLS verification follows `ARGOCD_API_TLS_INSECURE` (default false).
 
@@ -215,7 +215,7 @@ Consumers (kube9-vscode) should key primarily on stderr `code`; exit codes are s
 - **Do not demote** for per-application CLI outcomes: `APPLICATION_NOT_FOUND`, per-app RBAC deny, or per-app `TIMEOUT`. Those return structured CLI errors only; global capability stays `true` when the last probe succeeded.
 - Probe or query auth/connectivity failures that are cluster-wide demote capability as above.
 
-**Minimum Argo CD RBAC** (platform admin; chart does not mutate Argo CD roles): the dedicated token identity must be allowed to `get` Applications (including resource-tree) for the Applications/projects intended for enrichment. Exact policy snippets live in Helm / platform onboarding docs.
+**Minimum Argo CD RBAC** (platform admin; chart does not mutate Argo CD roles): the dedicated token identity must be allowed to `get` Applications (including resource-tree) for the Applications/projects intended for enrichment. Example policy (attach to the account that issued the token): `p, role:kube9-resource-tree, applications, get, */*, allow` (or a project-scoped variant). Chart README documents this onboarding; the chart does not apply Argo CD roles.
 
 **Consumer:** kube9-vscode extension host via `kubectl exec` on graph open/refresh when `resourceTreeCapable` is true. Webview receives normalized `ApplicationResourceGraph` only (`topologySource: argocd_resource_tree` on success).
 

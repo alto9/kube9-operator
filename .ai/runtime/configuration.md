@@ -179,10 +179,17 @@ argocd:
     timeoutMs: 30000            # Shared by collection, probe, and resource-tree get
     tlsInsecure: false
     serverServiceName: argocd-server
-    # tokenFile / bearer via Secret mount — platform onboarding (chart docs)
+    token:
+      # Name of an existing Secret in the release namespace (platform-created out-of-band).
+      # Empty/unset = default-off: no volume mount and no ARGOCD_API_TOKEN_FILE.
+      existingSecret: ""
+      # Key within that Secret holding the bearer token string.
+      existingSecretKey: token
 ```
 - Maps to `ARGOCD_*` and `ARGOCD_API_*` environment variables
-- Resource-tree requires a dedicated bearer (`ARGOCD_API_BEARER_TOKEN` or `ARGOCD_API_TOKEN_FILE`); no SA fallback on that path
+- **Dedicated API token (M17 onboarding):** When `argocd.api.token.existingSecret` is non-empty, the chart volume-mounts that Secret key at `/var/run/secrets/kube9/argocd-api-token` and sets `ARGOCD_API_TOKEN_FILE` to that path. Chart does **not** create a Secret from a plaintext bearer value in Helm values.
+- Resource-tree requires a dedicated bearer (`ARGOCD_API_BEARER_TOKEN` or `ARGOCD_API_TOKEN_FILE`); no SA fallback on that path. File mount alone satisfies resolution order (bearer env first, then token file).
+- When `existingSecret` is set but the Secret is absent, Kubernetes fails the pod mount (not a soft runtime miss). When unset, install succeeds; runtime reports `ARGOCD_TOKEN_MISSING` / `resourceTreeCapable: false` for the resource-tree path.
 
 ### Collection Interval Configuration
 ```yaml
