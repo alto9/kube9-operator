@@ -112,7 +112,8 @@ rules:
 **Operator → In-Cluster Services** (outbound only):
 - Kubernetes API: Operator-initiated API calls
 - Prometheus: Metrics endpoint exposed, scraped by Prometheus (no ingress needed)
-- Argo CD: Detection uses the Kubernetes API (`src/argocd/detection.ts`). **M9** adds read-only HTTP to in-cluster `argocd-server` for Application list/status into SQLite. **M17** adds on-demand `GET /api/v1/applications/{name}/resource-tree` at CLI query time. All Argo CD HTTP is **zero ingress** (cluster-internal egress). M17 requires a **dedicated Argo CD API bearer token** (Helm Secret); operator must not rely on its K8s SA token against argocd-server unless a future story documents opt-in.
+- Argo CD: Detection uses the Kubernetes API (`src/argocd/detection.ts`). **M9** adds read-only HTTP to in-cluster `argocd-server` for Application list/status into SQLite. **M17** adds on-demand `GET /api/v1/applications/{name}/resource-tree` at CLI query time. All Argo CD HTTP is **zero ingress** (cluster-internal egress).
+- **M17 resource-tree auth:** Dedicated Argo CD API bearer only (`ARGOCD_API_BEARER_TOKEN` or `ARGOCD_API_TOKEN_FILE`). The resource-tree path **must not** fall back to the operator Kubernetes ServiceAccount token. Platform admin grants Argo CD RBAC `get` on Applications (resource-tree) for the token identity; the kube9-operator chart does not mutate Argo CD roles. Helm Secret mount / values onboarding is documented with chart platform docs (sibling onboarding issue).
 
 **Extension → Operator** (via kubectl):
 - ConfigMap read: Direct Kubernetes API access (no ingress)

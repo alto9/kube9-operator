@@ -8,9 +8,12 @@
 - **Implementation**: `src/argocd/detection.ts` - detection failures never crash operator
 
 ### ArgoCD Resource-Tree Enrichment Failures (M17)
-- **Failure behavior**: Structured CLI error envelope; `status.argocd.resourceTreeCapable` set false with bounded `resourceTreeLastError`; operator global `health` stays **healthy**
-- **Distinction from detection**: `detected: true` with enrichment unavailable is a separate signal from `detected: false`
-- **Implementation**: Resource-tree fetch errors must not crash operator main loop or block assessments/collections
+- **CLI failures**: Structured stderr JSON envelope (`ok: false`, `code`, `message`, optional `details`); exit codes per integration API contract. Success writes raw Argo CD JSON to stdout only.
+- **Global capability demotion**: Set `resourceTreeCapable: false` and `resourceTreeLastError: { code, message }` only for cluster-wide problems (missing dedicated token, API unreachable, auth failure, cluster-wide RBAC deny on probe). When Argo CD is not detected, omit capable/error fields.
+- **Per-application failures**: `APPLICATION_NOT_FOUND`, per-app RBAC deny, and per-app `TIMEOUT` return CLI errors only; leave `resourceTreeCapable` true when the last probe succeeded.
+- **Health**: Operator global `health` stays **healthy** for all resource-tree enrichment failures (CLI or probe).
+- **Distinction from detection**: `detected: true` with `resourceTreeCapable: false` is a separate signal from `detected: false`.
+- **Implementation**: Resource-tree fetch errors must not crash the operator main loop or block assessments/collections.
 
 ### Storage Write Failures
 - **Collection storage**: Errors logged, metrics recorded, collection retries on next interval

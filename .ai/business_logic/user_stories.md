@@ -54,10 +54,11 @@
 - VS Code extension reads ArgoCD status for conditional features
 
 ### M17 — Resource-tree enrichment
-- On-demand `GET /api/v1/applications/{name}/resource-tree` via CLI `query argocd resource-tree get`
-- Raw JSON passthrough to kube9-vscode; no durable tree store
-- Dedicated Argo CD API bearer token via Helm Secret
-- `status.argocd.resourceTreeCapable` gates extension topology tier
+- On-demand `GET /api/v1/applications/{name}/resource-tree` via CLI `query argocd resource-tree get <appName> --namespace=<appNs>`
+- Raw unmodified JSON on stdout; structured stderr errors; no `--refresh`; no operator-side tree size cap
+- Dedicated Argo CD API bearer only (no SA fallback on resource-tree path)
+- Lightweight status-loop probe sets `status.argocd.resourceTreeCapable`; demote only on cluster-wide token/auth/unreachable/RBAC-probe failures
+- kube9-vscode gates operator topology tier on `resourceTreeCapable`
 
 ## Event System
 

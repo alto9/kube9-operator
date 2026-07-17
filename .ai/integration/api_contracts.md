@@ -154,20 +154,70 @@ Returns assessment run record with:
 kube9-operator query argocd resource-tree get <appName> --namespace=<appNamespace> [--format=json]
 ```
 
+**Flags**:
+- `<appName>` (required positional): Argo CD Application name.
+- `--namespace=<appNamespace>` (required): Application namespace (`appNamespace` for the Argo CD API).
+- `--format=json` (optional): Accepted as the only format; default is JSON. `table` and `yaml` are not supported for this subcommand.
+- **Out of scope:** `--refresh` (and any flag that forces an Argo CD Application refresh before returning the tree). The CLI always returns the current resource-tree snapshot from argocd-server.
+
 **Behavior**:
-- **On-demand only:** Fetches `GET /api/v1/applications/{name}/resource-tree` from in-cluster `argocd-server` at query time. No durable tree store in SQLite for M17.
-- **Response:** Raw Argo CD resource-tree JSON (`nodes[]` with `group`, `kind`, `namespace`, `name`, `parentRefs`, optional health/sync). kube9-vscode consumes this via existing `buildResourceTreeApplicationResourceGraph`.
+- **On-demand only:** Fetches `GET /api/v1/applications/{name}/resource-tree?appNamespace={appNamespace}` from in-cluster `argocd-server` at query time. No durable tree store in SQLite for M17.
+- **Success stdout:** Exactly the unmodified Argo CD response body (raw JSON). Typical shape includes `nodes[]` with `group`, `kind`, `namespace`, `name`, `parentRefs`, optional health/sync. No operator-side node or byte truncation; large trees rely on `ARGOCD_API_TIMEOUT_MS` and Kubernetes exec payload limits. Platform operators should size memory and exec timeouts for large Applications.
 - **Application identity:** `appName` + `appNamespace` match `argocd_apps` composite key `(cluster_id, app_namespace, app_name)`.
-- **Failure:** Structured stderr JSON error envelope; operator global `health` remains unaffected. Extension falls back per vscode tier ladder.
+- **Timeout:** Each HTTP fetch uses `ARGOCD_API_TIMEOUT_MS` (default `30000`, minimum `1000`).
+- **Failure:** Structured JSON error envelope on **stderr** only; stdout empty or non-JSON on failure. Operator global `health` remains unaffected. kube9-vscode falls back per its tier ladder.
+
+**Stderr error envelope** (one JSON object):
+```json
+{ "ok": false, "code": "<CODE>", "message": "<human-readable>", "details": {} }
+```
+`details` is optional and must not include tokens, raw Authorization headers, or unbounded upstream bodies.
+
+**Error codes** (minimum set):
+
+| `code` | Meaning |
+|--------|---------|
+| `INVALID_ARGUMENT` | Missing/invalid `appName` or `--namespace` |
+| `ARGOCD_NOT_DETECTED` | Argo CD not detected / resource-tree path unavailable |
+| `ARGOCD_TOKEN_MISSING` | No dedicated bearer (`ARGOCD_API_BEARER_TOKEN` / `ARGOCD_API_TOKEN_FILE`) |
+| `ARGOCD_API_UNREACHABLE` | Cannot reach argocd-server (DNS, connect, TLS hard failure) |
+| `ARGOCD_AUTH_FAILED` | Token rejected (HTTP 401) |
+| `ARGOCD_RBAC_DENIED` | Authorization denied (HTTP 403), including cluster-wide probe deny |
+| `APPLICATION_NOT_FOUND` | Application missing for name/namespace (HTTP 404) |
+| `TIMEOUT` | Exceeded `ARGOCD_API_TIMEOUT_MS` |
+| `INTERNAL_ERROR` | Unexpected operator/runtime failure |
+
+**Exit codes**:
+
+| Exit | When |
+|------|------|
+| `0` | Success; raw resource-tree JSON on stdout |
+| `2` | `INVALID_ARGUMENT` |
+| `3` | `APPLICATION_NOT_FOUND` |
+| `4` | `ARGOCD_TOKEN_MISSING` or `ARGOCD_AUTH_FAILED` |
+| `5` | `ARGOCD_RBAC_DENIED` |
+| `6` | `TIMEOUT` |
+| `7` | `ARGOCD_API_UNREACHABLE` or `ARGOCD_NOT_DETECTED` |
+| `1` | `INTERNAL_ERROR` or unclassified failure |
+
+Consumers (kube9-vscode) should key primarily on stderr `code`; exit codes are stable for scripts.
 
 **Authentication to argocd-server:**
-- Platform admin supplies a **dedicated Argo CD API bearer token** via Helm Secret / `ARGOCD_API_BEARER_TOKEN` or `ARGOCD_API_TOKEN_FILE`.
-- Operator **must not** use its Kubernetes ServiceAccount token against argocd-server unless explicitly documented as a future opt-in; M17 requires dedicated token provisioning.
-- Missing or denied credentials set `status.argocd.resourceTreeCapable: false` (or equivalent); extension uses CRD-flat fallback with actionable copy in kube9-vscode.
+- Platform admin supplies a **dedicated Argo CD API bearer token** via Helm-mounted Secret wired as `ARGOCD_API_BEARER_TOKEN` and/or `ARGOCD_API_TOKEN_FILE` (chart onboarding: sibling issue / Helm docs).
+- Resource-tree resolution order: non-empty `ARGOCD_API_BEARER_TOKEN`, else readable `ARGOCD_API_TOKEN_FILE`. **No** fallback to the Kubernetes ServiceAccount token on this path (even if M9 application-status collection still allows SA fallback until a later hardening story).
+- Missing dedicated token → CLI `ARGOCD_TOKEN_MISSING` and `status.argocd.resourceTreeCapable: false`.
 
-**Service discovery:** `ARGOCD_API_BASE_URL` or derived `https://{ARGOCD_API_SERVER_SERVICE_NAME}.{detectedNamespace}.svc.cluster.local`.
+**Service discovery:** `ARGOCD_API_BASE_URL` when set; otherwise `https://{ARGOCD_API_SERVER_SERVICE_NAME}.{detectedNamespace}.svc.cluster.local` (default service name `argocd-server`). TLS verification follows `ARGOCD_API_TLS_INSECURE` (default false).
 
-**Consumer:** kube9-vscode extension host via `kubectl exec` on graph open/refresh. Webview receives normalized `ApplicationResourceGraph` only.
+**`resourceTreeCapable` probe and demotion:**
+- When Argo CD is `detected` and a dedicated token is configured, the operator runs a **lightweight probe** on the status / detection-adjacent loop (not only on first vscode query). After a successful probe, set `status.argocd.resourceTreeCapable: true` and omit `resourceTreeLastError`.
+- **Demote** `resourceTreeCapable` to `false` only for **cluster-wide** problems: missing dedicated token, Argo CD not detected (omit capable fields when not detected), API unreachable, auth failure, or cluster-wide RBAC deny on probe. On demotion, set bounded `resourceTreeLastError: { code, message }` to the last global demotion reason.
+- **Do not demote** for per-application CLI outcomes: `APPLICATION_NOT_FOUND`, per-app RBAC deny, or per-app `TIMEOUT`. Those return structured CLI errors only; global capability stays `true` when the last probe succeeded.
+- Probe or query auth/connectivity failures that are cluster-wide demote capability as above.
+
+**Minimum Argo CD RBAC** (platform admin; chart does not mutate Argo CD roles): the dedicated token identity must be allowed to `get` Applications (including resource-tree) for the Applications/projects intended for enrichment. Exact policy snippets live in Helm / platform onboarding docs.
+
+**Consumer:** kube9-vscode extension host via `kubectl exec` on graph open/refresh when `resourceTreeCapable` is true. Webview receives normalized `ApplicationResourceGraph` only (`topologySource: argocd_resource_tree` on success).
 
 ### Argo CD Apps Query (existing)
 
@@ -177,16 +227,3 @@ kube9-operator query argocd apps get <appNamespace>/<appName> [--format=json|yam
 ```
 
 Reads SQLite `argocd_apps` snapshots (M9 application status collection). Independent of resource-tree on-demand fetch.
-
-## Open Implementation Decisions
-
-Implementation-level items not yet fully specified. `/refine-issue` resolves these into timeless contract prose and removes or collapses bullets when done.
-
-### Argo CD resource-tree (M17)
-
-- Exact CLI flags: `--refresh`, exit codes for not-found vs RBAC-denied vs upstream timeout.
-- Structured stderr JSON error envelope schema (`ARGOCD_NOT_DETECTED`, `ARGOCD_API_UNREACHABLE`, `ARGOCD_RBAC_DENIED`, `APPLICATION_NOT_FOUND`, `TIMEOUT`, etc.).
-- Per-application fetch timeout and max node bounds for oversized trees.
-- `resourceTreeCapable` probe cadence: piggyback on status loop vs on-first-query only.
-- Helm chart docs for Secret mount and Argo CD RBAC prerequisites for resource-tree access.
-- Whether CLI supports `table` format or json-only given payload size.

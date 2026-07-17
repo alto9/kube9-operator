@@ -35,8 +35,8 @@ Exposed via ConfigMap `kube9-operator-status` in operator namespace.
 | namespace | string \| null | Namespace where ArgoCD is installed (null if not detected) |
 | version | string \| null | ArgoCD version extracted from deployment (null if not detected) |
 | lastChecked | string | ISO 8601 timestamp of last detection check |
-| resourceTreeCapable | boolean \| *omitted* | Whether operator can fetch resource-tree (token configured, Argo CD detected, last probe succeeded). Omitted when Argo CD not detected. |
-| resourceTreeLastError | object \| *omitted* | Bounded last enrichment error: `{ code, message }` when `resourceTreeCapable` is false but Argo CD is detected |
+| resourceTreeCapable | boolean \| *omitted* | `true` after dedicated token is configured, Argo CD is detected, and the last lightweight status-loop / detection-adjacent probe succeeded. `false` when Argo CD is detected but capability is demoted for a **cluster-wide** reason (missing token, API unreachable, auth failure, cluster-wide RBAC deny on probe). Omitted when Argo CD is not detected. Per-application CLI failures (`APPLICATION_NOT_FOUND`, per-app RBAC, per-app timeout) do **not** flip this to `false`. |
+| resourceTreeLastError | object \| *omitted* | Bounded last **global demotion** reason: `{ code, message }` when `resourceTreeCapable` is false and Argo CD is detected. Omitted when capable is true or Argo CD is not detected. Must not contain tokens or unbounded payloads. |
 | applications | object \| *omitted* | When `argocd_apps` has rows: bounded summary (see below); omitted when none |
 
 #### ArgoCDApplicationsPersistedSummary (nested under `argocd.applications`)
