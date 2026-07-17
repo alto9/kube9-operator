@@ -35,6 +35,14 @@ export interface ArgoCDApplicationsPersistedSummary {
 }
 
 /**
+ * Last global demotion reason for resource-tree capability (bounded; no tokens).
+ */
+export interface ArgoCDResourceTreeLastError {
+  code: string;
+  message: string;
+}
+
+/**
  * ArgoCD Status
  * Represents the current state of ArgoCD detection in the cluster
  */
@@ -67,6 +75,18 @@ export interface ArgoCDStatus {
    * Optional summary derived from SQLite `argocd_apps` when snapshots exist (omitted when none).
    */
   applications?: ArgoCDApplicationsPersistedSummary;
+
+  /**
+   * Whether on-demand resource-tree enrichment is available after probe success.
+   * Omitted when Argo CD is not detected.
+   */
+  resourceTreeCapable?: boolean;
+
+  /**
+   * Last cluster-wide demotion reason when {@link resourceTreeCapable} is false.
+   * Omitted when capable is true or Argo CD is not detected.
+   */
+  resourceTreeLastError?: ArgoCDResourceTreeLastError;
 }
 
 /**

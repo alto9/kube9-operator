@@ -23,4 +23,14 @@ describe('createQueryCommands', () => {
     expect(names).toContain('events');
     expect(names).toContain('vulnerabilities');
   });
+
+  it('includes argocd resource-tree get subcommand', () => {
+    const queryCmd = createQueryCommands();
+    const argocd = queryCmd.commands.find((c) => c.name() === 'argocd');
+    expect(argocd).toBeTruthy();
+    const resourceTree = argocd!.commands.find((c) => c.name() === 'resource-tree');
+    expect(resourceTree).toBeTruthy();
+    const getCmd = resourceTree!.commands.find((c) => c.name() === 'get');
+    expect(getCmd).toBeTruthy();
+  });
 });

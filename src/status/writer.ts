@@ -24,6 +24,10 @@ import { collectionStatsTracker } from '../collection/stats-tracker.js';
 import { argocdStatusTracker } from '../argocd/state.js';
 import { trivyStatusTracker } from '../trivy/state.js';
 import { withPersistedArgoApplicationsSummary } from './argocd-for-status.js';
+import {
+  mergeResourceTreeProbeIntoStatus,
+  runResourceTreeCapabilityProbe,
+} from '../argocd/resource-tree-probe.js';
 
 /**
  * ConfigMap name for operator status
@@ -173,7 +177,10 @@ export class StatusWriter {
       const canWriteConfigMap = true;
 
       const collectionStats = collectionStatsTracker.getStats();
-      const argocdStatus = withPersistedArgoApplicationsSummary(argocdStatusTracker.getStatus());
+      const detectionStatus = argocdStatusTracker.getStatus();
+      const probeResult = await runResourceTreeCapabilityProbe(detectionStatus);
+      const argocdWithProbe = mergeResourceTreeProbeIntoStatus(detectionStatus, probeResult);
+      const argocdStatus = withPersistedArgoApplicationsSummary(argocdWithProbe);
       const trivyStatus = trivyStatusTracker.getStatus();
       let assessmentSchedule = DEFAULT_ASSESSMENT_SCHEDULE_CONTEXT;
       try {

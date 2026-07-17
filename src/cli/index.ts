@@ -15,6 +15,7 @@ import {
 import { listVulnerabilities, summarizeVulnerabilities } from './commands/vulnerabilities.js';
 import { listCollections, getCollection } from './commands/collections.js';
 import { listArgoCDApplications, getArgoCDApplication } from './commands/argocd-apps.js';
+import { getArgoCDResourceTree } from './commands/argocd-resource-tree.js';
 import {
   aiConformanceRun,
   aiConformanceLatest,
@@ -240,6 +241,17 @@ export function createQueryCommands(): Command {
     .description('Get one persisted Application snapshot by primary key')
     .option('--format <format>', 'Output format (json|yaml|table|compact)', 'json')
     .action(getArgoCDApplication);
+
+  const resourceTree = argocd
+    .command('resource-tree')
+    .description('On-demand Argo CD Application resource-tree (live API)');
+
+  resourceTree
+    .command('get <appName>')
+    .description('Fetch raw resource-tree JSON for an Application from argocd-server')
+    .requiredOption('--namespace <appNamespace>', 'Argo CD Application namespace (appNamespace)')
+    .option('--format <format>', 'Output format (json only)', 'json')
+    .action(getArgoCDResourceTree);
 
   return query;
 }
