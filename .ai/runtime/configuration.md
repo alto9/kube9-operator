@@ -85,6 +85,35 @@
   - Default: `6` hours
   - How often operator checks for ArgoCD installation changes
 
+### Argo CD API (HTTP) Environment Variables
+
+Used by M9 application-status collection and M17 resource-tree query/probe. Chart wires the same names.
+
+- **ARGOCD_API_COLLECTION_ENABLED**: Enable periodic Application list/status collection (M9)
+  - Default: `true`
+
+- **ARGOCD_API_BASE_URL**: Explicit HTTPS base URL for argocd-server
+  - Default: empty (derive `https://{ARGOCD_API_SERVER_SERVICE_NAME}.{detectedNamespace}.svc.cluster.local`)
+
+- **ARGOCD_API_SERVER_SERVICE_NAME**: Service name segment for derived URL
+  - Default: `argocd-server`
+
+- **ARGOCD_API_TIMEOUT_MS**: HTTP timeout for each Argo CD API request (including resource-tree get and capability probe)
+  - Default: `30000`
+  - Minimum: `1000`
+
+- **ARGOCD_API_TLS_INSECURE**: Skip TLS verification for argocd-server HTTPS
+  - Default: `false`
+  - Not recommended for production
+
+- **ARGOCD_API_BEARER_TOKEN**: Dedicated Argo CD API bearer token (preferred for M17)
+  - Optional string; when non-empty, used for resource-tree auth
+
+- **ARGOCD_API_TOKEN_FILE**: Path to a file containing the dedicated bearer token
+  - Used when `ARGOCD_API_BEARER_TOKEN` is unset/empty
+  - **Resource-tree path (M17):** must resolve a dedicated token from bearer env or this file; **must not** fall back to `/var/run/secrets/kubernetes.io/serviceaccount/token`
+  - M9 application-status collection may still allow SA fallback until a later hardening story; resource-tree does not share that fallback
+
 ## Helm Values
 
 ### Image Configuration
@@ -144,8 +173,16 @@ argocd:
   # namespace: "argocd"         # Custom namespace (default: "argocd")
   # selector: "app.kubernetes.io/name=argocd-server"  # Custom selector
   detectionInterval: 6          # Detection check interval in hours (default: 6)
+  api:
+    collectionEnabled: true     # M9 Application status collection
+    # baseUrl: ""               # Optional explicit HTTPS base URL
+    timeoutMs: 30000            # Shared by collection, probe, and resource-tree get
+    tlsInsecure: false
+    serverServiceName: argocd-server
+    # tokenFile / bearer via Secret mount — platform onboarding (chart docs)
 ```
-- Maps to `ARGOCD_*` environment variables
+- Maps to `ARGOCD_*` and `ARGOCD_API_*` environment variables
+- Resource-tree requires a dedicated bearer (`ARGOCD_API_BEARER_TOKEN` or `ARGOCD_API_TOKEN_FILE`); no SA fallback on that path
 
 ### Collection Interval Configuration
 ```yaml

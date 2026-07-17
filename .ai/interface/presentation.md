@@ -21,11 +21,13 @@ The `status` key contains a JSON string with the following `OperatorStatus` stru
   - `totalFailureCount`: Number of failed collections
   - `collectionsStoredCount`: Number of collections stored locally
   - `lastSuccessTime`: ISO 8601 timestamp of most recent successful collection (or null)
-- `argocd`: ArgoCD status object (includes optional `resourceTreeCapable`, `resourceTreeLastError`)
+- `argocd`: ArgoCD status object
   - `detected`: Boolean indicating if ArgoCD is detected
   - `namespace`: Namespace where ArgoCD is installed (or null)
   - `version`: ArgoCD version string (or null)
   - `lastChecked`: ISO 8601 timestamp of last detection check
+  - `resourceTreeCapable` (optional boolean): Present when Argo CD is detected; `true` after successful lightweight resource-tree capability probe with dedicated token configured
+  - `resourceTreeLastError` (optional `{ code, message }`): Last global demotion reason when capable is false and Argo CD is detected; omit when capable is true
 - `trivy`: Trivy detection status object
   - `detected`: Boolean indicating if a Trivy server was probed successfully
   - `serverUrl`: Base URL when detected (or null)

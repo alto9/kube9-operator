@@ -62,13 +62,15 @@ Exposed in ConfigMap `kube9-operator-status` under `status.argocd`:
 - `namespace`: string | null - Namespace where ArgoCD was detected
 - `version`: string | null - ArgoCD version extracted from deployment
 - `lastChecked`: string - ISO 8601 timestamp of last detection check
-- `resourceTreeCapable`: boolean (optional) - Whether resource-tree enrichment is available
-- `resourceTreeLastError`: object (optional) - Bounded `{ code, message }` when enrichment unavailable
+- `resourceTreeCapable`: boolean (optional) - Whether resource-tree enrichment is available after a successful lightweight probe (token configured + Argo CD detected). Omitted when Argo CD is not detected.
+- `resourceTreeLastError`: object (optional) - Bounded `{ code, message }` for the last **global** demotion reason when `resourceTreeCapable` is false and Argo CD is detected. Cleared/omitted when capable is true.
 
 **Resource-tree HTTP (M17)**:
 - `GET /api/v1/applications/{name}/resource-tree` with `appNamespace` query parameter
 - On-demand fetch at CLI query time; not persisted to SQLite in M17
-- Authenticates with dedicated bearer token (Helm Secret); not operator K8s SA token
+- Authenticates with dedicated bearer token (`ARGOCD_API_BEARER_TOKEN` or `ARGOCD_API_TOKEN_FILE`); **no** Kubernetes ServiceAccount token fallback on this path
+- HTTP timeout: `ARGOCD_API_TIMEOUT_MS` (default 30000). No operator-side node/byte cap on the response body
+- Capability probe: status-loop / detection-adjacent lightweight probe when token is configured and Argo CD is detected; demote only on cluster-wide token/auth/unreachable/RBAC-probe failures (not on per-app not-found/RBAC/timeout)
 - Consumer: kube9-vscode via `query argocd resource-tree get`
 
 **Application status (M9, existing)**:

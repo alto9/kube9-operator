@@ -57,7 +57,8 @@ The operator requires namespace-scoped permissions via Role:
 ### RBAC Security Principles
 - **Read-Only by Default**: All cluster resources are read-only
 - **Minimal Write Access**: Only ConfigMap write access in operator's namespace
-- **No Secrets Access**: Operator never requests secrets or credentials
+- **No Secrets API list/get**: Operator ClusterRole does not grant Kubernetes Secrets API access. A dedicated Argo CD API bearer for M17 resource-tree is supplied by platform admins via Helm-mounted file / env (`ARGOCD_API_BEARER_TOKEN` / `ARGOCD_API_TOKEN_FILE`), not by the operator reading Secrets through the API.
+- **Token hygiene**: Bearer tokens must never appear in status ConfigMap fields, CLI success stdout, or stderr `message`/`details` beyond a redacted failure code.
 - **No Pod Execution**: Operator does not execute commands in other pods
 - **No Cluster Admin**: No cluster-admin or elevated privileges required
 
