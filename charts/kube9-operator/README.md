@@ -123,7 +123,9 @@ The following table lists the configurable parameters and their default values:
 | `argocd.api.timeoutMs` | HTTP timeout for each Argo CD API request | `30000` |
 | `argocd.api.tlsInsecure` | Skip TLS verification (not recommended for production) | `false` |
 | `argocd.api.serverServiceName` | Kubernetes Service name for derived in-cluster API URL | `argocd-server` |
-| `argocd.api.tokenFile` | Optional path to a bearer token file (defaults to the pod SA token path when omitted and readable) | (unset) |
+| `argocd.api.token.existingSecret` | Name of an existing Secret (release namespace) with a dedicated Argo CD API bearer token. Empty = default-off (no mount) | `""` |
+| `argocd.api.token.existingSecretKey` | Key within `existingSecret` holding the bearer token | `token` |
+| `argocd.api.tokenFile` | Advanced: override `ARGOCD_API_TOKEN_FILE` path without chart-managed Secret mount | (unset) |
 | `metrics.intervals.argocdApplicationStatus` | Argo CD Application API collection interval (seconds); minimum 1800 | `3600` |
 | `trivy.autoDetect` | Probe `trivy.serverUrl` periodically for Trivy HTTP health | `true` |
 | `trivy.serverUrl` | Trivy server base URL (required for detection and scans) | (unset) |
@@ -238,7 +240,42 @@ The operator can detect and integrate with ArgoCD installations in your cluster.
 - **timeoutMs** (default: `30000`): Timeout for listing applications.
 - **tlsInsecure** (default: `false`): Skip TLS verification (labs only).
 - **serverServiceName** (default: `argocd-server`): Kubernetes Service DNS name segment used for the derived URL.
-- **tokenFile** (optional): Bearer token path. If unset, the operator reads the pod service-account token when `/var/run/secrets/kubernetes.io/serviceaccount/token` exists. Grant this identity **Argo CD RBAC** to read Applications (chart does not modify Argo CD `AppProject` / roles).
+
+**Dedicated Argo CD API bearer token (`argocd.api.token.*`)** — required for M17 resource-tree (Application graph) auth. The chart does **not** create a Secret from plaintext Helm values. Platform admins create the Secret out-of-band and reference it here.
+
+- **token.existingSecret** (default: `""`): Name of an existing Secret in the release namespace. When empty/unset, the chart does not mount a token file and does not set `ARGOCD_API_TOKEN_FILE` (install succeeds; runtime reports `ARGOCD_TOKEN_MISSING` / `resourceTreeCapable: false` when Argo CD is detected).
+- **token.existingSecretKey** (default: `token`): Key within that Secret holding the bearer token string.
+- When `existingSecret` is set, the chart mounts the key at `/var/run/secrets/kube9/argocd-api-token` and sets `ARGOCD_API_TOKEN_FILE` to that path. Resolution order at runtime (see operator #151): non-empty `ARGOCD_API_BEARER_TOKEN` env first, else readable `ARGOCD_API_TOKEN_FILE`. The resource-tree path does **not** fall back to the operator Kubernetes ServiceAccount token.
+- **tokenFile** (optional, advanced): Override the `ARGOCD_API_TOKEN_FILE` env path without a chart-managed Secret mount. Not the supported M17 onboarding path.
+
+**Create the Secret (release namespace, typically `kube9-system`):**
+
+```bash
+kubectl -n kube9-system create secret generic kube9-argocd-api-token \
+  --from-literal=token="<argocd-api-bearer-token>"
+```
+
+**Helm values example:**
+
+```yaml
+argocd:
+  api:
+    token:
+      existingSecret: kube9-argocd-api-token
+      existingSecretKey: token
+```
+
+**Mount failure:** If `existingSecret` is set but the Secret does not exist, Kubernetes fails the pod volume mount and the pod does not become Ready. This is expected; create the Secret before or with the install.
+
+**Argo CD RBAC (platform admin; chart does not apply):** Grant the token identity permission to read Applications for resource-tree. Example policy snippet:
+
+```text
+p, role:kube9-resource-tree, applications, get, */*, allow
+```
+
+Attach that role (or a project-scoped variant) to the Argo CD account that issued the token. If the token is present but lacks permission, the operator pod still runs; status shows `ARGOCD_RBAC_DENIED` and `resourceTreeCapable: false`.
+
+**Missing dedicated token:** When Argo CD is detected but no dedicated token is configured (`existingSecret` unset), the operator does not implement the kube9-vscode fallback ladder. The extension may still use REST settings, `kubernetes_owner_ref`, or `crd_flat` when the operator is not resource-tree capable.
 
 **When to use `enabled` vs `autoDetect`:**
 
@@ -603,7 +640,9 @@ Complete reference of all configurable values:
 | `argocd.api.timeoutMs` | HTTP timeout for each Argo CD API request | `30000` |
 | `argocd.api.tlsInsecure` | Skip TLS verification (not recommended for production) | `false` |
 | `argocd.api.serverServiceName` | Kubernetes Service name for derived in-cluster API URL | `argocd-server` |
-| `argocd.api.tokenFile` | Optional path to a bearer token file (defaults to the pod SA token path when omitted and readable) | (unset) |
+| `argocd.api.token.existingSecret` | Name of an existing Secret (release namespace) with a dedicated Argo CD API bearer token. Empty = default-off (no mount) | `""` |
+| `argocd.api.token.existingSecretKey` | Key within `existingSecret` holding the bearer token | `token` |
+| `argocd.api.tokenFile` | Advanced: override `ARGOCD_API_TOKEN_FILE` path without chart-managed Secret mount | (unset) |
 | `metrics.intervals.argocdApplicationStatus` | Argo CD Application API collection interval (seconds); minimum 1800 | `3600` |
 
 ## Additional Resources

@@ -40,7 +40,24 @@
             "timeoutMs": { "type": "integer", "minimum": 1000, "default": 30000 },
             "tlsInsecure": { "type": "boolean", "default": false },
             "serverServiceName": { "type": "string", "default": "argocd-server" },
-            "tokenFile": { "type": "string" }
+            "tokenFile": { "type": "string", "description": "Advanced override for ARGOCD_API_TOKEN_FILE without chart-managed Secret mount" },
+            "token": {
+              "type": "object",
+              "description": "Reference an existing Secret for a dedicated Argo CD API bearer token (M17 resource-tree)",
+              "properties": {
+                "existingSecret": {
+                  "type": "string",
+                  "default": "",
+                  "description": "Name of an existing Secret in the release namespace. Empty = default-off (no mount)"
+                },
+                "existingSecretKey": {
+                  "type": "string",
+                  "default": "token",
+                  "description": "Key within existingSecret holding the bearer token"
+                }
+              },
+              "additionalProperties": false
+            }
           },
           "additionalProperties": false
         }
