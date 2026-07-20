@@ -4,6 +4,11 @@ name: Cut Release
 
 on:
   workflow_dispatch:
+    inputs:
+      existing_tag:
+        description: 'Publish artifacts for an existing tag (e.g. v2.4.0). Skips semantic-release.'
+        required: false
+        type: string
 
 concurrency:
   group: cut-release-operator
@@ -16,8 +21,36 @@ env:
   AWS_REGION: 'us-east-1'
 
 jobs:
+  resolve_existing:
+    name: Validate existing tag (republish)
+    if: inputs.existing_tag != ''
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.validate.outputs.tag }}
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout default branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag exists on origin
+        id: validate
+        run: |
+          set -euo pipefail
+          TAG="${{ inputs.existing_tag }}"
+          git fetch --tags origin
+          if ! git rev-parse "refs/tags/${TAG}" >/dev/null 2>&1; then
+            echo "::error::Tag ${TAG} not found on origin."
+            exit 1
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "Republishing existing tag: ${TAG}"
+
   release:
     name: Version and tag (semantic-release)
+    if: inputs.existing_tag == ''
     runs-on: ubuntu-latest
     outputs:
       tag: ${{ steps.meta.outputs.tag }}
@@ -82,8 +115,8 @@ jobs:
           set -euo pipefail
           git fetch --tags origin
           sort -u tags-before.txt > tags-before-sorted.txt
-          git tag -l | sort -u > tags-after.txt
-          NEW_TAG=$(comm -13 tags-before-sorted.txt tags-after.txt | head -n1 || true)
+          git ls-remote --tags origin 'v*' | awk '{print $2}' | sed 's|refs/tags/||' | sort -u > tags-after-remote.txt
+          NEW_TAG=$(comm -13 tags-before-sorted.txt tags-after-remote.txt | head -n1 || true)
           if [[ -z "${NEW_TAG}" ]]; then
             echo "::error::semantic-release did not create a new tag. Nothing to publish."
             exit 1
@@ -93,7 +126,8 @@ jobs:
 
   publish_image:
     name: Publish Docker image
-    needs: release
+    needs: [release, resolve_existing]
+    if: ${{ !cancelled() && (needs.release.result == 'success' || needs.resolve_existing.result == 'success') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -104,7 +138,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: refs/tags/${{ needs.release.outputs.tag }}
+          ref: refs/tags/${{ needs.release.outputs.tag || needs.resolve_existing.outputs.tag }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -122,7 +156,7 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ needs.release.outputs.tag }},enable=true
+            type=raw,value=${{ needs.release.outputs.tag || needs.resolve_existing.outputs.tag }},enable=true
           labels: |
             org.opencontainers.image.title=kube9-operator
             org.opencontainers.image.description=Kubernetes Operator for kube9 Ecosystem
@@ -151,7 +185,7 @@ jobs:
         uses: aquasecurity/trivy-action@master
         if: success()
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.release.outputs.tag }}
+          image-ref: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ needs.release.outputs.tag || needs.resolve_existing.outputs.tag }}
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH'
@@ -166,7 +200,8 @@ jobs:
 
   publish_chart:
     name: Publish Helm chart
-    needs: release
+    needs: [release, resolve_existing]
+    if: ${{ !cancelled() && (needs.release.result == 'success' || needs.resolve_existing.result == 'success') }}
     runs-on: ubuntu-latest
     environment: production
     permissions:
@@ -177,7 +212,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: refs/tags/${{ needs.release.outputs.tag }}
+          ref: refs/tags/${{ needs.release.outputs.tag || needs.resolve_existing.outputs.tag }}
 
       - name: Install Helm
         uses: azure/setup-helm@v3
