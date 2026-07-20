@@ -1,3 +1,10 @@
+# [2.4.0](https://github.com/alto9/kube9-operator/compare/v2.3.0...v2.4.0) (2026-07-20)
+
+
+### Features
+
+* **helm:** mount Argo CD API token Secret for M17 resource-tree ([#152](https://github.com/alto9/kube9-operator/issues/152)) ([9cf2809](https://github.com/alto9/kube9-operator/commit/9cf2809684af238143567a4013730f6be1abb587)), closes [#151](https://github.com/alto9/kube9-operator/issues/151)
+
 # [2.3.0](https://github.com/alto9/kube9-operator/compare/v2.2.0...v2.3.0) (2026-07-13)
 
 
