@@ -250,3 +250,11 @@ Exact metric names and label sets are defined at implementation time and registe
 - Include relevant context in log messages
 - Structured data aids troubleshooting
 - Logs are collected by Kubernetes and can be forwarded to external systems
+
+## Agent / Desktop query consumers
+
+Agent or Desktop wrapping of `query events list` / `query assessments history` does **not** add a new metric taxonomy, scrape contract, or regulated observability band. Existing event and assessment Prometheus series plus `/healthz` / `/readyz` remain the ops surface. Operator process logs (Winston stdout) are unrelated to capturing workload pod logs for agent evidence.
+
+### Open implementation decisions
+
+- **Alert thresholds under query load:** Exact alert thresholds on `kube9_operator_events_dropped_total` / queue depth when clients issue more frequent history queries remain refine-issue backlog, not a packaging or deployment-band change.

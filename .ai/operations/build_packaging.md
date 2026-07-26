@@ -65,9 +65,19 @@ The Helm chart supports comprehensive configuration through `values.yaml`:
 - `events.retention.infoWarning`: Retention period for info/warning events in days (default: `7`)
 - `events.retention.errorCritical`: Retention period for error/critical events in days (default: `30`)
 
+**Advertised retention for agent / Desktop history consumers:** Chart defaults above are the product-visible event windows (info/warning **7** days, error/critical **30** days). Peer clients that cite Operator history must match this severity-split pair. There is no single unified day count in packaging. Overrides via Helm/env remain supported; changing defaults is out of scope for agent-debugging packaging.
+
+**Packaging non-goals (agent-consumer path):**
+- No Helm values, PVC sizing, or image packaging for operator **log** capture or failure-log retention
+- No assessment-history TTL / prune knobs in the chart (assessments persist until explicit remove or cascade; data owns lifecycle)
+
 #### Namespace
 - **Default Namespace**: `kube9-system`
 - Configurable via `--namespace` flag during Helm install
+
+### Open implementation decisions
+
+- **Footer vs dual retention:** Desktop evidence-footer microcopy for “retained N days” should not invent a packaging single-N default; refine-issue may add a short chart README note that consumers should state both bands (7 and 30) when paraphrasing policy.
 
 ## Docker Image
 

@@ -87,3 +87,25 @@ The evaluator must prefer `not-evaluated` or `needs-evidence` over inference whe
 5. Security posture (future, 24h)
 
 **Implementation**: Intervals configured via Helm values (`charts/kube9-operator/values.yaml`) and enforced with minimums. Collections scheduled with random offsets (0-1 hour) to distribute load. Default intervals: 86400s (24h), 21600s (6h), 43200s (12h).
+
+## Queryable history for agent and client consumers
+
+Paid Desktop products and vscode extensions may **co-consume** the same operator query surfaces for retained **events** and **assessments history**. The operator owns what those histories mean, which filters apply, and the retention outcomes below. Desktop owns debug playbooks, diagnostic report shape, and tool-loop strategy. This path does **not** add a presence mode beyond basic/operated, and does **not** add AssessmentRunState or CheckStatus values.
+
+### User-visible retention outcomes
+
+| History | User-visible promise | Notes |
+|---------|----------------------|-------|
+| Events | Severity-split defaults: **7** days for info/warning, **30** days for error/critical | Honest advertised window for agent/evidence outcomes that cite Operator history. Knobs and cleanup schedule live in data/runtime contracts. |
+| Assessments history | **No** time-based retention SLA in this product surface | Rows persist until explicit remove or cascade delete of the parent assessment. Consumers may rely only on whatever is still stored. Empty or partial assessment history is a normal gap. |
+
+### Non-goals (agent-consumer path)
+
+- Operator capture, retention, or query of pod/container **logs** (separate product epic; not part of this domain surface)
+- Recovery of logs already pruned from the live Kubernetes API
+- Any agent or query path that mutates cluster state (apply, patch, delete)
+
+### Open implementation decisions
+
+- **Consumer naming in operator docs:** Whether user-facing operator docs list Desktop/agent alongside vscode as first-class query consumers (wording only; integration owns CLI consumer list).
+- **Assessment-history framing in issues:** Exact acceptance phrasing that assessment history is a posture/history signal, not a live incident log stream (see `user_stories.md`).

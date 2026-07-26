@@ -29,6 +29,20 @@ kube9-operator query <subcommand>
 - `kube9-operator query events get <eventId>` - Get single event by ID
   - Options: `--format <json|yaml|table>` (default: json)
 
+Agent and Desktop history consumers use these existing event list/get shapes. Results reflect **currently stored** rows after event retention prune (see [consistency.md](consistency.md)). Output does not carry a separate retention-window field today.
+
+### Assessment query commands (history consumers)
+
+```
+kube9-operator query assessments <subcommand>
+```
+
+Normative query surface for co-consumers (Desktop, vscode, agents) is documented under integration `api_contracts.md`, including:
+
+- `query assessments list|get|summary|history` with the filter and `--format` options listed there
+
+Assessment history serialization is “rows still present,” not a time-bounded SLA. No assessment TTL metadata is required on responses.
+
 ### Assessment Commands
 
 ```
@@ -127,3 +141,8 @@ Extension reads `status` key from ConfigMap `kube9-operator-status` in operator 
 ## Collection Payloads
 
 M8 collectors store data as JSON blobs in `collections` table. Schema validated before storage. (Note: collections table not yet implemented in current schema)
+
+## Open implementation decisions
+
+- **Retention / “as of” bounds on serialized query results:** whether event (or assessment) list/get JSON should expose effective retention windows or query “as of” bounds for agent tooling. Not required for current Desktop wrap of existing CLI. Field-level shapes deferred to `/refine-issue` if product chooses to surface them.
+- **`--since` value forms for agent filters:** relative durations vs ISO-datetime validation on the operator CLI (peer Desktop may pass relative forms). Serialization contract stays ISO-oriented until a refine-issue lands an explicit dual form.

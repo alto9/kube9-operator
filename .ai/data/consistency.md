@@ -63,11 +63,32 @@ Events are automatically cleaned up based on severity and age:
 - **Cleanup schedule**: Runs every 6 hours via `RetentionCleanup` service
 - **Immediate execution**: Cleanup runs immediately on service start, then on schedule
 
+### Agent and Desktop consumers of event history
+
+Desktop Pro debugging (and other agent tooling) that reads operator event history via the existing query CLI may treat the **severity-split defaults above (7 / 30 days)** as the **advertised consumer retention window**:
+
+- After prune, matching event rows are gone. Operator history cannot recover pruned events.
+- There is no single fixed “N days” in the data plane. Severity selects the band. Product surfaces that say “retained N days” must map to this split (or state both bands), not invent a third window.
+- Overrides via Helm/env change the effective store window. Consumers that need a hard bound should filter with `--since` / `--until` against still-stored rows, not assume a SLA beyond what remains after cleanup.
+- Empty or partial event history (prune, operator absent, persistence disabled / ephemeral volume) is a normal gap for history consumers. Live cluster reads remain the debugging baseline outside this store.
+
+### Assessment retention (no time-based TTL)
+
+`assessments` and `assessment_history` are **not** time-pruned by `RetentionCleanup` or any assessment TTL:
+
+- Rows persist until an explicit remove or parent cascade (`assessment_history` follows `assessments` via `ON DELETE CASCADE`).
+- Agent and Desktop consumers of `query assessments history` (and related assessment query paths) may rely **only on whatever is still stored**. Empty or partial assessment history is a normal gap, not a retention SLA.
+- This epic does **not** introduce an assessment TTL or a product retention window for assessment rows.
+
+### Log storage (out of scope)
+
+The operator SQLite model does **not** store pod or workload container logs. There is no log table, log retention policy, or pruned-log recovery path in this data plane. Log evidence for debugging agents comes from live Kubernetes API reads (Desktop Tier 1), not from operator history.
+
 ### Retention Cleanup Implementation
 
 - **Service**: `RetentionCleanup` class in `src/database/retention-cleanup.ts`
 - **Scheduled job**: Runs every 6 hours (`6 * 60 * 60 * 1000` milliseconds)
-- **Deletion queries**: Separate queries for info/warning vs error/critical events
+- **Deletion queries**: Separate queries for info/warning vs error/critical events (events table only)
 - **Logging**: Logs number of events deleted per cleanup run
 
 ### Configuration Sources
@@ -103,4 +124,9 @@ Retention days can be configured via:
 - **Privacy by default**: Raw data never leaves cluster
 - **ACID compliance**: SQLite provides transaction guarantees
 - **Referential integrity**: Foreign keys ensure data consistency
-- **Automatic cleanup**: Retention policies prevent unbounded growth
+- **Automatic cleanup**: Event retention policies prevent unbounded growth of the events table; assessments rely on explicit remove / cascade, not time prune
+
+## Open implementation decisions
+
+- **Assessment prune policy (if ever introduced):** days-by-severity or single window; whether prune targets `assessments` only (cascade history) vs both tables; cleanup schedule alignment with `RetentionCleanup`; Helm/env knobs and migration of consumer prose. Not product-committed now. Resolve via `/refine-issue` if a future epic adds TTL.
+- **Consumer-visible retention bounds on query results:** whether CLI/JSON should expose effective retention windows or “as of” bounds for agent tooling (field shapes). Contract intent today is filter-against-stored-rows only; no new result metadata required for current Desktop Tier 2 wrap.

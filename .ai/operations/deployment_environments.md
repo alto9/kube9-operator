@@ -81,3 +81,18 @@ Shared local cluster for **kube9-vscode** and **kube9-operator** development: [k
 
 - Host-run dev: `LOG_LEVEL`, `DB_PATH` (defaults to `./.kube9-data` when unset in `npm run dev` / `dev:watch`), `POD_NAMESPACE`, `HEALTH_PORT` (default `8080`); see `.env.example`.
 - In-cluster: override via Helm values (e.g. `logLevel: debug`) on install/upgrade.
+
+## Agent / Desktop history consumers (availability)
+
+Desktop and other clients may query retained events and assessments history via the existing in-pod CLI (`kubectl exec`). Delivery posture for that path:
+
+- **Optional for Pro debugging:** Product acceptance for debugging does not require operator install. Operator absence or unreadiness is a Tier 2 gap, not a failed delivery environment.
+- **Best-effort when ready + PVC:** Queryable history is available when the operator Deployment is ready and SQLite is on the chart-default PersistentVolumeClaim (`events.persistence.enabled = true`). No HA, multi-replica, or external query SLA for agent consumers.
+- **Persistence disabled:** With `events.persistence.enabled = false` (`emptyDir`), history is ephemeral across pod restarts. Consumers treat that as operator-history degraded or absent, not as a separate environment tier.
+- **No log-capture ops:** Operations contracts do not add log retention, log PVC sizing, failure-log capture runbooks, or pruned-log recovery. That remains a separate epic.
+- **Assessment history:** No ops-owned time-based TTL or cleanup schedule for assessment rows. Storage growth under frequent assessments is a data-domain concern unless a later epic adds policy.
+
+### Open implementation decisions
+
+- **Local dogfood paths:** Whether minikube / kind checklists should call out an explicit operator-present vs operator-absent history query smoke step (Desktop owns acceptance scoring; operator side only needs confirmable query + chart defaults).
+- **emptyDir wording in install docs:** Exact operator install-doc phrasing that persistence-off means ephemeral history for agent/evidence consumers (packaging already documents the volume switch).

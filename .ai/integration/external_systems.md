@@ -111,16 +111,16 @@ Exposed in ConfigMap `kube9-operator-status` under `status.argocd`:
 - Provides `/healthz` (liveness), `/readyz` (readiness), and `/metrics` endpoints
 - Started early during operator initialization for probe availability
 
-## kube9-vscode
+## In-cluster clients (kube9-vscode and kube9-desktop)
 
-**Primary Consumer**: VS Code extension that integrates with kube9-operator
+**Consumers**: kube9-vscode and kube9-desktop share the same zero-ingress integration path (ConfigMap read + `kubectl exec` CLI query). Desktop Pro AI agent Tier 2 tools are a co-consumer of `query events list` and `query assessments history` on that path; they do not introduce a separate HTTP or SaaS hop.
 
 **Integration Points**:
 
 1. **Operator detection**:
    - Reads `kube9-operator-status` ConfigMap to determine whether the operator is installed and healthy
    - `basic`: No operator / no status ConfigMap
-   - `operated`: Operator installed; extension uses status JSON for dashboards and workflows
+   - `operated`: Operator installed; clients use status JSON for dashboards, workflows, and (Desktop) capability gating for Tier 2 agent tools
 
 2. **Status monitoring**:
    - Reads ConfigMap for operator health status
@@ -129,17 +129,22 @@ Exposed in ConfigMap `kube9-operator-status` under `status.argocd`:
 
 3. **Rich Data Queries**:
    - Executes CLI commands via `kubectl exec` for:
-     - Event history (`query events list`)
-     - Assessment results (`query assessments summary`, `query assessments history`)
+     - Event history (`query events list`): vscode, Desktop historical context, and Desktop AI agent Tier 2
+     - Assessment results (`query assessments summary`, `query assessments history`): same consumer set for history; agent wraps history for debugging turns
      - Detailed status (`query status`)
+   - **Non-goal**: No operator log query surface for these clients. Live logs stay on the Kubernetes API path in the client (Desktop Tier 1).
 
-4. **RBAC Requirements**:
+4. **RBAC Requirements** (unchanged; see [authorization.md](authorization.md)):
    - `get` permission on `configmaps` named `kube9-operator-status` in operator namespace
    - `get` permission on `deployments` in operator namespace (for pod discovery)
    - `create` permission on `pods/exec` in operator namespace (for CLI queries)
 
+5. **Retention narrative for consumers**:
+   - Event history available to query is bounded by default severity-split retention (**7** days info/warning, **30** days error/critical). See [api_contracts.md](api_contracts.md) CLI Exec Contract and [`.ai/data/consistency.md`](../data/consistency.md).
+   - Assessment history has no time-based prune commitment for agent consumers; empty/partial results are normal.
+
 **Discovery Flow**:
-1. Extension checks default namespace (`kube9-system`) for ConfigMap
+1. Client checks default namespace (`kube9-system`) for ConfigMap
 2. If found, reads `status.namespace` field
 3. Uses discovered namespace for all subsequent operations
 4. Resolves operator pod via deployment name `kube9-operator`
