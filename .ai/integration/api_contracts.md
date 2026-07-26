@@ -63,10 +63,22 @@ Clients must tolerate an absent `aiConformance` block until operator versions th
 
 **Command Format**: `kubectl exec -n <namespace> deploy/kube9-operator -- kube9-operator query <command>`
 
+**Consumers** (same wire path, same RBAC model):
+- **kube9-vscode**: extension host historical queries and dashboards
+- **kube9-desktop**: Pro historical context assembly and Desktop Pro AI agent Tier 2 tools that wrap `query events list` and `query assessments history` (no Desktop→operator HTTP; no new query subcommands for agent debugging)
+
+**Non-breaking stance**: Command names, JSON default format, and existing filter flags for `events list` and `assessments history` are a stable peer contract for Desktop Tier 2. Prefer additive changes. Intentional breaking CLI/JSON changes belong to a separate operator initiative, not agent wrapping.
+
+**Explicit non-goal (log query)**: This surface does **not** include `query logs*` (or equivalent). The operator does not expose a log query / failure-log capture CLI for agent or extension consumers here. Live pod logs remain a client Kubernetes API concern (Desktop Tier 1). Pruned-log recovery via operator is a future epic, not promised by this contract.
+
+**Consumer-facing event retention** (for evidence and agent copy; authoritative knobs in data/runtime):
+- Default severity-split event retention: **7** days info/warning, **30** days error/critical (Helm `events.retention.*` / env; cleanup every 6h). See [`.ai/data/consistency.md`](../data/consistency.md) and [`.ai/runtime/configuration.md`](../runtime/configuration.md).
+- Assessment history: no time-based prune in current product stance; rows persist until explicit remove/cascade. Empty or partial history is a normal query outcome, not a retention SLA.
+
 **Pod Resolution**:
-- Extension uses deployment name `kube9-operator` (or full name from Helm chart)
+- Consumers use deployment name `kube9-operator` (or full name from Helm chart)
 - Kubernetes resolves `deploy/kube9-operator` to the active pod automatically
-- Extension requires `get` permission on deployments in operator namespace for pod discovery
+- Consumers require `get` permission on deployments in operator namespace for pod discovery
 
 **Available Query Commands**:
 
@@ -81,6 +93,8 @@ kube9-operator query events list [--type=<type>] [--severity=<severity>] [--sinc
 kube9-operator query events get <eventId> [--format=json|yaml|table]
 ```
 
+**JSON shape (events list, programmatic default)**: Object with `events` (array) and `pagination` (`total`, `limit`, `offset`, `returned`). Field-level redaction beyond existing storage rules is not introduced for agent consumers.
+
 **Assessments Query**:
 ```bash
 kube9-operator query assessments list [--state=<state>] [--limit=<number>] [--since=<ISO8601>] [--format=json|yaml|table|compact]
@@ -88,6 +102,8 @@ kube9-operator query assessments get <assessmentId> [--format=json|yaml|table|co
 kube9-operator query assessments summary [--since=<ISO8601>] [--limit=<number>] [--format=json|yaml|table|compact]
 kube9-operator query assessments history [--pillar=<pillar>] [--result=<result>] [--severity=<severity>] [--limit=<number>] [--since=<ISO8601>] [--format=json|yaml|table|compact]
 ```
+
+**JSON shape (assessments history, programmatic default)**: Object with `history` (array) and `pagination` (`total`, `limit`, `offset`, `returned`). Agents may rely only on rows still stored.
 
 **Output Formats**:
 - `json` (default): JSON output for programmatic consumption
@@ -227,3 +243,11 @@ kube9-operator query argocd apps get <appNamespace>/<appName> [--format=json|yam
 ```
 
 Reads SQLite `argocd_apps` snapshots (M9 application status collection). Independent of resource-tree on-demand fetch.
+
+## Open implementation decisions
+
+**Desktop AI agent / CLI query alignment (tier TW, refine-issue):**
+
+- **`--since` relative vs ISO**: Operator CLI validates `--since` / `--until` with ISO-8601 datetime (`z.string().datetime()` on events list and assessment history). Desktop `kube9OperatorQueryClient` defaults `--since=24h` for `events-list`. Decide whether the operator adds relative-duration acceptance (additive) or Desktop always converts relative windows to absolute ISO before exec; document the agent tool parameter mapping either way.
+- **Agent tool filter subset vs full CLI**: Which `events list` / `assessments history` flags Desktop agent tools expose (object filters, severity, pillar, limit/offset caps, defaults) vs pass-through of the full CLI surface.
+- **Timeouts / exec failure mapping**: Numeric kubectl-exec timeouts and structured stderr/`code` conventions for agent tool results remain refine-issue detail (Desktop already has operator query failure codes). Operator-side notes only if CLI error envelopes need agent-facing stabilization beyond current events/assessments JSON errors.

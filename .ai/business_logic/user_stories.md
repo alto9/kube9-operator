@@ -83,7 +83,7 @@
 - **Metrics**: Events tracked with Prometheus metrics (events_stored_total, events_errors_total)
 
 ### Query Capabilities
-Events queryable via CLI (`kube9 events list`) with filters:
+Events queryable via CLI (`kube9 events list` / `kube9-operator query events list`) with filters:
 - **type**: Filter by event type (cluster, operator, insight, assessment, health, system)
 - **severity**: Filter by severity (info, warning, error, critical)
 - **since/until**: Filter by date range (ISO 8601 datetime)
@@ -92,7 +92,28 @@ Events queryable via CLI (`kube9 events list`) with filters:
 - **objectName**: Filter by Kubernetes object name
 - **limit/offset**: Pagination support (max 1000 per query)
 
+### Agent and Desktop co-consumers
+- Desktop Pro AI agent tools and vscode are **co-consumers** of the same events query surface. The operator does not own debug playbooks or diagnostic synthesis.
+- Agents read **already retained** events. This path does not expand cluster-event recording and does not add log capture.
+- **Retention outcome (user-visible):** info/warning events are retained for **7** days by default; error/critical for **30** days. Product copy that cites Operator history for agent/evidence must match this severity-split window (not a longer single-number promise).
+- **Empty history is success:** A successful query that returns zero matching rows is a valid outcome (for example nothing retained in range, or rows already pruned). It is not an operator unhealthy/error state. Clients may treat absence of history as an evidence gap.
+
 **Implementation**: Event types and severities defined in `src/types/event.ts`. Recording via `EventRecorder` (`src/events/event-recorder.ts`), queue processing via `EventQueueWorker` (`src/events/queue-worker.ts`), querying via `EventRepository` (`src/database/event-repository.ts`), CLI commands in `src/cli/commands/events.ts`.
+
+## Assessment History Query
+
+### Capabilities
+Assessment check history is queryable via CLI (`kube9-operator query assessments history`) with filters such as pillar, result, severity, since, and limit (see integration API contracts for the command surface).
+
+### Agent and Desktop co-consumers
+- Desktop Pro AI agent tools and vscode may consume assessments history as a **posture / historical check signal**, not as a live incident log stream. Diagnostic playbooks and root-cause synthesis remain Desktop-owned.
+- **Retention outcome (user-visible):** No new time-based TTL for assessment history. Rows remain until explicit remove or cascade with the parent assessment. Agents and contracts may rely only on whatever is still stored.
+- **Empty or partial history is success:** Zero matching rows after a successful query is a normal gap, not a retention SLA failure and not an operator unhealthy state.
+
+### Non-goals (this surface)
+- Operator log capture, log retention tables, or log query for agent consumers
+- Promising recovery of pruned live-API logs via operator history
+- Agent-driven cluster mutation through operator query paths
 
 ## Data Collection (M8)
 
@@ -120,3 +141,9 @@ Events queryable via CLI (`kube9 events list`) with filters:
 - **Statistics**: Collection success/failure tracked in `CollectionStatsTracker` and exposed in status ConfigMap
 
 **Implementation**: Collectors initialized in `src/operator.ts`, scheduled via `CollectionScheduler`, stored locally via `LocalStorage` (`src/collection/storage.ts`).
+
+## Open implementation decisions
+
+- **Assessment-history story acceptance:** Exact Given/When/Then wording that agent consumers treat assessments history as posture/history signal (not live incident log), and that empty rows are a valid success gap.
+- **Events retention copy coordination:** Desktop evidence-footer / Pro retention microcopy must state 7/30 severity-split; operator BL states the outcome, Desktop interface owns chip/footer strings.
+- **Agent filter subset:** Which events-list and assessments-history filters agents typically pass vs the full CLI filter set (coordinate with integration; not a new domain entity).

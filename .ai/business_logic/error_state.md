@@ -25,6 +25,8 @@
 - **degraded** → reserved for future operator-side semantics
 - **unhealthy** → show error message, fall back to basic mode (kubectl-only)
 
+Empty events or assessments-history query results do **not** change operator health. Absence of matching retained rows is a consumer evidence gap, not an unhealthy signal (see `error_handling.md`).
+
 ## Stale Status
 - **Threshold**: `lastUpdate > 5 minutes` → treat as degraded regardless of reported health
 - **Rationale**: If status hasn't updated in 5+ minutes, operator may be down or unhealthy

@@ -45,7 +45,9 @@
 
 **Binding**: `RoleBinding` binds ServiceAccount to Role in operator namespace
 
-### Extension User RBAC
+### Extension / Desktop User RBAC
+
+**Applies to**: kube9-vscode extension users and kube9-desktop (including Desktop Pro AI agent Tier 2 operator queries). Same permission set; no separate agent auth model.
 
 **Required Permissions**:
 
@@ -61,8 +63,9 @@
 - `create` on `pods/exec` subresource in operator namespace
 - Required for executing `kubectl exec` commands into operator pod
 - Format: `kubectl exec -n <namespace> deploy/kube9-operator -- kube9-operator query <command>`
+- Agent-facing history uses the same exec path (`query events list`, `query assessments history`); auth is unchanged for agent debugging tools
 
-**Example RoleBinding** (for extension users):
+**Example RoleBinding** (for extension / Desktop users):
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -115,10 +118,11 @@ rules:
 - Argo CD: Detection uses the Kubernetes API (`src/argocd/detection.ts`). **M9** adds read-only HTTP to in-cluster `argocd-server` for Application list/status into SQLite. **M17** adds on-demand `GET /api/v1/applications/{name}/resource-tree` at CLI query time. All Argo CD HTTP is **zero ingress** (cluster-internal egress).
 - **M17 resource-tree auth:** Dedicated Argo CD API bearer only (`ARGOCD_API_BEARER_TOKEN` or `ARGOCD_API_TOKEN_FILE`). The resource-tree path **must not** fall back to the operator Kubernetes ServiceAccount token. Platform admin creates a Secret out-of-band and sets Helm `argocd.api.token.existingSecret` / `existingSecretKey` (default key `token`); the chart mounts the key at `/var/run/secrets/kube9/argocd-api-token` and sets `ARGOCD_API_TOKEN_FILE`. Unset `existingSecret` is default-off. Platform admin grants Argo CD RBAC `get` on Applications (resource-tree) for the token identity; the kube9-operator chart does not mutate Argo CD roles.
 
-**Extension → Operator** (via kubectl):
+**Extension / Desktop → Operator** (via kubectl):
 - ConfigMap read: Direct Kubernetes API access (no ingress)
-- CLI exec: Direct `kubectl exec` into pod (no ingress)
+- CLI exec: Direct `kubectl exec` into pod (no ingress), including Desktop AI agent Tier 2 history queries
 - All communication uses standard Kubernetes mechanisms
+- No agent-specific ingress, token exchange, or hosted SaaS path for operator history
 
 **Outbound connections (operator core)**:
 - Kubernetes API (in-cluster or via kubeconfig)
@@ -130,3 +134,7 @@ rules:
 - No external IPs or load balancers needed
 - Works in air-gapped environments (open-source operator path)
 - Simplified network security (egress-only)
+
+## Open implementation decisions
+
+- **Agent auth model**: Closed for this epic. Desktop AI agent Tier 2 uses the same Extension / Desktop User RBAC and kubectl-exec path; no new Role, ClusterRole, or token type.

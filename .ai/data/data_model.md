@@ -106,6 +106,8 @@ Nested under `OperatorStatus.aiConformance`. This is the client-facing readiness
 
 Framework assessment run records.
 
+**Retention (agent / Desktop consumers):** No time-based TTL. Rows persist until explicit remove or cascade. History consumers may rely only on whatever is still stored. See [consistency.md](consistency.md).
+
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | run_id | TEXT | PRIMARY KEY | Unique assessment run identifier |
@@ -132,6 +134,8 @@ Framework assessment run records.
 ### assessment_history
 
 Individual check results from assessment runs.
+
+**Retention:** Follows parent `assessments` via `ON DELETE CASCADE`. No separate time-based prune. See [consistency.md](consistency.md).
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
@@ -161,6 +165,8 @@ Individual check results from assessment runs.
 
 Event history for cluster, operator, assessment, health, and system events.
 
+**Retention (agent / Desktop consumers):** Severity-split defaults (info/warning **7** days, error/critical **30** days) are the advertised consumer window. Pruned rows are gone. See [consistency.md](consistency.md).
+
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | id | TEXT | PRIMARY KEY | Event identifier (format: `evt_YYYYMMDD_HHMMSS_<random>`) |
@@ -179,6 +185,10 @@ Event history for cluster, operator, assessment, health, and system events.
 - `idx_events_severity` ON `events(severity)`
 - `idx_events_created_at` ON `events(created_at DESC)`
 - `idx_events_object_kind` ON `events(object_kind, object_namespace, object_name)`
+
+### Log entities
+
+None. Operator SQLite does not model pod/workload container logs. Debugging log evidence is out of band for this store (live Kubernetes API via Desktop). Do not add log tables under this epic.
 
 ### schema_version
 

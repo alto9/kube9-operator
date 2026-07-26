@@ -66,3 +66,19 @@
 - **Retry behavior**: Failed collections retry on next scheduled interval (no immediate retry)
 - **Error handling**: Errors logged, metrics recorded, scheduler continues
 - **Implementation**: Collection tasks registered with `CollectionScheduler` (`src/collection/scheduler.ts`), errors caught in task callbacks
+
+## Queryable history for agent and client consumers
+
+### Empty history vs failure
+- **Success with zero rows**: Valid outcome when filters match nothing or retained rows have aged out / been removed. Does not change operator `health`. Clients report an evidence gap, not an operator failure.
+- **Operator unhealthy or absent**: Consumers fall back per presence/`error_state.md` (toward basic). Tiered agent tooling that depends on history is gated off; live Kubernetes debugging paths remain independent of operator history.
+- **Query / exec / RBAC transport failure**: Distinct from empty history. Surface as consumer-side query failure (integration CLI/exec contracts); do not conflate with "no matching retained rows."
+- **Assessment history gaps**: Empty or partial assessment history after a successful query is a normal gap (no time-based retention SLA). Same success-vs-failure distinction as events.
+
+### Non-goals
+- No error or recovery path that implies operator-held pod/container logs or pruned-log restoration.
+- History query failures must not be framed as cluster-mutation or write failures; query paths remain read-only for agent consumers.
+
+### Open implementation decisions
+
+- **Consumer error copy:** Exact Desktop/vscode strings for empty history vs exec/RBAC failure stay in peer interface contracts; operator BL only distinguishes outcome classes.
