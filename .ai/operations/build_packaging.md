@@ -75,9 +75,9 @@ The Helm chart supports comprehensive configuration through `values.yaml`:
 - **Default Namespace**: `kube9-system`
 - Configurable via `--namespace` flag during Helm install
 
-### Open implementation decisions
+### Consumer retention narrative (chart README)
 
-- **Footer vs dual retention:** Desktop evidence-footer microcopy for “retained N days” should not invent a packaging single-N default; refine-issue may add a short chart README note that consumers should state both bands (7 and 30) when paraphrasing policy.
+`charts/kube9-operator/README.md` under **Event Storage and Retention** documents the agent/Desktop consumer stance: severity-split defaults (**7** / **30** days), cleanup every **6 hours** via `RetentionCleanup`, Helm/env overrides of the effective store window, and that peers must not paraphrase a single “N days” default for evidence copy. kube9-desktop owns evidence-footer chip strings against this peer truth.
 
 ## Docker Image
 

@@ -129,4 +129,7 @@ Retention days can be configured via:
 ## Open implementation decisions
 
 - **Assessment prune policy (if ever introduced):** days-by-severity or single window; whether prune targets `assessments` only (cascade history) vs both tables; cleanup schedule alignment with `RetentionCleanup`; Helm/env knobs and migration of consumer prose. Not product-committed now. Resolve via `/refine-issue` if a future epic adds TTL.
-- **Consumer-visible retention bounds on query results:** whether CLI/JSON should expose effective retention windows or “as of” bounds for agent tooling (field shapes). Contract intent today is filter-against-stored-rows only; no new result metadata required for current Desktop Tier 2 wrap.
+
+### Resolved (event retention consumer bounds)
+
+Event and assessment query JSON **does not** expose effective retention windows, configured day counts, or query “as of” prune bounds. Agent and Desktop consumers filter with `--since` / `--until` (ISO-8601 on the operator CLI) against **still-stored** rows after `RetentionCleanup`. Helm/env overrides change the effective store window but are not echoed as result metadata in this product surface. A future additive operator epic may introduce optional metadata; that is not committed here.

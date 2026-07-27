@@ -209,6 +209,9 @@ The operator stores Kubernetes events in a SQLite database for insights and dash
 
 - **infoWarning** (default: `7`): Days to retain info and warning events.
 - **errorCritical** (default: `30`): Days to retain error and critical events.
+- **Cleanup:** `RetentionCleanup` prunes expired event rows every **6 hours** and once on operator start. Helm/env overrides above change the effective store window that in-cluster query consumers may filter against.
+
+**Agent and Desktop query consumers:** [kube9-desktop](https://github.com/alto9/kube9-desktop) Pro AI agent Tier 2 tools and [kube9-vscode](https://github.com/alto9/kube9-vscode) read event history via `kubectl exec` → `kube9-operator query events list`. When citing Operator-stored history, product copy must reflect the **severity-split** defaults (**7** days info/warning, **30** days error/critical), not a single unified day count. Bound queries with `--since` / `--until` (ISO-8601 on the operator CLI) against still-stored rows; pruned, absent, or ephemeral-store gaps are normal. Assessment history retention is separate (no time-based TTL on assessment rows).
 
 **PVC vs emptyDir behavior:**
 
