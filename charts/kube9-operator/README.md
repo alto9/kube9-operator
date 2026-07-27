@@ -1,15 +1,15 @@
 # kube9-operator Helm Chart
 
-This Helm chart installs the kube9-operator, a Kubernetes operator that powers Well-Architected Framework validation and in-cluster status for the [kube9 VS Code extension](https://github.com/alto9/kube9-vscode) and other tooling. It also supports optional integrations (for example ArgoCD awareness and Trivy server detection) configured through values.
+This Helm chart installs the kube9-operator, a Kubernetes operator that powers Well-Architected Framework validation and in-cluster status for the [kube9 VS Code extension](https://github.com/alto9/kube9-vscode), [kube9-desktop](https://github.com/alto9/kube9-desktop) (including Pro AI agent Tier 2 operator queries), and other tooling. It also supports optional integrations (for example ArgoCD awareness and Trivy server detection) configured through values.
 
 Assessment walkthroughs and CLI examples are documented in the repository guide: [`docs/assessment/user-guide.md`](../../docs/assessment/user-guide.md).
 
 ## Overview
 
-The kube9-operator runs in your Kubernetes cluster and publishes status and assessment-related data locally. The VS Code extension uses this to determine whether your cluster is in:
+The kube9-operator runs in your Kubernetes cluster and publishes status and assessment-related data locally. [kube9-vscode](https://github.com/alto9/kube9-vscode) and [kube9-desktop](https://github.com/alto9/kube9-desktop) are first-class consumers on the ConfigMap read + `kubectl exec` query path. Clients use operator status to determine whether your cluster is in:
 
 - **Basic mode** (no operator) — kubectl-focused workflows
-- **Operated mode** (operator installed) — scheduled assessments, local persistence, and ConfigMap status for the extension
+- **Operated mode** (operator installed) — scheduled assessments, local persistence, ConfigMap status, and in-cluster query history for extension and Desktop agent Tier 2 tools
 
 The operator is installed via Helm and requires no ingress for the control plane path this chart installs. The chart does not configure API keys, credentials, or remote product sign-in. Optional commercial tooling (for example **kube9-desktop**) is separate from this chart.
 
@@ -211,7 +211,7 @@ The operator stores Kubernetes events in a SQLite database for insights and dash
 - **errorCritical** (default: `30`): Days to retain error and critical events.
 - **Cleanup:** `RetentionCleanup` prunes expired event rows every **6 hours** and once on operator start. Helm/env overrides above change the effective store window that in-cluster query consumers may filter against.
 
-**Agent and Desktop query consumers:** [kube9-desktop](https://github.com/alto9/kube9-desktop) Pro AI agent Tier 2 tools and [kube9-vscode](https://github.com/alto9/kube9-vscode) read event history via `kubectl exec` → `kube9-operator query events list`. When citing Operator-stored history, product copy must reflect the **severity-split** defaults (**7** days info/warning, **30** days error/critical), not a single unified day count. Bound queries with `--since` / `--until` (ISO-8601 on the operator CLI) against still-stored rows; pruned, absent, or ephemeral-store gaps are normal.
+**Agent and Desktop query consumers:** [kube9-vscode](https://github.com/alto9/kube9-vscode) and [kube9-desktop](https://github.com/alto9/kube9-desktop) Pro AI agent Tier 2 tools read operator history via `kubectl exec` → `kube9-operator query events list` and `query assessments history` (same RBAC model; no Desktop→operator HTTP). When citing Operator-stored event history, product copy must reflect the **severity-split** defaults (**7** days info/warning, **30** days error/critical), not a single unified day count. Bound queries with `--since` / `--until` (ISO-8601 on the operator CLI) against still-stored rows; pruned, absent, or ephemeral-store gaps are normal.
 
 **Assessment history (agent/Desktop consumers):** Well-Architected check history is available via `kube9-operator query assessments history`. It is a **posture / historical check signal**, not a live incident log stream. Assessment rows are **not** time-pruned by `RetentionCleanup`; they persist until explicit remove or cascade delete of the parent assessment run. A successful query that returns an empty `history` array is a normal evidence gap, not an operator error.
 
@@ -656,6 +656,7 @@ Complete reference of all configurable values:
 
 - **Documentation**: https://docs.kube9.dev
 - **VS Code Extension**: https://github.com/alto9/kube9-vscode
+- **kube9-desktop**: https://github.com/alto9/kube9-desktop
 - **Project Repository**: https://github.com/alto9/kube9-operator
 - **Helm Chart Best Practices**: https://helm.sh/docs/chart_best_practices/
 
