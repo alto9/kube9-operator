@@ -54,7 +54,7 @@ When persistence is disabled (`events.persistence.enabled = false`), uses `empty
 
 ### Durable history for agent / Desktop consumers
 
-Queryable event and assessment history for Desktop Tier 2 (and similar agents) assumes chart-default PVC-backed SQLite at `/data/kube9.db`. With `emptyDir` (persistence disabled) or a missing/unhealthy operator, treat history as degraded or absent: empty results are expected, not a store failure to invent. Desktop does not own a peer durable ledger of operator rows. Retention semantics for still-stored rows are in [consistency.md](consistency.md).
+Queryable event and assessment history for Desktop Tier 2 (and similar agents) assumes chart-default PVC-backed SQLite at `/data/kube9.db`. With `emptyDir` (persistence disabled) or a missing/unhealthy operator, treat history as degraded or absent: empty results are expected, not a store failure to invent. Desktop does not own a peer durable ledger of operator rows. Retention semantics for still-stored rows are in [consistency.md](consistency.md): events are severity-split time-pruned; **assessments and `assessment_history` have no time-based TTL** (cascade on parent delete only). Operator SQLite does not store pod/workload logs.
 
 ## Single Binary, Dual Modes
 
