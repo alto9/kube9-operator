@@ -141,7 +141,7 @@ Exposed in ConfigMap `kube9-operator-status` under `status.argocd`:
 
 5. **Retention narrative for consumers**:
    - Event history available to query is bounded by default severity-split retention (**7** days info/warning, **30** days error/critical). See [api_contracts.md](api_contracts.md) CLI Exec Contract and [`.ai/data/consistency.md`](../data/consistency.md).
-   - Assessment history has no time-based prune commitment for agent consumers; empty/partial results are normal.
+   - Assessment history is a **posture / historical check signal** (not live pod logs); no time-based prune commitment for agent consumers; empty/partial results are normal.
 
 **Discovery Flow**:
 1. Client checks default namespace (`kube9-system`) for ConfigMap
