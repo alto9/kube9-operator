@@ -64,6 +64,8 @@
   - Default: `30` days
   - Events with error or critical severity are retained for this period
 
+**Agent and Desktop consumers:** These env vars (and Helm `events.retention.*`) define the **effective store window** for `query events list` / `get` after `RetentionCleanup` runs every **6 hours** (plus immediate run on service start). Consumers filter with `--since` / `--until` against still-stored rows; query JSON does not echo configured retention days. See [`.ai/data/consistency.md`](../data/consistency.md).
+
 ### ArgoCD Configuration Environment Variables
 - **ARGOCD_AUTO_DETECT**: Enable automatic ArgoCD detection
   - Default: `true` (unless set to `"false"`)

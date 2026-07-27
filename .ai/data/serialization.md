@@ -144,5 +144,10 @@ M8 collectors store data as JSON blobs in `collections` table. Schema validated 
 
 ## Open implementation decisions
 
-- **Retention / “as of” bounds on serialized query results:** whether event (or assessment) list/get JSON should expose effective retention windows or query “as of” bounds for agent tooling. Not required for current Desktop wrap of existing CLI. Field-level shapes deferred to `/refine-issue` if product chooses to surface them.
-- **`--since` value forms for agent filters:** relative durations vs ISO-datetime validation on the operator CLI (peer Desktop may pass relative forms). Serialization contract stays ISO-oriented until a refine-issue lands an explicit dual form.
+### Resolved (retention metadata on query JSON)
+
+Event list/get and assessments history JSON keep existing shapes (`events` / `history` plus `pagination`). No retention-window, configured-day, or prune “as of” fields are added for agent or Desktop consumers in this epic. Consumers bound queries with `--since` / `--until` against rows still present after severity-split retention (see [consistency.md](consistency.md)).
+
+### Out of scope (operator `--since` value forms)
+
+The operator CLI validates `--since` / `--until` as **ISO-8601 datetimes** only. kube9-desktop converts relative windows (for example `24h`) before exec. Relative-duration aliases on the operator CLI are not part of this serialization contract; see integration [api_contracts.md](../integration/api_contracts.md).

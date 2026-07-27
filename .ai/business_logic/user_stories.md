@@ -161,4 +161,6 @@ Assessment check history is queryable via CLI (`kube9-operator query assessments
 
 ## Open implementation decisions
 
-- **Events retention copy coordination:** Desktop evidence-footer / Pro retention microcopy must state 7/30 severity-split; operator BL states the outcome, Desktop interface owns chip/footer strings (sibling issue #159).
+### Resolved (events retention copy coordination)
+
+Operator business-logic and integration contracts state the user-visible outcome: info/warning **7** days, error/critical **30** days by default, with cleanup every **6 hours** and Helm/env overrides of the effective store window. kube9-desktop interface contracts own evidence-footer and Pro retention microcopy; those surfaces must cite the severity-split pair (or both bands), not a single longer “N days” promise. No 90-day (or other unified) agent/history retention claim belongs in operator consumer prose.
