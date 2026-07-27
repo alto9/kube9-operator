@@ -105,7 +105,6 @@ Paid Desktop products and vscode extensions may **co-consume** the same operator
 - Recovery of logs already pruned from the live Kubernetes API
 - Any agent or query path that mutates cluster state (apply, patch, delete)
 
-### Open implementation decisions
+### Consumer documentation
 
-- **Consumer naming in operator docs:** Whether user-facing operator docs list Desktop/agent alongside vscode as first-class query consumers (wording only; integration owns CLI consumer list).
-- **Assessment-history framing in issues:** Exact acceptance phrasing that assessment history is a posture/history signal, not a live incident log stream (see `user_stories.md`).
+User-facing operator docs (`charts/kube9-operator/README.md`) list **kube9-vscode** and **kube9-desktop** (including Pro AI agent Tier 2 operator query tools) as first-class co-consumers on the ConfigMap read + `kubectl exec` query path. Integration contracts own CLI semantics; README owns operator-facing consumer naming.

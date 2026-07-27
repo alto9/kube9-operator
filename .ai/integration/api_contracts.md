@@ -93,6 +93,17 @@ kube9-operator query events list [--type=<type>] [--severity=<severity>] [--sinc
 kube9-operator query events get <eventId> [--format=json|yaml|table]
 ```
 
+**`--since` / `--until` (events list and assessments history):** Operator CLI validates these flags as **ISO-8601 datetimes** only. Relative durations (for example `24h`, `7d`) are **not** accepted by the operator. kube9-vscode and direct `kubectl exec` callers pass ISO strings. **kube9-desktop** Tier 2 wrappers and Pro AI agent tools convert relative windows to absolute ISO-8601 UTC before exec. This keeps the operator contract non-breaking; relative parsing remains a client concern unless a future additive operator epic adds duration aliases.
+
+**Desktop Tier 2 agent tool filter subset (v1):** Curated mapping onto the full CLI above; not a separate operator surface.
+
+| Agent / IPC query kind | Operator command | Flags passed by Desktop v1 | Notes |
+|------------------------|------------------|----------------------------|-------|
+| `events-list` | `query events list` | `--since=<ISO8601>`, `--format=json` | Desktop default lookback is 24h converted to ISO before exec. Type, severity, until, object filters, limit, offset not exposed on Tier 2 tools. |
+| `assessments-history` | `query assessments history` | optional `--limit=<number>`, `--format=json` | Pillar, result, severity, and `--since` remain full-CLI-only for vscode and direct exec. |
+
+Full CLI flags remain stable for vscode and advanced consumers via direct `kubectl exec`.
+
 **JSON shape (events list, programmatic default)**: Object with `events` (array) and `pagination` (`total`, `limit`, `offset`, `returned`). Field-level redaction beyond existing storage rules is not introduced for agent consumers.
 
 **Assessments Query**:
@@ -244,10 +255,7 @@ kube9-operator query argocd apps get <appNamespace>/<appName> [--format=json|yam
 
 Reads SQLite `argocd_apps` snapshots (M9 application status collection). Independent of resource-tree on-demand fetch.
 
-## Open implementation decisions
+## Exec failures and client timeouts
 
-**Desktop AI agent / CLI query alignment (tier TW, refine-issue):**
-
-- **`--since` relative vs ISO**: Operator CLI validates `--since` / `--until` with ISO-8601 datetime (`z.string().datetime()` on events list and assessment history). Desktop `kube9OperatorQueryClient` defaults `--since=24h` for `events-list`. Decide whether the operator adds relative-duration acceptance (additive) or Desktop always converts relative windows to absolute ISO before exec; document the agent tool parameter mapping either way.
-- **Agent tool filter subset vs full CLI**: Which `events list` / `assessments history` flags Desktop agent tools expose (object filters, severity, pillar, limit/offset caps, defaults) vs pass-through of the full CLI surface.
-- **Timeouts / exec failure mapping**: Numeric kubectl-exec timeouts and structured stderr/`code` conventions for agent tool results remain refine-issue detail (Desktop already has operator query failure codes). Operator-side notes only if CLI error envelopes need agent-facing stabilization beyond current events/assessments JSON errors.
+- **Operator CLI:** Validation and query failures emit JSON on stderr (for example `{ "error": "...", "details": "..." }` on events list parse errors). stdout stays empty or non-JSON on failure.
+- **Desktop / agent consumers:** kubectl exec timeout, empty stdout, non-JSON stdout, and exit-code mapping are **Desktop-owned** (`OperatorQueryError` codes such as `timeout`, `invalid_json`, `non_zero_exit`). Default exec timeout is 60 seconds unless overridden by the caller. Operator contracts do not define agent tool result envelopes; Desktop maps exec outcomes into agent tool responses.

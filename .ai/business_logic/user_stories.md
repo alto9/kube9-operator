@@ -95,8 +95,17 @@ Events queryable via CLI (`kube9 events list` / `kube9-operator query events lis
 ### Agent and Desktop co-consumers
 - Desktop Pro AI agent tools and vscode are **co-consumers** of the same events query surface. The operator does not own debug playbooks or diagnostic synthesis.
 - Agents read **already retained** events. This path does not expand cluster-event recording and does not add log capture.
+- **Tier 2 filter subset:** Desktop Pro AI Tier 2 tools pass `--since` (ISO-8601 after client conversion) and `--format=json` on `events list`; optional `--limit` on `assessments history`. Other CLI filters remain available to vscode and direct exec only (see integration API contracts).
 - **Retention outcome (user-visible):** info/warning events are retained for **7** days by default; error/critical for **30** days. Product copy that cites Operator history for agent/evidence must match this severity-split window (not a longer single-number promise).
 - **Empty history is success:** A successful query that returns zero matching rows is a valid outcome (for example nothing retained in range, or rows already pruned). It is not an operator unhealthy/error state. Clients may treat absence of history as an evidence gap.
+
+**Acceptance (events, agent consumers):**
+- **Given** the operator is healthy and event rows exist within retention for the requested `--since` window,
+- **When** a Desktop agent Tier 2 tool or vscode issues `query events list --format=json`,
+- **Then** the operator returns `{ events, pagination }` with matching retained rows and does not synthesize debug guidance or playbook steps.
+- **Given** no rows match filters or retention has pruned older rows,
+- **When** the query succeeds with an empty `events` array,
+- **Then** the outcome is a valid evidence gap, not an operator error state.
 
 **Implementation**: Event types and severities defined in `src/types/event.ts`. Recording via `EventRecorder` (`src/events/event-recorder.ts`), queue processing via `EventQueueWorker` (`src/events/queue-worker.ts`), querying via `EventRepository` (`src/database/event-repository.ts`), CLI commands in `src/cli/commands/events.ts`.
 
@@ -109,6 +118,14 @@ Assessment check history is queryable via CLI (`kube9-operator query assessments
 - Desktop Pro AI agent tools and vscode may consume assessments history as a **posture / historical check signal**, not as a live incident log stream. Diagnostic playbooks and root-cause synthesis remain Desktop-owned.
 - **Retention outcome (user-visible):** No new time-based TTL for assessment history. Rows remain until explicit remove or cascade with the parent assessment. Agents and contracts may rely only on whatever is still stored.
 - **Empty or partial history is success:** Zero matching rows after a successful query is a normal gap, not a retention SLA failure and not an operator unhealthy state.
+
+**Acceptance (assessments history, agent consumers):**
+- **Given** stored assessment history rows exist,
+- **When** a Desktop agent Tier 2 tool or vscode issues `query assessments history --format=json`,
+- **Then** the operator returns `{ history, pagination }` describing past check outcomes only; it does not stream live pod logs or incident timelines.
+- **Given** no matching history rows,
+- **When** the query succeeds with an empty `history` array,
+- **Then** the outcome is a valid posture/evidence gap, not an operator unhealthy state.
 
 ### Non-goals (this surface)
 - Operator log capture, log retention tables, or log query for agent consumers
@@ -144,6 +161,4 @@ Assessment check history is queryable via CLI (`kube9-operator query assessments
 
 ## Open implementation decisions
 
-- **Assessment-history story acceptance:** Exact Given/When/Then wording that agent consumers treat assessments history as posture/history signal (not live incident log), and that empty rows are a valid success gap.
-- **Events retention copy coordination:** Desktop evidence-footer / Pro retention microcopy must state 7/30 severity-split; operator BL states the outcome, Desktop interface owns chip/footer strings.
-- **Agent filter subset:** Which events-list and assessments-history filters agents typically pass vs the full CLI filter set (coordinate with integration; not a new domain entity).
+- **Events retention copy coordination:** Desktop evidence-footer / Pro retention microcopy must state 7/30 severity-split; operator BL states the outcome, Desktop interface owns chip/footer strings (sibling issue #159).
