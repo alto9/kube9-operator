@@ -97,7 +97,7 @@ Paid Desktop products and vscode extensions may **co-consume** the same operator
 | History | User-visible promise | Notes |
 |---------|----------------------|-------|
 | Events | Severity-split defaults: **7** days for info/warning, **30** days for error/critical | Honest advertised window for agent/evidence outcomes that cite Operator history. Knobs and cleanup schedule live in data/runtime contracts. |
-| Assessments history | **No** time-based retention SLA in this product surface | Rows persist until explicit remove or cascade delete of the parent assessment. Consumers may rely only on whatever is still stored. Empty or partial assessment history is a normal gap. |
+| Assessments history | **No** time-based retention SLA in this product surface | **Posture / historical check signal** for agent and vscode consumers (not a live incident log stream). Rows persist until explicit remove or cascade delete of the parent assessment. Consumers may rely only on whatever is still stored. Empty or partial assessment history is a normal gap. |
 
 ### Non-goals (agent-consumer path)
 

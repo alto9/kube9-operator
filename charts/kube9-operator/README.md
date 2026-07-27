@@ -211,7 +211,11 @@ The operator stores Kubernetes events in a SQLite database for insights and dash
 - **errorCritical** (default: `30`): Days to retain error and critical events.
 - **Cleanup:** `RetentionCleanup` prunes expired event rows every **6 hours** and once on operator start. Helm/env overrides above change the effective store window that in-cluster query consumers may filter against.
 
-**Agent and Desktop query consumers:** [kube9-desktop](https://github.com/alto9/kube9-desktop) Pro AI agent Tier 2 tools and [kube9-vscode](https://github.com/alto9/kube9-vscode) read event history via `kubectl exec` → `kube9-operator query events list`. When citing Operator-stored history, product copy must reflect the **severity-split** defaults (**7** days info/warning, **30** days error/critical), not a single unified day count. Bound queries with `--since` / `--until` (ISO-8601 on the operator CLI) against still-stored rows; pruned, absent, or ephemeral-store gaps are normal. Assessment history retention is separate (no time-based TTL on assessment rows).
+**Agent and Desktop query consumers:** [kube9-desktop](https://github.com/alto9/kube9-desktop) Pro AI agent Tier 2 tools and [kube9-vscode](https://github.com/alto9/kube9-vscode) read event history via `kubectl exec` → `kube9-operator query events list`. When citing Operator-stored history, product copy must reflect the **severity-split** defaults (**7** days info/warning, **30** days error/critical), not a single unified day count. Bound queries with `--since` / `--until` (ISO-8601 on the operator CLI) against still-stored rows; pruned, absent, or ephemeral-store gaps are normal.
+
+**Assessment history (agent/Desktop consumers):** Well-Architected check history is available via `kube9-operator query assessments history`. It is a **posture / historical check signal**, not a live incident log stream. Assessment rows are **not** time-pruned by `RetentionCleanup`; they persist until explicit remove or cascade delete of the parent assessment run. A successful query that returns an empty `history` array is a normal evidence gap, not an operator error.
+
+**Log evidence (explicit non-goal):** This operator does **not** expose `query logs*` (or equivalent) for agent or extension consumers. Pod and workload container logs for debugging agents come from live Kubernetes API reads in the client (Desktop Tier 1), not from operator SQLite history.
 
 **PVC vs emptyDir behavior:**
 
