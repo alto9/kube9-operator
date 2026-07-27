@@ -73,6 +73,7 @@ Clients must tolerate an absent `aiConformance` block until operator versions th
 
 **Consumer-facing event retention** (for evidence and agent copy; authoritative knobs in data/runtime):
 - Default severity-split event retention: **7** days info/warning, **30** days error/critical (Helm `events.retention.*` / env; cleanup every 6h). See [`.ai/data/consistency.md`](../data/consistency.md) and [`.ai/runtime/configuration.md`](../runtime/configuration.md).
+- Filter against stored rows: bound event history with `--since` / `--until` (ISO-8601 on the operator CLI) against rows still present after `RetentionCleanup`. Query JSON does not expose configured retention days or prune "as of" metadata (see [`.ai/data/serialization.md`](../data/serialization.md)).
 - Assessment history: no time-based prune in current product stance; rows persist until explicit remove/cascade. Empty or partial history is a normal query outcome, not a retention SLA.
 
 **Pod Resolution**:
