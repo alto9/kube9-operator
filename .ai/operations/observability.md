@@ -269,7 +269,10 @@ Agent or Desktop wrapping of `query events list` / `query assessments history` d
 
 Prometheus collection-series `type` label values match payload / CLI ids: `cluster-metadata`, `resource-inventory`, `resource-configuration-patterns`, `performance-metrics`, `security-posture`. Do not rename or remove existing type strings; cardinality stays within this closed set. Status ConfigMap `collectionStats` stays aggregate-only (`totalSuccessCount`, `totalFailureCount`, `collectionsStoredCount`, `lastSuccessTime`) for this initiative; no required per-type status fields.
 
+### Resolved (performance-metrics collection metric status)
+
+When the performance-metrics collector is registered and Prometheus is unreachable / unusable: increment `kube9_operator_collection_total` with `type=performance-metrics` and `status=failed` (and `totalFailureCount`). Do not skip-without-increment and do not emit `status=success` for unavailable ticks. When URL is unset, no performance ticks run (no series for that type until registration).
+
 - **Alert thresholds under query load:** Exact alert thresholds on `kube9_operator_events_dropped_total` / queue depth when clients issue more frequent history queries remain refine-issue backlog, not a packaging or deployment-band change.
-- **Prometheus-absent tick → `status` label:** How absent/unreachable Prometheus maps to `kube9_operator_collection_total` `status` (`success` / `failed` / skip-without-increment) so existing dashboards that filter known types keep working; coordinate with runtime degrade classification (performance-metrics collector scope).
-- **Histogram buckets for ~15m performance ticks:** Confirm shared collection duration buckets remain adequate; any bucket tweak is refine-issue backlog, not a product packaging change.
+- **Histogram buckets for ~15m performance ticks:** Shared collection duration buckets remain adequate for v1; any bucket tweak is refine-issue backlog, not a product packaging change.
 - **Collection-series alert thresholds:** Exact alert thresholds on the new type labels stay `/refine-issue` backlog like other collection metrics.

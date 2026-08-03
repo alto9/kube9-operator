@@ -140,10 +140,10 @@ securityContext:
 
 ## Optional Prometheus (performance collector, outbound)
 
-- **Prometheus is optional**: The performance-metrics collector may query or scrape an in-cluster Prometheus HTTP endpoint when configured or discovered. There is **no** requirement to install Prometheus via the kube9-operator Helm chart, and kube9 does not own Prometheus Operator / ServiceMonitor lifecycle.
+- **Prometheus is optional**: The performance-metrics collector issues PromQL HTTP queries to an in-cluster Prometheus endpoint when `PROMETHEUS_BASE_URL` is configured. There is **no** requirement to install Prometheus via the kube9-operator Helm chart, and kube9 does not own Prometheus Operator / ServiceMonitor lifecycle.
 - **Zero-ingress unchanged**: Traffic is operator → Prometheus (cluster-internal egress). Operator `/metrics` exposition for scrapers of the operator itself remains a separate inbound path on the existing Service/port model.
-- **Safe degradation**: When Prometheus is absent or unreachable, the operator Deployment stays ready; only that collection type degrades. Absence must not become a readiness failure and must not imply phone-home or kube9-api sync.
-- **Auth hygiene**: Prefer not sending the operator ServiceAccount token to Prometheus by default. If a dedicated credential is ever required, use an out-of-band Secret + existingSecret mount (same class as Argo CD API token); chart does not create Secrets from plaintext. Tokens must not appear in status ConfigMap or CLI success stdout.
+- **Safe degradation**: When Prometheus is absent or unreachable, the operator Deployment stays ready; that collection type fails the tick without a durable row. Absence must not become a readiness failure and must not imply phone-home or kube9-api sync.
+- **Auth hygiene**: Never send the operator ServiceAccount token to Prometheus as an implicit credential. v1 ships URL / timeout / TLS only (no required Secret mount). If a dedicated credential is added later, use an out-of-band Secret + existingSecret mount (same class as Argo CD API token); chart does not create Secrets from plaintext. Tokens must not appear in status ConfigMap or CLI success stdout.
 
 ## Security posture collector (RBAC class)
 
@@ -168,4 +168,6 @@ securityContext:
 - **RBAC delta vs live chart:** Diff agreed security-posture v1 reads against `charts/kube9-operator/templates/clusterrole.yaml`. Add only missing resources/verbs; keep read-only. Confirm privileged / hostPath / hostNetwork signals need no new API groups beyond current pod/workload grants.
 - **NetworkPolicy purpose comment:** Chart comment today cites ai-conformance; update template comment (and this doc) so NetworkPolicy reads also cover security-posture coverage rollups (same verbs).
 - **Additional API groups for basic NSA/CIS rollups:** If implementation needs resources not already listed (for example namespaces already granted, or other policy objects), list them explicitly here and in the ClusterRole before merge; do not silently widen to Secrets, pods/exec, or deferred RBAC-risk analysis.
-- **Prometheus credential mount:** Whether v1 ships URL/timeout/TLS only (no Secret mount) or includes an optional existingSecret path in the same release; coordinate with packaging and integration.
+### Resolved (Prometheus credential mount for v1)
+
+v1 ships URL / timeout / TLS only (no Secret mount required for collector accept). Optional existingSecret auth remains packaging backlog if a platform requires it later; never use the operator SA token as an implicit Prometheus credential.

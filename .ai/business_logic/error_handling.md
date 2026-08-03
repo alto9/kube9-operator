@@ -23,7 +23,7 @@
 
 ### External Endpoint Failures
 - **Prometheus unreachable (optional assessment checks)**: Log warning, skip optional checks that depend on Prometheus
-- **Prometheus unreachable (performance metrics collector)**: Log warning; that collector tick degrades gracefully (no metrics-server / Kubernetes metrics API fallback). Operator continues; other collectors keep their schedules. Prometheus miss alone does **not** set operator `health` to `unhealthy`, and does **not** promote reserved `degraded` health. Exact tick classification (failed vs skipped vs success-with-unavailable) is under Open implementation decisions.
+- **Prometheus unreachable (performance metrics collector)**: When the collector is registered and Prometheus is unreachable, auth-failed, timed out, or returns unusable/empty results: log warning; **omit** a `collections` row; count the tick as **failed** on `kube9_operator_collection_total` (`status=failed`) and `totalFailureCount`; retry next interval. Do not persist `source.available: false` marker rows; do not classify as skipped. No metrics-server / Kubernetes metrics API fallback. Operator continues; other collectors keep their schedules. Prometheus miss alone does **not** set operator `health` to `unhealthy`, and does **not** promote reserved `degraded` health. When `PROMETHEUS_BASE_URL` is unset, the collector is not registered (no ticks).
 - **ArgoCD endpoint unreachable**: Detection returns not detected, operator continues
 - **Trivy server unreachable**: Detection returns not detected; workload scans are skipped until a server is configured
 
@@ -88,6 +88,9 @@
 
 ### Open implementation decisions
 
+### Resolved (performance-metrics unavailable tick)
+
+When registered and Prometheus is unreachable / auth-failed / timed out / unusable/empty: omit `collections` row; record **failed** (not skipped, not success-with-unavailable). Empty `--type performance-metrics` until a successful snapshot is a normal evidence gap. Must not invent a new operator `health` value.
+
 - **Consumer error copy:** Exact Desktop/vscode strings for empty history vs exec/RBAC failure stay in peer interface contracts; operator BL only distinguishes outcome classes.
-- **Performance collector tick classification:** When Prometheus is absent or unreachable, lock whether the tick is recorded as failed, skipped, or success-with-unavailable (coordinate with runtime and data). Must not invent a new operator `health` value.
-- **Security posture partial-failure classification:** When some cluster API reads fail mid-tick, lock whether the outcome is a failed tick, a partial persisted snapshot, or skipped (coordinate with runtime and data). Same health constraint as Prometheus miss.
+- **Security posture partial-failure classification:** When some cluster API reads fail mid-tick, lock whether the outcome is a failed tick, a partial persisted snapshot, or skipped (coordinate with runtime and data). Same health constraint as Prometheus miss (security-posture collector scope).
