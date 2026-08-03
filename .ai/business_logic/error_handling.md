@@ -30,8 +30,8 @@
 **Implementation**: All external dependencies wrapped with try-catch, errors logged but never thrown to operator main loop.
 
 ### Security posture collection partial failures
-- **Partial cluster API reads**: When some reads for security-posture signals fail mid-tick while others succeed, classify per Open implementation decisions (partial snapshot vs failed tick). Log and record collection metrics; retry on the next scheduled interval; do not crash the operator.
-- **Health**: Security-posture partial or failed ticks alone do **not** set `health: unhealthy` and do not promote reserved `degraded` health.
+- **Partial or failed cluster API reads**: When any required cluster-API list/read for security-posture signals fails mid-tick (including when other reads succeeded), treat the tick as **failed**: omit a `collections` row; increment failure counters / `kube9_operator_collection_total{type="security-posture",status="failed"}`; log warn; retry on the next scheduled interval. Do **not** persist a partial snapshot. Do **not** classify as skipped. Do not crash the operator.
+- **Health**: Security-posture failed ticks alone do **not** set `health: unhealthy`, do not promote reserved `degraded` health, and do not fail `/readyz`.
 - **Non-overlap**: Trivy unreachable remains the vulnerability-scan path only; it is not a security-posture collector failure mode.
 
 ## Per-Check (Assessments)
@@ -89,5 +89,8 @@
 ### Open implementation decisions
 
 - **Consumer error copy:** Exact Desktop/vscode strings for empty history vs exec/RBAC failure stay in peer interface contracts; operator BL only distinguishes outcome classes.
-- **Performance collector tick classification:** When Prometheus is absent or unreachable, lock whether the tick is recorded as failed, skipped, or success-with-unavailable (coordinate with runtime and data). Must not invent a new operator `health` value.
-- **Security posture partial-failure classification:** When some cluster API reads fail mid-tick, lock whether the outcome is a failed tick, a partial persisted snapshot, or skipped (coordinate with runtime and data). Same health constraint as Prometheus miss.
+- **Performance collector tick classification:** Owned by the performance-metrics collector capability / peer refine (`#169`). Must not invent a new operator `health` value.
+
+### Resolved (security posture partial-failure classification)
+
+When any required cluster-API read for a security-posture tick fails, **omit** the `collections` row and count the tick as **failed** (not skipped, not a partial persisted snapshot). Retry next interval. Health and `/readyz` stay unaffected by posture failure alone. Aligns with performance unavailable omit+failed semantics for durable rows.

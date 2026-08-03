@@ -26,7 +26,7 @@ Related capabilities: `performance-metrics-collector` and `security-posture-coll
 - **Status:** ConfigMap `collectionStats` remains aggregate-only (`totalSuccessCount`, `totalFailureCount`, `collectionsStoredCount`, `lastSuccessTime`); new types participate in those counters.
 - **Config:** Helm `metrics.intervals.*` and matching env interval seconds; optional Prometheus client config for performance only (exact keys / registration gate owned by collector + packaging peers).
 - **Trust / deploy:** Zero-ingress default; cluster-internal egress only for optional Prometheus; read-only ClusterRole for Kubernetes API collectors.
-- **Peer collector open items:** Degrade-row persistence when Prometheus is absent, PromQL/auth knobs, and security-posture partial-API tick classification remain in `performance-metrics-collector` / `security-posture-collector` and runtime/integration child docs.
+- **Peer collector items:** Performance Prometheus unavailable / PromQL / auth knobs live in `performance-metrics-collector` (`#169`). Security-posture partial-API tick classification is locked in `security-posture-collector` (omit row + failed; closed six-key `nsaCisRollups`).
 
 ## Testing Strategy
 

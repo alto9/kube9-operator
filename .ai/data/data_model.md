@@ -145,15 +145,28 @@ Identity and time live on `data` for all types: `timestamp` (ISO 8601), `collect
 | privilegedHost.privilegedContainers | number | yes | ≥ 0 |
 | privilegedHost.hostPathVolumes | number | yes | ≥ 0 |
 | privilegedHost.hostNetworkPods | number | yes | ≥ 0 |
-| privilegedHost.hostPIDPods | number | no | ≥ 0 when present |
-| privilegedHost.hostIPCPods | number | no | ≥ 0 when present |
+| privilegedHost.hostPIDPods | number | no | ≥ 0 when present (ship in v1 gather) |
+| privilegedHost.hostIPCPods | number | no | ≥ 0 when present (ship in v1 gather) |
 | networkPolicyCoverage | object | yes | Namespace coverage aggregates |
 | networkPolicyCoverage.namespacesTotal | number | yes | ≥ 0 |
 | networkPolicyCoverage.namespacesWithNetworkPolicy | number | yes | ≥ 0 |
-| networkPolicyCoverage.coverageRatio | number | no | `[0, 1]` when present |
-| nsaCisRollups | object | yes | Non-negative integer counters; max **24** keys; each key length ≤ 64 |
+| networkPolicyCoverage.coverageRatio | number | no | `[0, 1]` when present; compute as `namespacesWithNetworkPolicy / namespacesTotal` when `namespacesTotal > 0`; omit when total is 0 |
+| nsaCisRollups | object | yes | Non-negative integer counters; v1 closed key set below (≤ **24** keys hard cap; each key length ≤ 64) |
 
-**Reject:** Trivy CVE bodies, `vulnerabilities` arrays, RBAC-risk blobs, serialized `data` larger than **64 KiB**.
+**v1 closed `nsaCisRollups` keys** (exactly these six; no other keys in v1):
+
+| Key | Meaning |
+|-----|---------|
+| `allowPrivilegeEscalationTrueContainers` | Containers with `allowPrivilegeEscalation: true` (or equivalent explicit true) |
+| `runAsNonRootFalseContainers` | Containers not constrained to `runAsNonRoot: true` |
+| `readOnlyRootFilesystemFalseContainers` | Containers without `readOnlyRootFilesystem: true` |
+| `capabilitiesNotDroppedAllContainers` | Containers whose `capabilities.drop` does not include `ALL` |
+| `automountServiceAccountTokenTruePods` | Pods with `automountServiceAccountToken: true` (or default-true when unset per API semantics used by the gather walk) |
+| `hostNamespacesPods` | Pods with `hostPID` or `hostIPC` true (hostNetwork counted under `privilegedHost.hostNetworkPods`) |
+
+**Partial / failed gather:** If any required cluster-API read fails mid-tick, omit the row (no partial snapshot). See `.ai/business_logic/error_handling.md`.
+
+**Reject:** Trivy CVE bodies, `vulnerabilities` arrays, RBAC-risk blobs, unknown `nsaCisRollups` keys beyond the closed set, serialized `data` larger than **64 KiB**.
 
 ### Durable write path
 
@@ -396,11 +409,15 @@ Closed application set includes `performance-metrics` and `security-posture` alo
 
 ### Resolved (payload field catalogs)
 
-Normative `data` catalogs for `performance-metrics` and `security-posture` are under Collection Models above (including `source.available`, utilization/ratio bounds, privilegedHost / networkPolicyCoverage / nsaCisRollups, 64 KiB and key-count caps). Sanitization wrapping matches peer collectors (`rulesApplied`, `timestamp`).
+Normative `data` catalogs for `performance-metrics` and `security-posture` are under Collection Models above (including `source.available`, utilization/ratio bounds, privilegedHost / networkPolicyCoverage / closed `nsaCisRollups` keys, 64 KiB and key-count caps). Sanitization wrapping matches peer collectors (`rulesApplied`, `timestamp`).
 
 ### Resolved (durable write path)
 
 `CollectionRepository.insertCollection` is the sole durable write. LocalStorage is off the durable path and does not own `collectionsStoredCount`. Existing collectors must use the same durable path so CLI and status match SQLite.
+
+### Resolved (security-posture failed-tick omit)
+
+Security-posture ticks that cannot produce a complete schema-valid snapshot (including mid-tick cluster-API list failures) **omit** a `collections` row and count as **failed**. Partial snapshots are not persisted.
 
 ### Degrade-row persistence (Prometheus unavailable) — peer collector scope
 

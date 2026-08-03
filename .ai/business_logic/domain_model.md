@@ -89,10 +89,11 @@ The evaluator must prefer `not-evaluated` or `needs-evidence` over inference whe
    - Distinct from operator `/metrics` exposition (inbound scrape of the operator itself)
    - Collector: Performance metrics collector on `CollectionScheduler` (SQLite `collections`; existing collections query CLI)
 
-5. **Security posture** (24h default, enforced minimum)
-   - Cluster API aggregates only: privileged/hostPath/hostNetwork-style counts, NetworkPolicy coverage, and basic NSA/CIS-oriented rollups from Kubernetes objects
+5. **Security posture** (24h default `86400`, minimum `3600`)
+   - Cluster API aggregates only: privileged/hostPath/hostNetwork-style counts, NetworkPolicy coverage, and closed six-key NSA/CIS-oriented rollups from Kubernetes objects (`nsaCisRollups` keys in data contracts)
    - Distinct from resource-configuration-patterns (including its security-context-style pattern counts) and from Trivy image/CVE scanning
-   - Non-goals for this category: Trivy CVE duplication, RBAC risk rollups, broader CIS/NSA families beyond the basic rollups above
+   - Non-goals for this category: Trivy CVE duplication, RBAC risk rollups, broader CIS/NSA families beyond the closed rollup keys
+   - Always registered on `CollectionScheduler`; failed/partial API ticks omit rows (no partial snapshots)
    - Collector: Security posture collector on `CollectionScheduler` (SQLite `collections`; existing collections query CLI)
 
 **Scheduler and storage**: Intervals configured via Helm values and enforced with minimums. Collections scheduled with random offsets (0-1 hour) matching existing collectors. Persistence stays on the SQLite `collections` path via `CollectionRepository.insertCollection` (sole durable write); no CRDs for these payloads; no phone-home / registration / kube9-api sync. Default intervals for the five categories: 86400s (24h metadata), 21600s (6h inventory), 43200s (12h config patterns), ~900s (15m performance), 86400s (24h security posture). Exact second values and minima for the two newer collectors remain packaging/runtime peer scope under Open implementation decisions.
@@ -127,10 +128,14 @@ User-facing operator docs (`charts/kube9-operator/README.md`) list **kube9-vscod
 
 Additive kebab-case tokens are `performance-metrics` and `security-posture`. Business logic, data Zod/TS literals, CLI `--type`, and observability `type` labels use the same strings. Do not rename or remove the three shipped type strings.
 
-### Interval seconds and minima — peer packaging / runtime scope
+### Resolved (security posture interval and registration)
 
-Exact default seconds and enforced minima for the ~15m performance and ~24h security-posture collectors are locked with runtime and operations (Helm/env keys); product defaults remain ~15m and ~24h with random offset matching peer collectors.
+Security posture: default `86400`, minimum `3600`, random offset `0–3600`; always register; no enable flag. Helm key wiring is packaging peer `#171`.
+
+### Interval seconds and minima — performance peer scope
+
+Exact default seconds and enforced minima for the ~15m performance collector are locked with the performance-metrics capability / peer refine (`#169`) and operations (Helm/env keys).
 
 ### Performance collector registration gate — peer collector / runtime scope
 
-Whether the performance collector always registers on `CollectionScheduler` or registers only when a Prometheus endpoint is configured/enabled is locked with runtime and integration; either choice must preserve graceful degrade when Prometheus is absent or unreachable and must not block ready or other collectors.
+Whether the performance collector always registers on `CollectionScheduler` or registers only when a Prometheus endpoint is configured/enabled is locked with `#169` / runtime and integration; either choice must preserve graceful degrade when Prometheus is absent or unreachable and must not block ready or other collectors.

@@ -93,8 +93,9 @@ The operator follows a strict initialization sequence defined in `src/operator.t
     - **Recommended registration:** Register only when Prometheus base URL (or enable+URL) is configured. Do not probe Prometheus as a hard dependency before ready. When registered and Prometheus is unreachable, degrade that tick only (log/metric/retry next interval).
     - Persistence remains `{DB_PATH}/kube9.db` collections store. No metrics-server fallback. No phone-home.
   - **Security posture collector**: Cluster API aggregate rollups into SQLite `collections`
-    - Interval: ~24h class (`securityPostureIntervalSeconds`; exact default/min/offset in configuration Open implementation decisions)
-    - **Registration:** Always register (core-collector pattern). Independent of Prometheus and Trivy.
+    - Interval: `securityPostureIntervalSeconds` / `SECURITY_POSTURE_INTERVAL_SECONDS` (default `86400`, minimum `3600`, random offset `0–3600`)
+    - **Registration:** Always register (core-collector pattern). No enable flag. Independent of Prometheus and Trivy.
+    - Failed/partial API ticks: omit row + failed metrics; do not block ready.
 - Also registers existing gated / always-on optional tasks on the same scheduler as today (workload-image-scan, assessment, AI conformance, Argo CD application status) without changing their enable semantics.
 - Starts scheduler (begins periodic collection tasks)
 - Per-collector init or tick failures are logged; operator continues (same “log and continue” family as ArgoCD/K8s client tests)
@@ -149,7 +150,8 @@ Each step logs its progress:
 
 ## Open implementation decisions
 
-- **Bootstrap registration order:** Register performance (when gated condition met) and security posture after the three core collectors and before or alongside existing optional scheduler tasks; exact order among optional tasks is TW as long as failures for one collector still “log and continue.”
-- **Performance gate check at bootstrap:** Whether the gate is “non-empty Prometheus URL”, “explicit enable + URL”, or “enable with default-off until URL set” is locked with configuration Open implementation decisions. Recommended: non-empty URL (no separate enable required).
-- **First-tick vs scheduled-tick when Prometheus miss:** Prefer the same degrade path for first tick and later ticks (no special bootstrap scrape). Do not delay `setInitialized(true)` waiting on a Prometheus probe.
-- **Init failure isolation:** Constructing or registering either new collector must follow today’s collection-init catch: log error, continue serve without that collector if needed, still mark ready when the rest of bootstrap succeeds.
+- **Performance bootstrap gate / first-tick degrade:** Owned by the performance-metrics collector capability / peer refine (`#169`). Do not delay `setInitialized(true)` waiting on a Prometheus probe.
+
+### Resolved (security posture bootstrap)
+
+Register security posture after the three core collectors (before or alongside existing optional scheduler tasks). Constructing or registering the collector follows today’s collection-init catch: log error, continue serve without that collector if needed, still mark ready when the rest of bootstrap succeeds. First and later ticks share the same omit+failed path on API failure.

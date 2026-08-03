@@ -186,6 +186,11 @@ Assessment check history is queryable via CLI (`kube9-operator query assessments
 - **When** an operator issues `query collections` filtered to that type,
 - **Then** the snapshot is returned on the existing collections list/get surface (no parallel query API).
 
+**Acceptance (security posture partial API failure):**
+- **Given** a required cluster-API list/read for security-posture fails mid-tick,
+- **When** that tick completes,
+- **Then** no new `security-posture` row is persisted; failure counters increment; the operator stays ready/healthy for that reason alone; the collector retries next interval.
+
 **Acceptance (empty list for new type):**
 - **Given** no rows yet exist for a new collections `--type`,
 - **When** `query collections list` succeeds with an empty result for that filter,

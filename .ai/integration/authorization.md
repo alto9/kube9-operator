@@ -155,6 +155,9 @@ rules:
 ## Open implementation decisions
 
 - **Agent auth model**: Closed for this epic. Desktop AI agent Tier 2 uses the same Extension / Desktop User RBAC and kubectl-exec path; no new Role, ClusterRole, or token type.
-- **Security-posture RBAC delta vs live ClusterRole**: Chart already grants read on pods, namespaces, networkpolicies, and related assessment resources. Coordinate with operations any **additional** API-group/resource verbs required for agreed NSA/CIS-oriented rollups. Keep read-only; no Secrets, no pod exec, no cluster-admin. Document the final delta in Helm ClusterRole + this file together.
-- **Prometheus outbound auth knobs**: Exact none / bearer / basic / Secret-mount defaults and TLS verify vs insecure. Confirm operator SA token is never an implicit Prometheus credential. Align Secret mount patterns with chart precedents if dedicated credentials are supported.
-- **Degrade vs global health**: Prometheus miss and posture API list failures follow existing collector failure practice (log/metric/retry next interval). Do not widen `health: degraded` / `unhealthy` solely for optional Prometheus absence (coordinate wording with runtime/error_handling).
+- **Prometheus outbound auth knobs**: Exact none / bearer / basic / Secret-mount defaults and TLS verify vs insecure. Confirm operator SA token is never an implicit Prometheus credential. Align Secret mount patterns with chart precedents if dedicated credentials are supported. Peer scope `#169` / `#171`.
+
+### Resolved (security-posture RBAC and health)
+
+- **RBAC delta:** None for the locked v1 posture signal set (pods, apps workloads, namespaces, networkpolicies already granted). Keep read-only; no Secrets, no pod exec, no cluster-admin.
+- **Degrade vs global health:** Posture API list failures follow omit-row + failed metrics + retry next interval. Do not widen `health: degraded` / `unhealthy` or fail `/readyz` solely for posture collect failures (coordinate with runtime/error_handling).
