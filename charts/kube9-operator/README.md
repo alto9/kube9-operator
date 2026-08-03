@@ -107,6 +107,8 @@ The following table lists the configurable parameters and their default values:
 | `metrics.intervals.clusterMetadata` | Cluster metadata collection interval (seconds). Default 86400 (24h), minimum 3600 (1h) | `86400` |
 | `metrics.intervals.resourceInventory` | Resource inventory collection interval (seconds). Default 21600 (6h), minimum 1800 (30m) | `21600` |
 | `metrics.intervals.resourceConfigurationPatterns` | Resource configuration patterns collection interval (seconds). Default 43200 (12h), minimum 3600 (1h) | `43200` |
+| `metrics.intervals.performanceMetrics` | Performance metrics collection interval (seconds). Default 900 (15m), minimum 300 (5m). Requires optional Prometheus (`prometheus.baseUrl`) | `900` |
+| `metrics.intervals.securityPosture` | Security posture collection interval (seconds). Default 86400 (24h), minimum 3600 (1h). Cluster API only | `86400` |
 | `events.persistence.enabled` | Enable PersistentVolume for event storage. When false, uses emptyDir (data lost on pod restart) | `true` |
 | `events.persistence.size` | PVC size for event database | `5Gi` |
 | `events.persistence.storageClassName` | Storage class for PVC. Empty uses cluster default | `""` |
@@ -138,6 +140,9 @@ The following table lists the configurable parameters and their default values:
 | `trivy.vulnMaxHigh` | `VULN_MAX_HIGH` | `1000000` |
 | `trivy.vulnMaxMedium` | `VULN_MAX_MEDIUM` | `1000000` |
 | `metrics.intervals.workloadImageScan` | Seconds between workload image collection / scan cycles | `86400` |
+| `prometheus.baseUrl` | Optional Prometheus base URL for performance-metrics collector. Empty = default-off (no outbound Prometheus; pod stays Ready) | `""` |
+| `prometheus.timeoutMs` | `PROMETHEUS_TIMEOUT_MS` — HTTP timeout for Prometheus queries | `30000` |
+| `prometheus.tlsInsecure` | `PROMETHEUS_TLS_INSECURE` — skip TLS verification (labs only) | `false` |
 
 ### Configuration Details
 
@@ -188,11 +193,32 @@ Controls how often the operator collects different types of metrics data. All va
 | `clusterMetadata` | 86400 | 3600 | 24h / 1h |
 | `resourceInventory` | 21600 | 1800 | 6h / 30m |
 | `resourceConfigurationPatterns` | 43200 | 3600 | 12h / 1h |
+| `performanceMetrics` | 900 | 300 | 15m / 5m |
+| `securityPosture` | 86400 | 3600 | 24h / 1h |
+
+**Collection type labels:** Prometheus collection metrics and CLI filters use a closed five-type set: `cluster-metadata`, `resource-inventory`, `resource-configuration-patterns`, `performance-metrics`, `security-posture`. Status ConfigMap `collectionStats` stays aggregate-only (no required per-type status fields).
+
+**Performance vs security posture:**
+
+- **performance-metrics** — optional outbound Prometheus PromQL when `prometheus.baseUrl` is set. Default install (empty URL) does not register performance ticks; readiness does not depend on Prometheus.
+- **security-posture** — cluster API aggregates only (NetworkPolicy, RBAC, etc.). Always registered at the configured interval.
 
 **Usage scenarios:**
 
 - **Production**: Use defaults. Balances freshness with API load and cluster impact.
 - **Testing/debugging**: Override with shorter intervals within the minimums to get faster feedback during development or troubleshooting.
+
+#### Optional Prometheus (`prometheus.*`)
+
+Optional in-cluster Prometheus HTTP client for the **performance-metrics** collector. Mirrors the optional-integration pattern used by `trivy.*` and `argocd.api.*`:
+
+| Value | Default | Env | Notes |
+|-------|---------|-----|-------|
+| `baseUrl` | `""` | `PROMETHEUS_BASE_URL` | Emitted only when non-empty. Empty = default-off; no performance collector ticks. |
+| `timeoutMs` | `30000` | `PROMETHEUS_TIMEOUT_MS` | Minimum 1000 ms. |
+| `tlsInsecure` | `false` | `PROMETHEUS_TLS_INSECURE` | Labs / mis-signed certs only. |
+
+The chart does **not** install Prometheus, create ServiceMonitors for Prometheus ownership, or mount Secrets for Prometheus credentials in v1. Traffic is outbound cluster-internal when configured. Default install stays zero-ingress and reaches Ready without Prometheus.
 
 #### Event Storage and Retention (`events.*`)
 
@@ -214,6 +240,8 @@ The operator stores Kubernetes events in a SQLite database for insights and dash
 **Agent and Desktop query consumers:** [kube9-vscode](https://github.com/alto9/kube9-vscode) and [kube9-desktop](https://github.com/alto9/kube9-desktop) Pro AI agent Tier 2 tools read operator history via `kubectl exec` → `kube9-operator query events list` and `query assessments history` (same RBAC model; no Desktop→operator HTTP). When citing Operator-stored event history, product copy must reflect the **severity-split** defaults (**7** days info/warning, **30** days error/critical), not a single unified day count. Bound queries with `--since` / `--until` (ISO-8601 on the operator CLI) against still-stored rows; pruned, absent, or ephemeral-store gaps are normal.
 
 **Assessment history (agent/Desktop consumers):** Well-Architected check history is available via `kube9-operator query assessments history`. It is a **posture / historical check signal**, not a live incident log stream. Assessment rows are **not** time-pruned by `RetentionCleanup`; they persist until explicit remove or cascade delete of the parent assessment run. A successful query that returns an empty `history` array is a normal evidence gap, not an operator error.
+
+**Collections disk growth:** SQLite `collections` rows (cluster metadata, inventory, configuration patterns, performance metrics, security posture) have **no TTL or count cap** in the chart. Expect PVC growth under frequent append-only collectors, notably ~15m performance-metrics ticks when `prometheus.baseUrl` is set. Size the PVC operationally; there is no chart prune knob in this release.
 
 **Log evidence (explicit non-goal):** This operator does **not** expose `query logs*` (or equivalent) for agent or extension consumers. Pod and workload container logs for debugging agents come from live Kubernetes API reads in the client (Desktop Tier 1), not from operator SQLite history.
 
@@ -631,6 +659,8 @@ Complete reference of all configurable values:
 | `metrics.intervals.clusterMetadata` | Cluster metadata collection interval (seconds). Default 86400 (24h), minimum 3600 (1h) | `86400` |
 | `metrics.intervals.resourceInventory` | Resource inventory collection interval (seconds). Default 21600 (6h), minimum 1800 (30m) | `21600` |
 | `metrics.intervals.resourceConfigurationPatterns` | Resource configuration patterns collection interval (seconds). Default 43200 (12h), minimum 3600 (1h) | `43200` |
+| `metrics.intervals.performanceMetrics` | Performance metrics collection interval (seconds). Default 900 (15m), minimum 300 (5m). Requires optional Prometheus (`prometheus.baseUrl`) | `900` |
+| `metrics.intervals.securityPosture` | Security posture collection interval (seconds). Default 86400 (24h), minimum 3600 (1h). Cluster API only | `86400` |
 | `events.persistence.enabled` | Enable PersistentVolume for event storage. When false, uses emptyDir | `true` |
 | `events.persistence.size` | PVC size for event database | `5Gi` |
 | `events.persistence.storageClassName` | Storage class for PVC. Empty uses cluster default | `""` |
@@ -651,6 +681,9 @@ Complete reference of all configurable values:
 | `argocd.api.token.existingSecretKey` | Key within `existingSecret` holding the bearer token | `token` |
 | `argocd.api.tokenFile` | Advanced: override `ARGOCD_API_TOKEN_FILE` path without chart-managed Secret mount | (unset) |
 | `metrics.intervals.argocdApplicationStatus` | Argo CD Application API collection interval (seconds); minimum 1800 | `3600` |
+| `prometheus.baseUrl` | Optional Prometheus base URL for performance-metrics collector. Empty = default-off | `""` |
+| `prometheus.timeoutMs` | `PROMETHEUS_TIMEOUT_MS` — HTTP timeout for Prometheus queries | `30000` |
+| `prometheus.tlsInsecure` | `PROMETHEUS_TLS_INSECURE` — skip TLS verification (labs only) | `false` |
 
 ## Additional Resources
 

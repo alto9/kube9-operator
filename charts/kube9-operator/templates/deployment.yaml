@@ -52,6 +52,10 @@ spec:
           value: {{ .Values.metrics.intervals.resourceInventory | default 21600 | quote }}
         - name: RESOURCE_CONFIGURATION_PATTERNS_INTERVAL_SECONDS
           value: {{ .Values.metrics.intervals.resourceConfigurationPatterns | default 43200 | quote }}
+        - name: PERFORMANCE_METRICS_INTERVAL_SECONDS
+          value: {{ .Values.metrics.intervals.performanceMetrics | default 900 | quote }}
+        - name: SECURITY_POSTURE_INTERVAL_SECONDS
+          value: {{ .Values.metrics.intervals.securityPosture | default 86400 | quote }}
         # ArgoCD configuration
         - name: ARGOCD_AUTO_DETECT
           value: {{ .Values.argocd.autoDetect | quote }}
@@ -124,6 +128,16 @@ spec:
           value: {{ .Values.trivy.vulnMaxMedium | quote }}
         - name: WORKLOAD_IMAGE_SCAN_INTERVAL_SECONDS
           value: {{ .Values.metrics.intervals.workloadImageScan | default 86400 | quote }}
+        # Optional Prometheus client (performance-metrics collector; outbound only)
+        {{- $prometheus := .Values.prometheus | default dict }}
+        {{- if $prometheus.baseUrl }}
+        - name: PROMETHEUS_BASE_URL
+          value: {{ $prometheus.baseUrl | quote }}
+        {{- end }}
+        - name: PROMETHEUS_TIMEOUT_MS
+          value: {{ $prometheus.timeoutMs | default 30000 | quote }}
+        - name: PROMETHEUS_TLS_INSECURE
+          value: {{ $prometheus.tlsInsecure | default false | quote }}
         # Periodic assessment schedule (see assessment.* in values.yaml)
         {{- $assessment := .Values.assessment | default dict }}
         - name: ASSESSMENT_ENABLED

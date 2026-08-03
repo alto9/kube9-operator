@@ -31,7 +31,7 @@ rules:
 - apiGroups: ["policy"]
   resources: ["poddisruptionbudgets"]
   verbs: ["get", "list", "watch"]
-# Read NetworkPolicies (ai-conformance security.network-policy-default-deny)
+# Read NetworkPolicies (AI conformance security.network-policy-default-deny + security-posture NetworkPolicy coverage)
 - apiGroups: ["networking.k8s.io"]
   resources: ["networkpolicies"]
   verbs: ["get", "list", "watch"]

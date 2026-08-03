@@ -107,6 +107,52 @@ else
     exit 1
 fi
 
+if echo "$TEMPLATE_OUTPUT" | grep -q "PERFORMANCE_METRICS_INTERVAL_SECONDS"; then
+    success "PERFORMANCE_METRICS_INTERVAL_SECONDS env present on default install"
+else
+    error "PERFORMANCE_METRICS_INTERVAL_SECONDS env missing from default template"
+    exit 1
+fi
+
+if echo "$TEMPLATE_OUTPUT" | grep -q "SECURITY_POSTURE_INTERVAL_SECONDS"; then
+    success "SECURITY_POSTURE_INTERVAL_SECONDS env present on default install"
+else
+    error "SECURITY_POSTURE_INTERVAL_SECONDS env missing from default template"
+    exit 1
+fi
+
+if echo "$TEMPLATE_OUTPUT" | grep -q "PROMETHEUS_BASE_URL"; then
+    error "PROMETHEUS_BASE_URL must not appear when prometheus.baseUrl is empty"
+    exit 1
+else
+    success "PROMETHEUS_BASE_URL correctly absent on default install"
+fi
+
+PROMETHEUS_TEMPLATE=$(helm template "$RELEASE_NAME" "$CHART_DIR" \
+    --namespace "$NAMESPACE" \
+    --set prometheus.baseUrl=http://prometheus.monitoring.svc:9090)
+
+if echo "$PROMETHEUS_TEMPLATE" | grep -q "name: PROMETHEUS_BASE_URL"; then
+    success "PROMETHEUS_BASE_URL env present when prometheus.baseUrl is set"
+else
+    error "PROMETHEUS_BASE_URL env missing when prometheus.baseUrl is set"
+    exit 1
+fi
+
+if echo "$PROMETHEUS_TEMPLATE" | grep -q "name: PROMETHEUS_TIMEOUT_MS"; then
+    success "PROMETHEUS_TIMEOUT_MS env present when prometheus.baseUrl is set"
+else
+    error "PROMETHEUS_TIMEOUT_MS env missing when prometheus.baseUrl is set"
+    exit 1
+fi
+
+if echo "$PROMETHEUS_TEMPLATE" | grep -q "name: PROMETHEUS_TLS_INSECURE"; then
+    success "PROMETHEUS_TLS_INSECURE env present when prometheus.baseUrl is set"
+else
+    error "PROMETHEUS_TLS_INSECURE env missing when prometheus.baseUrl is set"
+    exit 1
+fi
+
 echo ""
 
 # Phase 3: NOTES.txt Validation
