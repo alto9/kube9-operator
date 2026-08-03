@@ -19,11 +19,12 @@ Depends on `data-collection-pipeline`.
 
 - **Runtime:** Node.js `>=22`; CollectionScheduler + SQLite `collections` + `CollectionPayload`.
 - **Integration / RBAC:** read-only ClusterRole expansion only for resources still missing for the agreed signal set; chart already grants many workload and NetworkPolicy reads. No Secrets API, no pod exec, no cluster-admin for this collector.
-- Field-level counter keys, NSA/CIS rollup catalog, and exact ClusterRole delta vs live chart are open implementation decisions (data / operations / integration).
+- **Payload accept shape:** Normative `security-posture` `data` catalog (`privilegedHost`, `networkPolicyCoverage`, `nsaCisRollups` bounds) is defined in `.ai/data/data_model.md` / serialization; this collector fills those fields on ticks.
+- Exact NSA/CIS rollup key vocabulary beyond the catalog bounds, and exact ClusterRole delta vs live chart, remain open implementation decisions (operations / integration).
 
 ## Testing Strategy
 
-- Unit: payload validation for `security-posture`; reject Trivy CVE bodies or RBAC-risk blobs if presented as this type.
+- Unit: payload validation for `security-posture` against the shared catalog; reject Trivy CVE bodies or RBAC-risk blobs if presented as this type.
 - Integration: successful append from fake/minimal API fixtures; query by type; scheduler always registers security posture when core collectors start.
 - Chart: ClusterRole remains read-only; NetworkPolicy (and any added resources) documented for posture purpose.
 - Manual: kind/minikube shows posture rows after first successful tick without Prometheus or Trivy installed.

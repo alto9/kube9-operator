@@ -20,11 +20,12 @@ Depends on `data-collection-pipeline`. Does not replace operator `/metrics` expo
 - **Runtime:** Node.js `>=22`; same CollectionScheduler and SQLite path as peer collectors.
 - **Integration:** Trivy-style optional outbound client; cluster-internal egress; prefer not using the operator ServiceAccount token as an implicit Prometheus credential.
 - **Recommended registration:** register performance ticks only when a Prometheus base URL (or equivalent enable+URL) is set; unset is soft miss, not config failure.
-- Exact PromQL vs scrape shape, auth/TLS knobs, timeouts, and whether unavailable ticks omit rows vs store an unavailable marker are open implementation decisions (integration / data / runtime).
+- **Payload accept shape:** Normative `performance-metrics` `data` catalog (including required `source.available`) is defined in `.ai/data/data_model.md` / serialization; this collector fills those fields on ticks.
+- Exact PromQL vs scrape shape, auth/TLS knobs, timeouts, and whether unavailable ticks omit rows vs store `source.available: false` remain open implementation decisions (integration / runtime / error_handling).
 
 ## Testing Strategy
 
-- Unit: payload validation for `performance-metrics`; config reject for invalid Prometheus URL when set.
+- Unit: payload validation for `performance-metrics` against the shared catalog; config reject for invalid Prometheus URL when set.
 - Integration: with Prometheus unset → collector not registered or no failing ticks; `/readyz` stays ready; with mock Prometheus → successful append + query by type.
 - Chart / ops: optional Prometheus values documented; zero-ingress unchanged; metric `type=performance-metrics` appears only on collection series when ticks run.
 - Manual: kind/minikube without Prometheus proves graceful degrade; with in-cluster Prometheus proves snapshot queryability.

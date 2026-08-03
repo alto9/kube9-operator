@@ -24,7 +24,7 @@ Exposed via ConfigMap `kube9-operator-status` in operator namespace.
 |----------|------|-------------|
 | totalSuccessCount | number | Total number of successful collections across all types |
 | totalFailureCount | number | Total number of failed collections across all types |
-| collectionsStoredCount | number | Number of collections currently stored locally |
+| collectionsStoredCount | number | Number of rows in SQLite `collections` (durable truth via `CollectionRepository.countCollections`) |
 | lastSuccessTime | string \| null | ISO 8601 timestamp of most recent successful collection |
 
 ### ArgoCDStatus
@@ -102,9 +102,62 @@ Five scheduled collectors persist append-only snapshot rows in SQLite `collectio
 
 **Resource Configuration Patterns** (`resource-configuration-patterns`, ~12h): Limits/requests, replica counts, image pull policies, security contexts, probes, volume types, service types.
 
-**Performance Metrics** (`performance-metrics`, ~15m): Bounded aggregate snapshot from optional in-cluster Prometheus (utilization / ratio style rollups). Not a raw time-series warehouse. When Prometheus is absent or unreachable, the collector degrades gracefully and does not invent metrics-server / Kubernetes metrics API data. Field-level `data` keys remain open implementation decisions below.
+**Performance Metrics** (`performance-metrics`, ~15m): Bounded aggregate snapshot from optional in-cluster Prometheus (utilization / ratio style rollups). Not a raw time-series warehouse. When Prometheus is absent or unreachable, the collector degrades gracefully and does not invent metrics-server / Kubernetes metrics API data. Normative `data` catalog below; tick gather / degrade classification owned by the performance-metrics collector capability.
 
-**Security Posture** (`security-posture`, ~24h): Bounded cluster-API aggregate counts and coverage rollups (privileged / hostPath / hostNetwork-style counts, NetworkPolicy coverage, basic NSA/CIS-oriented rollups from Kubernetes objects). Distinct from resource-configuration-patterns security-context counts and from Trivy image scanning (no CVE bodies). RBAC risk rollups and broader CIS/NSA families are out of scope for this payload. Field-level `data` keys remain open implementation decisions below.
+**Security Posture** (`security-posture`, ~24h): Bounded cluster-API aggregate counts and coverage rollups (privileged / hostPath / hostNetwork-style counts, NetworkPolicy coverage, basic NSA/CIS-oriented rollups from Kubernetes objects). Distinct from resource-configuration-patterns security-context counts and from Trivy image scanning (no CVE bodies). RBAC risk rollups and broader CIS/NSA families are out of scope for this payload. Normative `data` catalog below; tick gather / partial-API classification owned by the security-posture collector capability.
+
+### CollectionPayload envelope
+
+| Field | Type | Notes |
+|-------|------|-------|
+| version | string | Payload schema version (e.g. `v1.0.0`) |
+| type | string enum | Closed: `cluster-metadata` \| `resource-inventory` \| `resource-configuration-patterns` \| `performance-metrics` \| `security-posture` |
+| data | object | Type-specific; must match discriminant (Zod discriminated union at write time) |
+| sanitization | object | `{ rulesApplied: string[], timestamp: string }` |
+
+Identity and time live on `data` for all types: `timestamp` (ISO 8601), `collectionId` (`coll_*`), `clusterId` (`cls_*`).
+
+### performance-metrics `data`
+
+| Field | Type | Required | Constraints |
+|-------|------|----------|-------------|
+| timestamp | string | yes | ISO 8601 |
+| collectionId | string | yes | `coll_*` |
+| clusterId | string | yes | `cls_*` |
+| source | object | yes | `{ available: boolean, reason?: string }`; `reason` max 200 chars when present |
+| utilization | object | no | Optional `cpu` / `memory` objects |
+| utilization.cpu.clusterAvgRatio | number | no | `[0, 1]` when present |
+| utilization.cpu.nodeHighWatermarkRatio | number | no | `[0, 1]` when present |
+| utilization.memory.clusterAvgRatio | number | no | `[0, 1]` when present |
+| utilization.memory.nodeHighWatermarkRatio | number | no | `[0, 1]` when present |
+| ratios | object | no | Map of named ratios in `[0, 1]`; max **16** keys; each key length ≤ 64 |
+
+**Reject:** raw Prometheus vector / series dumps, unbounded label cardinality maps, nested sample arrays, serialized `data` larger than **64 KiB**.
+
+### security-posture `data`
+
+| Field | Type | Required | Constraints |
+|-------|------|----------|-------------|
+| timestamp | string | yes | ISO 8601 |
+| collectionId | string | yes | `coll_*` |
+| clusterId | string | yes | `cls_*` |
+| privilegedHost | object | yes | Non-negative integer counts |
+| privilegedHost.privilegedContainers | number | yes | ≥ 0 |
+| privilegedHost.hostPathVolumes | number | yes | ≥ 0 |
+| privilegedHost.hostNetworkPods | number | yes | ≥ 0 |
+| privilegedHost.hostPIDPods | number | no | ≥ 0 when present |
+| privilegedHost.hostIPCPods | number | no | ≥ 0 when present |
+| networkPolicyCoverage | object | yes | Namespace coverage aggregates |
+| networkPolicyCoverage.namespacesTotal | number | yes | ≥ 0 |
+| networkPolicyCoverage.namespacesWithNetworkPolicy | number | yes | ≥ 0 |
+| networkPolicyCoverage.coverageRatio | number | no | `[0, 1]` when present |
+| nsaCisRollups | object | yes | Non-negative integer counters; max **24** keys; each key length ≤ 64 |
+
+**Reject:** Trivy CVE bodies, `vulnerabilities` arrays, RBAC-risk blobs, serialized `data` larger than **64 KiB**.
+
+### Durable write path
+
+Successful collector ticks persist only through `CollectionRepository.insertCollection` (Zod validate then SQLite insert). `query collections` and status `collectionsStoredCount` reflect SQLite row counts. In-memory `LocalStorage` is not durable truth, must not drive `collectionsStoredCount`, and is removed from the collector durable write path (historical max-100 buffer is not a SQLite retention cap).
 
 ## SQLite Tables (at /data/kube9.db)
 
@@ -337,26 +390,18 @@ Stores per-requirement results for each conformance run.
 
 ## Open implementation decisions
 
-### Collection payload field catalogs (`performance-metrics`, `security-posture`)
+### Resolved (collection type literals and write-time validation)
 
-- Exact `data` object keys and nested shapes for `performance-metrics` (which utilization / ratio rollups; whether an explicit `prometheusAvailable` or source-status marker is required; max payload size / key count bounds).
-- Exact `data` object keys for `security-posture` (privileged / hostPath / hostNetwork-style counters; NetworkPolicy coverage representation; which basic NSA/CIS rollup keys). Must exclude Trivy CVE bodies and deferred RBAC risk fields.
-- Sanitization wrapping details for hashed / namespaced aggregates, aligned with peer collectors.
-- Resolve via `/refine-issue` into full field tables under Collection Models / serialization once implementation picks concrete keys.
+Closed application set includes `performance-metrics` and `security-posture` alongside the three shipped types. TypeScript `CollectionPayload` / `CollectionRowType` and Zod `CollectionPayloadSchema` use a discriminated union on `type`. `CollectionRepository.insertCollection` rejects `type`/`data` mismatch and malformed envelopes (no row). SQLite `type` remains unconstrained TEXT.
 
-### Zod / TypeScript type literals
+### Resolved (payload field catalogs)
 
-- Extend `CollectionPayload` discriminated union, `CollectionRowType`, CLI `--type` enum, and `CollectionPayloadSchema` with `performance-metrics` and `security-posture`.
-- Write-time rejection rules when `type` and `data` shape mismatch.
-- Keep SQLite `type` as unconstrained TEXT; closed set stays in app validation only.
+Normative `data` catalogs for `performance-metrics` and `security-posture` are under Collection Models above (including `source.available`, utilization/ratio bounds, privilegedHost / networkPolicyCoverage / nsaCisRollups, 64 KiB and key-count caps). Sanitization wrapping matches peer collectors (`rulesApplied`, `timestamp`).
 
-### Degrade-row persistence (Prometheus unavailable)
+### Resolved (durable write path)
 
-- Whether a Prometheus-absent/unreachable tick **omits** a `collections` row, stores a **success** payload with empty/unavailable metrics (and optional source-status marker), or counts as a **collection failure** with no durable row.
-- Coordinate with runtime / integration / error_handling for tick classification; data owns which documents are valid to persist.
-- Security posture (cluster API only) is not gated on Prometheus; degrade semantics above apply to performance-metrics only unless a shared pattern is chosen.
+`CollectionRepository.insertCollection` is the sole durable write. LocalStorage is off the durable path and does not own `collectionsStoredCount`. Existing collectors must use the same durable path so CLI and status match SQLite.
 
-### Durable write path vs in-memory
+### Degrade-row persistence (Prometheus unavailable) — peer collector scope
 
-- Wire both new collectors (and ideally existing ones) through durable `CollectionRepository.insertCollection` so `query collections` and status `collectionsStoredCount` reflect SQLite truth.
-- Document whether in-memory `LocalStorage` (historical max-100 buffer) remains a cache, is removed from the write path, or is transitional only. Single durable write path is the product contract for queryable history.
+Whether a Prometheus-absent/unreachable tick **omits** a `collections` row, stores a **success** payload with `source.available: false`, or counts as a **collection failure** with no durable row is owned by the performance-metrics collector capability (coordinate with runtime / error_handling). Schema accepts `source.available` either way. Security posture is not gated on Prometheus.

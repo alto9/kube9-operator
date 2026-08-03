@@ -20,16 +20,21 @@ Related capabilities: `performance-metrics-collector` and `security-posture-coll
 - **Runtime:** Node.js `>=22` (package engines); TypeScript operator process; better-sqlite3 for durable store at `{DB_PATH}/kube9.db`.
 - **Components:** CollectionScheduler; per-type collectors; CollectionRepository / SQLite `collections` table; Zod `CollectionPayload` validation; status publisher; CLI query path via `kubectl exec`.
 - **Type tokens (closed set for this pipeline):** `cluster-metadata`, `resource-inventory`, `resource-configuration-patterns`, `performance-metrics`, `security-posture`.
-- **Config:** Helm `metrics.intervals.*` and matching env interval seconds; optional Prometheus client config for performance only.
+- **Validation:** `CollectionPayloadSchema` is a Zod discriminated union on `type`. `CollectionRepository.insertCollection` rejects type/data mismatch and malformed envelopes (no row written). SQLite `type` stays unconstrained TEXT.
+- **Payload catalogs:** Normative `data` shapes for `performance-metrics` and `security-posture` live in `.ai/data/data_model.md` and `.ai/data/serialization.md` (source marker, utilization/ratios bounds, privilegedHost / networkPolicyCoverage / nsaCisRollups, 64 KiB and key-count caps).
+- **Durable write:** Sole durable write is `CollectionRepository.insertCollection`. Status `collectionsStoredCount` equals SQLite row count. In-memory LocalStorage is not queryable truth and is off the durable write path.
+- **Status:** ConfigMap `collectionStats` remains aggregate-only (`totalSuccessCount`, `totalFailureCount`, `collectionsStoredCount`, `lastSuccessTime`); new types participate in those counters.
+- **Config:** Helm `metrics.intervals.*` and matching env interval seconds; optional Prometheus client config for performance only (exact keys / registration gate owned by collector + packaging peers).
 - **Trust / deploy:** Zero-ingress default; cluster-internal egress only for optional Prometheus; read-only ClusterRole for Kubernetes API collectors.
-- Field catalogs, exact env key names, registration gate details, and degrade-row persistence shapes remain open implementation decisions in domain child docs until `/refine-issue`.
+- **Peer collector open items:** Degrade-row persistence when Prometheus is absent, PromQL/auth knobs, and security-posture partial-API tick classification remain in `performance-metrics-collector` / `security-posture-collector` and runtime/integration child docs.
 
 ## Testing Strategy
 
-- Unit: payload schema accept/reject per type; interval min enforcement; empty query success envelope.
-- Integration: scheduler registers expected collectors; SQLite insert + `query collections` round-trip; status aggregates include new types without dropping required fields.
-- Contract / chart: Helm values expose interval keys; ClusterRole remains read-only for posture reads; collection Prometheus metric `type` labels stay within the closed set.
-- Manual / smoke (kind/minikube): install without Prometheus → operator ready, security-posture rows appear over time, performance absent or gated without failing ready; with Prometheus configured → performance rows appear.
+- Unit: payload schema accept/reject per type (including mismatch of `type` vs `data`); reject oversized or forbidden security-posture CVE/RBAC bodies; empty query success envelope.
+- Unit / integration: durable insert via `CollectionRepository.insertCollection`; `collectionsStoredCount` tracks SQLite count after inserts (not LocalStorage size); LocalStorage store alone does not change durable count or CLI visibility.
+- Integration: SQLite insert + `query collections --type performance-metrics|security-posture` round-trip with fixture payloads; status aggregates keep the four required fields when new types succeed/fail.
+- Contract / chart: collection Prometheus metric `type` labels stay within the closed five-type set (label wiring may land with packaging peer); Helm interval keys for the two new types remain packaging peer scope.
+- Manual / smoke (kind/minikube): deferred to collector shipping issues; pipeline contract issue proves schema + durable write with unit/integration fixtures without requiring live Prometheus.
 
 ## References
 

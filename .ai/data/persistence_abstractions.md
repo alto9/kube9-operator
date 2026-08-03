@@ -59,15 +59,24 @@ Queryable event, assessment, and collection history for Desktop Tier 2 (and simi
 ### Collections persistence boundary
 
 - **Store:** Existing SQLite `collections` table via `CollectionRepository` (append-only inserts). No CRDs, no phone-home / kube9-api sync, no second persistence engine.
-- **Queryable truth:** `query collections list|get` and status `collectionsStoredCount` reflect durable SQLite rows.
+- **Queryable truth:** `query collections list|get` and status `collectionsStoredCount` reflect durable SQLite rows (`CollectionRepository.countCollections`).
+- **Sole durable write:** Collectors persist only through `CollectionRepository.insertCollection` (Zod validate then insert). In-memory `LocalStorage` is not durable truth, must not update `collectionsStoredCount`, and is removed from the collector durable write path.
 - **Types:** `cluster-metadata`, `resource-inventory`, `resource-configuration-patterns`, `performance-metrics`, `security-posture`.
 - **Producer ownership:** Operator owns normative write shapes. Peer Desktop foreshadows are non-normative.
 
 ## Open implementation decisions
 
-- **Single durable write path:** Wire collectors through `CollectionRepository.insertCollection` so CLI and `collectionsStoredCount` match SQLite. Decide fate of in-memory `LocalStorage` (cache vs removed vs transitional). See [data_model.md](data_model.md).
-- **Degrade persistence:** Whether Prometheus-unavailable performance ticks omit rows, persist unavailable success payloads, or fail without a row. Coordinate with runtime / integration.
-- **Optional future prune/cap:** Not in contract now; if introduced later, align Helm/env, `RetentionCleanup` (or peer service), and consumer prose via `/refine-issue`.
+### Resolved (single durable write path)
+
+Collectors (existing three and the two additive types) write through `CollectionRepository.insertCollection`. LocalStorage is off the durable path. See [data_model.md](data_model.md).
+
+### Degrade persistence — peer collector scope
+
+Whether Prometheus-unavailable performance ticks omit rows, persist `source.available: false` success payloads, or fail without a row is owned by the performance-metrics collector capability (coordinate with runtime / integration).
+
+### Optional future prune/cap
+
+Not in contract now; if introduced later, align Helm/env, `RetentionCleanup` (or peer service), and consumer prose via `/refine-issue`.
 
 ## Single Binary, Dual Modes
 
