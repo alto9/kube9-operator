@@ -225,4 +225,59 @@ describe('formatOutput', () => {
 
     expect(result).toBe('No results found');
   });
+
+  it('formats collections list as table for performance-metrics and security-posture', () => {
+    const data = {
+      collections: [
+        {
+          collection_id: 'coll_perf123456789012345678901234',
+          cluster_id: 'cls_testabc1234567890123456789012',
+          type: 'performance-metrics',
+          collected_at: '2025-01-01T10:00:00Z',
+        },
+        {
+          collection_id: 'coll_sec1234567890123456789012345',
+          cluster_id: 'cls_testabc1234567890123456789012',
+          type: 'security-posture',
+          collected_at: '2025-01-01T11:00:00Z',
+        },
+      ],
+    };
+
+    const table = formatOutput(data, 'table');
+    expect(table).toContain('COLLECTION_ID');
+    expect(table).toContain('TYPE');
+    expect(table).toContain('performance-metrics');
+    expect(table).toContain('security-posture');
+
+    const compact = formatOutput(data, 'compact');
+    expect(compact).toContain('performance-metrics');
+    expect(compact).toContain('security-posture');
+  });
+
+  it('truncates TYPE column to 24 chars in compact and 36 in table for collections', () => {
+    const longType = 'resource-configuration-patterns-extra';
+    const data = {
+      collections: [
+        {
+          collection_id: 'coll_x',
+          cluster_id: 'cls_y',
+          type: longType,
+          collected_at: '2025-01-01T10:00:00Z',
+        },
+      ],
+    };
+
+    const compact = formatOutput(data, 'compact');
+    const table = formatOutput(data, 'table');
+    expect(compact).toContain('...');
+    expect(table).toContain('...');
+    expect(compact).not.toContain(longType);
+  });
+
+  it('handles empty collections array', () => {
+    const data = { collections: [] };
+    expect(formatOutput(data, 'table')).toBe('No results found');
+    expect(formatOutput(data, 'compact')).toBe('No results found');
+  });
 });
