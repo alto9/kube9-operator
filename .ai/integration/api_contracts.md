@@ -163,10 +163,17 @@ kube9-operator query collections get <collectionId> [--format=json|yaml|table|co
 
 ### Open implementation decisions (collections query / status wire)
 
-- Exact CLI help text / `--type` enum listing once both new tokens ship; table/compact column widths for new summary fields (coordinate with interface).
-- Whether status ConfigMap gains an optional bounded `prometheus` (or equivalent) detection block analogous to `trivy` / `argocd` (coordinate with external_systems + data serialization).
-- Payload field catalogs for `performance-metrics` and `security-posture` (owned by data; integration requires only that wire types stay additive and peer-tolerant).
-- Confirm peers that ignore unknown `type` values need no same-milestone `.ai` edits (default: yes).
+### Resolved (payload catalogs and aggregate status)
+
+Payload field catalogs for `performance-metrics` and `security-posture` are normative in data contracts. Wire types stay additive; `collectionStats` remains the aggregate four-field object; peers that ignore unknown `type` values need no same-milestone peer-repo `.ai` edits.
+
+### CLI help / table polish — peer CLI issue scope
+
+Exact Commander help text listing and table/compact column widths for new summary fields coordinate with interface once tokens ship (tracked with the query-collections CLI completion issue).
+
+### Optional status prometheus block — not required for pipeline types
+
+Whether status ConfigMap gains an optional bounded `prometheus` (or equivalent) detection block analogous to `trivy` / `argocd` remains optional packaging/integration backlog; not required for five-type CollectionPayload acceptance.
 
 ### Assessment API Contract
 

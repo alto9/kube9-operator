@@ -95,7 +95,7 @@ The evaluator must prefer `not-evaluated` or `needs-evidence` over inference whe
    - Non-goals for this category: Trivy CVE duplication, RBAC risk rollups, broader CIS/NSA families beyond the basic rollups above
    - Collector: Security posture collector on `CollectionScheduler` (SQLite `collections`; existing collections query CLI)
 
-**Scheduler and storage**: Intervals configured via Helm values and enforced with minimums. Collections scheduled with random offsets (0-1 hour) matching existing collectors. Persistence stays on the SQLite `collections` path; no CRDs for these payloads; no phone-home / registration / kube9-api sync. Default intervals for the five categories: 86400s (24h metadata), 21600s (6h inventory), 43200s (12h config patterns), ~900s (15m performance), 86400s (24h security posture). Exact second values and minima for the two newer collectors are listed under Open implementation decisions.
+**Scheduler and storage**: Intervals configured via Helm values and enforced with minimums. Collections scheduled with random offsets (0-1 hour) matching existing collectors. Persistence stays on the SQLite `collections` path via `CollectionRepository.insertCollection` (sole durable write); no CRDs for these payloads; no phone-home / registration / kube9-api sync. Default intervals for the five categories: 86400s (24h metadata), 21600s (6h inventory), 43200s (12h config patterns), ~900s (15m performance), 86400s (24h security posture). Exact second values and minima for the two newer collectors remain packaging/runtime peer scope under Open implementation decisions.
 
 **Milestone consumer scope**: Operator-owned schedule, status `collectionStats`, and collections query are the user-visible outcomes for these collectors. vscode and Desktop remain progressive-enhancement co-consumers later; this surface does not add presence modes or AssessmentRunState/CheckStatus values.
 
@@ -123,6 +123,14 @@ User-facing operator docs (`charts/kube9-operator/README.md`) list **kube9-vscod
 
 ## Open implementation decisions
 
-- **Collection type tokens:** Exact kebab-case type strings for performance metrics and security posture (family candidates such as `performance-metrics` and `security-posture`) are locked with data and interface contracts; business logic treats them as additive members of the existing collections type set.
-- **Interval seconds and minima:** Exact default seconds and enforced minima for the ~15m performance and ~24h security-posture collectors are locked with runtime and operations (Helm/env keys); product defaults remain ~15m and ~24h with random offset matching peer collectors.
-- **Performance collector registration gate:** Whether the performance collector always registers on `CollectionScheduler` or registers only when a Prometheus endpoint is configured/enabled is locked with runtime and integration; either choice must preserve graceful degrade when Prometheus is absent or unreachable and must not block ready or other collectors.
+### Resolved (collection type tokens)
+
+Additive kebab-case tokens are `performance-metrics` and `security-posture`. Business logic, data Zod/TS literals, CLI `--type`, and observability `type` labels use the same strings. Do not rename or remove the three shipped type strings.
+
+### Interval seconds and minima — peer packaging / runtime scope
+
+Exact default seconds and enforced minima for the ~15m performance and ~24h security-posture collectors are locked with runtime and operations (Helm/env keys); product defaults remain ~15m and ~24h with random offset matching peer collectors.
+
+### Performance collector registration gate — peer collector / runtime scope
+
+Whether the performance collector always registers on `CollectionScheduler` or registers only when a Prometheus endpoint is configured/enabled is locked with runtime and integration; either choice must preserve graceful degrade when Prometheus is absent or unreachable and must not block ready or other collectors.

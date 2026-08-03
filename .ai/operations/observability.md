@@ -265,9 +265,11 @@ Agent or Desktop wrapping of `query events list` / `query assessments history` d
 
 ### Open implementation decisions
 
+### Resolved (collection type labels and collectionStats)
+
+Prometheus collection-series `type` label values match payload / CLI ids: `cluster-metadata`, `resource-inventory`, `resource-configuration-patterns`, `performance-metrics`, `security-posture`. Do not rename or remove existing type strings; cardinality stays within this closed set. Status ConfigMap `collectionStats` stays aggregate-only (`totalSuccessCount`, `totalFailureCount`, `collectionsStoredCount`, `lastSuccessTime`) for this initiative; no required per-type status fields.
+
 - **Alert thresholds under query load:** Exact alert thresholds on `kube9_operator_events_dropped_total` / queue depth when clients issue more frequent history queries remain refine-issue backlog, not a packaging or deployment-band change.
-- **Canonical collection `type` label strings:** Confirm Prometheus `type` values match payload / CLI ids (`performance-metrics`, `security-posture` candidates). Do not rename or remove existing type strings; keep cardinality bounded to the known collection-type set.
-- **Prometheus-absent tick → `status` label:** How absent/unreachable Prometheus maps to `kube9_operator_collection_total` `status` (`success` / `failed` / skip-without-increment) so existing dashboards that filter known types keep working; coordinate with runtime degrade classification.
-- **`collectionStats` progressive enhancement:** Whether status ConfigMap stays aggregate-only for this initiative, or gains optional per-type fields under progressive enhancement without breaking required aggregate fields.
+- **Prometheus-absent tick → `status` label:** How absent/unreachable Prometheus maps to `kube9_operator_collection_total` `status` (`success` / `failed` / skip-without-increment) so existing dashboards that filter known types keep working; coordinate with runtime degrade classification (performance-metrics collector scope).
 - **Histogram buckets for ~15m performance ticks:** Confirm shared collection duration buckets remain adequate; any bucket tweak is refine-issue backlog, not a product packaging change.
 - **Collection-series alert thresholds:** Exact alert thresholds on the new type labels stay `/refine-issue` backlog like other collection metrics.

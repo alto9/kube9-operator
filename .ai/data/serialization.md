@@ -170,16 +170,36 @@ Empty successful `query collections list` (including `--type` with no rows) rema
 
 ### Status surface
 
-`collectionStats` stays aggregate counters (`totalSuccessCount`, `totalFailureCount`, `collectionsStoredCount`, `lastSuccessTime`). New types participate in those counters without changing the CollectionStats field set.
+`collectionStats` stays aggregate counters (`totalSuccessCount`, `totalFailureCount`, `collectionsStoredCount`, `lastSuccessTime`). New types participate in those counters without changing the CollectionStats field set. `collectionsStoredCount` is the SQLite `collections` row count, not an in-memory buffer size. Internal per-type tracker maps are not published on the status ConfigMap.
+
+### performance-metrics `data` serialization
+
+| Field | Notes |
+|-------|-------|
+| `timestamp`, `collectionId`, `clusterId` | Required identity/time |
+| `source.available` | boolean; required |
+| `source.reason` | optional string ≤ 200 chars |
+| `utilization.cpu` / `utilization.memory` | optional; ratio fields in `[0, 1]` |
+| `ratios` | optional named ratios in `[0, 1]`; ≤ 16 keys; key length ≤ 64 |
+
+Reject raw series dumps and serialized `data` > 64 KiB. Zod discriminant `type: "performance-metrics"` must match this shape at write time.
+
+### security-posture `data` serialization
+
+| Field | Notes |
+|-------|-------|
+| `timestamp`, `collectionId`, `clusterId` | Required identity/time |
+| `privilegedHost.*` | required privileged/hostPath/hostNetwork counts; optional hostPID/hostIPC |
+| `networkPolicyCoverage.*` | required namespace totals; optional `coverageRatio` in `[0, 1]` |
+| `nsaCisRollups` | required object of non-negative int counters; ≤ 24 keys; key length ≤ 64 |
+
+Reject CVE / vulnerabilities / RBAC-risk bodies and serialized `data` > 64 KiB. Zod discriminant `type: "security-posture"` must match this shape at write time.
 
 ## Open implementation decisions
 
-### Collection payload field-level serialization
+### Resolved (collection payload field-level serialization)
 
-- Concrete `data` property catalogs and nested JSON shapes for `performance-metrics` and `security-posture` (including optional Prometheus source-status marker and size bounds).
-- Exact Zod / TypeScript literal updates for the two new discriminants and write-time mismatch rejection.
-- Whether degrade ticks serialize a durable unavailable payload vs omit the row (see [data_model.md](data_model.md) open decisions).
-- Resolve via `/refine-issue` into field tables once implementation picks keys.
+Field catalogs and Zod discriminant rules for `performance-metrics` and `security-posture` are normative above and in [data_model.md](data_model.md). Write-time mismatch rejection uses the existing `CollectionPayloadSchema` discriminated union at `CollectionRepository.insertCollection`. Degrade-tick choice (omit row vs persist `source.available: false`) is owned by the performance-metrics collector capability; both outcomes serialize only documents that pass this schema when a row is written.
 
 ### Resolved (retention metadata on query JSON)
 

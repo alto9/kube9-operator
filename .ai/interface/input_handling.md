@@ -118,5 +118,10 @@ kubectl exec -n <namespace> deploy/kube9-operator -- kube9-operator <command> [o
 
 ## Open implementation decisions
 
-- **Exact `--type` tokens:** Lock final kebab-case strings for the two new collectors with data / business_logic (`performance-metrics` and `security-posture` are the working candidates already listed above). CLI Zod enum, Commander help text, and payload discriminants must match.
-- **Help / description copy:** Exact Commander descriptions for `query collections` and the `--type` option once the enum is final (today help lists only the three shipped types).
+### Resolved (`--type` tokens)
+
+CLI `--type`, payload discriminants, and observability labels use `cluster-metadata` | `resource-inventory` | `resource-configuration-patterns` | `performance-metrics` | `security-posture`. Invalid values fail option validation with the existing JSON-on-stderr pattern.
+
+### Help / description copy — peer CLI issue scope
+
+Exact Commander descriptions for `query collections` and the `--type` option once help text lists all five types (today help may still list only the three shipped types until the CLI completion issue lands).
