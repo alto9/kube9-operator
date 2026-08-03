@@ -56,19 +56,19 @@ The Helm chart supports comprehensive configuration through `values.yaml`:
 - `metrics.intervals.clusterMetadata`: Cluster metadata collection interval in seconds (default: `86400` = 24 hours, minimum: `3600`)
 - `metrics.intervals.resourceInventory`: Resource inventory collection interval in seconds (default: `21600` = 6 hours, minimum: `1800`)
 - `metrics.intervals.resourceConfigurationPatterns`: Resource configuration patterns collection interval in seconds (default: `43200` = 12 hours, minimum: `3600`)
-- `metrics.intervals.performanceMetrics`: Performance metrics collection interval in seconds (default: `900` = 15 minutes; enforced minimum locked with runtime)
-- `metrics.intervals.securityPosture`: Security posture collection interval in seconds (default: `86400` = 24 hours; enforced minimum locked with runtime)
+- `metrics.intervals.performanceMetrics`: Performance metrics collection interval in seconds (default: `900` = 15 minutes; minimum: `300`; maps to `PERFORMANCE_METRICS_INTERVAL_SECONDS`)
+- `metrics.intervals.securityPosture`: Security posture collection interval in seconds (default: `86400` = 24 hours; enforced minimum locked with security-posture / runtime peers)
 
 Chart `values.yaml` also carries intervals for Argo CD Application status and workload image scan under the same `metrics.intervals` map; those stay documented in the chart README.
 
 #### Optional Prometheus (performance collector, outbound)
 
-Performance metrics use an optional in-cluster Prometheus HTTP client (query and/or scrape). Packaging posture mirrors Trivy / Argo CD optional integrations:
+Performance metrics use an optional in-cluster Prometheus **PromQL HTTP** client. Packaging posture mirrors Trivy / Argo CD optional integrations:
 
-- Default install stays **zero-ingress**. Prometheus integration is **outbound** cluster-internal traffic when configured or discovered.
+- Default install stays **zero-ingress**. Prometheus integration is **outbound** cluster-internal traffic when configured.
 - Chart must not install Prometheus, create a ServiceMonitor for kube9 ownership of Prometheus, or invent an inbound scrape surface for this collector.
-- Chart must not create Secrets from plaintext credentials. If bearer/auth is ever required, use an existingSecret mount pattern (same class as `argocd.api.token.existingSecret`).
-- Exact values-tree keys (`prometheus.*` vs `performanceMetrics.*`), discovery defaults, timeout/TLS knobs, and enable vs always-register wiring are open implementation decisions below (coordinate with runtime + integration).
+- Chart must not create Secrets from plaintext credentials. v1 collector accept does **not** require a credential mount; if bearer/auth is added later, use an existingSecret mount pattern (same class as `argocd.api.token.existingSecret`).
+- Deployment must be able to set runtime env: `PROMETHEUS_BASE_URL`, `PROMETHEUS_TIMEOUT_MS` (default class `30000`), `PROMETHEUS_TLS_INSECURE` (default `false`). Non-empty base URL gates collector registration (not always-register). Exact values-tree nesting (`prometheus.*` vs under `performanceMetrics.*`) is packaging open work (#171) as long as env names match runtime.
 
 #### Event Storage
 - `events.persistence.enabled`: Enable persistent storage (default: `true`)
@@ -140,6 +140,13 @@ Performance metrics use an optional in-cluster Prometheus HTTP client (query and
 
 ## Open implementation decisions
 
-- **Exact Helm interval keys and env mapping:** Lock camelCase under `metrics.intervals` (candidates above: `performanceMetrics`, `securityPosture`) and Deployment env names (candidates: `PERFORMANCE_METRICS_INTERVAL_SECONDS`, `SECURITY_POSTURE_INTERVAL_SECONDS`). Defaults stay in the ~900s / ~86400s class; enforced minima and random-offset seconds align with runtime config loader.
-- **Prometheus values block shape:** Whether outbound client knobs live under `prometheus.*` (mirror `trivy.*` sibling) or nested under `performanceMetrics.*`; which of base URL, autoDetect/discovery, timeoutMs, tlsInsecure, and existingSecret auth are chart-first vs env-only; default-off until configured vs always-register collector with graceful degrade (must match runtime + integration).
-- **Chart harness / README tables:** `test-helm-chart.sh` Phase 5 assertions and README value tables for new interval env keys, optional Prometheus knobs, and any status fields; consumer wording that performance needs optional Prometheus and security posture is cluster-API only.
+### Resolved (performance-metrics chart env contract)
+
+- Interval key: `metrics.intervals.performanceMetrics` → `PERFORMANCE_METRICS_INTERVAL_SECONDS` (default `900`, minimum `300`, offset `0–300` per runtime).
+- Prometheus Deployment env names: `PROMETHEUS_BASE_URL`, `PROMETHEUS_TIMEOUT_MS`, `PROMETHEUS_TLS_INSECURE`. Registration gated on non-empty base URL (default-off until configured).
+
+### Packaging peer backlog (#171 / chart)
+
+- **Prometheus values-tree shape:** Nest under `prometheus.*` (mirror `trivy.*`) or under `performanceMetrics.*`; README / `test-helm-chart.sh` Phase 5 assertions for new interval and Prometheus knobs.
+- **Security-posture interval mapping:** `metrics.intervals.securityPosture` → `SECURITY_POSTURE_INTERVAL_SECONDS` (defaults/minima with security-posture collector).
+- **Consumer wording:** README notes that performance needs optional Prometheus and security posture is cluster-API only.

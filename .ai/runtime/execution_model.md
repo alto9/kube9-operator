@@ -130,9 +130,9 @@ The kube9-operator binary supports multiple execution modes via Commander.js CLI
      - Collector: `ResourceConfigurationPatternsCollector`
 
   4. **Performance Metrics Collection**
-     - Interval: ~15m class (exact default/min/offset in configuration Open implementation decisions)
-     - Collector: performance metrics collector (optional in-cluster Prometheus HTTP client)
-     - **Recommended registration:** Config-gated until Prometheus base URL configured; when registered, tick degrades on unreachable Prometheus without stopping the scheduler or failing ready
+     - Interval: `performanceMetricsIntervalSeconds` (default: 900s = 15m; minimum: 300s; random offset: 0–300s)
+     - Collector: performance metrics collector (optional in-cluster Prometheus PromQL HTTP client)
+     - **Registration:** Config-gated until `PROMETHEUS_BASE_URL` is non-empty; when registered and Prometheus is unreachable/unusable, omit row and count tick as failed without stopping the scheduler or failing ready
      - Storage: existing SQLite `collections` path; no CRDs; no phone-home
 
   5. **Security Posture Collection**
@@ -212,6 +212,8 @@ The kube9-operator binary supports multiple execution modes via Commander.js CLI
 
 ## Open implementation decisions
 
-- **Registration policy lock:** Confirm recommended config-gated performance registration vs always-register-with-degrade with integration contracts; security posture stays always-register. See configuration.md Open implementation decisions for the recommendation rationale.
-- **Degrade tick → stats/metrics:** How a Prometheus miss maps to `collectionStats` counters and `kube9_operator_collection_*` labels (`failed` vs skipped vs success-with-unavailable) is coordinated with business_logic and data; execution model only requires that the scheduler keeps running and ready stays up.
+### Resolved (performance-metrics registration and degrade)
+
+Config-gated registration on non-empty `PROMETHEUS_BASE_URL`. Unavailable ticks omit rows and increment failure counters / `status=failed` metrics; scheduler keeps running and ready stays up. Security posture stays always-register (peer collector).
+
 - **Query mode process boundary unchanged:** `query collections` for the new types remains a separate CLI process via `kubectl exec`, same as today. No in-serve query API.

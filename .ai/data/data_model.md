@@ -402,6 +402,6 @@ Normative `data` catalogs for `performance-metrics` and `security-posture` are u
 
 `CollectionRepository.insertCollection` is the sole durable write. LocalStorage is off the durable path and does not own `collectionsStoredCount`. Existing collectors must use the same durable path so CLI and status match SQLite.
 
-### Degrade-row persistence (Prometheus unavailable) — peer collector scope
+### Resolved (performance-metrics unavailable ticks)
 
-Whether a Prometheus-absent/unreachable tick **omits** a `collections` row, stores a **success** payload with `source.available: false`, or counts as a **collection failure** with no durable row is owned by the performance-metrics collector capability (coordinate with runtime / error_handling). Schema accepts `source.available` either way. Security posture is not gated on Prometheus.
+When the performance-metrics collector is registered and Prometheus is unreachable / auth-failed / timed out / unusable/empty: **omit** a `collections` row and count the tick as a **collection failure** (no durable row). Do not persist success payloads with `source.available: false` for that path. Successful ticks write catalog payloads with `source.available: true` (optional utilization / ratios). Schema still accepts `source.available: false` for validation completeness, but the collector does not produce unavailable marker rows in v1. Security posture is not gated on Prometheus.

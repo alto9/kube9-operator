@@ -149,7 +149,9 @@ Each step logs its progress:
 
 ## Open implementation decisions
 
-- **Bootstrap registration order:** Register performance (when gated condition met) and security posture after the three core collectors and before or alongside existing optional scheduler tasks; exact order among optional tasks is TW as long as failures for one collector still “log and continue.”
-- **Performance gate check at bootstrap:** Whether the gate is “non-empty Prometheus URL”, “explicit enable + URL”, or “enable with default-off until URL set” is locked with configuration Open implementation decisions. Recommended: non-empty URL (no separate enable required).
-- **First-tick vs scheduled-tick when Prometheus miss:** Prefer the same degrade path for first tick and later ticks (no special bootstrap scrape). Do not delay `setInitialized(true)` waiting on a Prometheus probe.
-- **Init failure isolation:** Constructing or registering either new collector must follow today’s collection-init catch: log error, continue serve without that collector if needed, still mark ready when the rest of bootstrap succeeds.
+### Resolved (performance-metrics bootstrap)
+
+- **Gate:** Non-empty `PROMETHEUS_BASE_URL` (no separate enable flag in v1).
+- **Order:** Register performance (when gate met) and security posture after the three core collectors and before or alongside existing optional scheduler tasks; failures for one collector still “log and continue.”
+- **First tick:** Same degrade path as later ticks (omit row + failed when Prometheus miss); no special bootstrap scrape; do not delay `setInitialized(true)` waiting on a Prometheus probe.
+- **Init failure isolation:** Constructing or registering either new collector follows today’s collection-init catch: log error, continue serve without that collector if needed, still mark ready when the rest of bootstrap succeeds.

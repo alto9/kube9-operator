@@ -199,7 +199,7 @@ Reject CVE / vulnerabilities / RBAC-risk bodies and serialized `data` > 64 KiB. 
 
 ### Resolved (collection payload field-level serialization)
 
-Field catalogs and Zod discriminant rules for `performance-metrics` and `security-posture` are normative above and in [data_model.md](data_model.md). Write-time mismatch rejection uses the existing `CollectionPayloadSchema` discriminated union at `CollectionRepository.insertCollection`. Degrade-tick choice (omit row vs persist `source.available: false`) is owned by the performance-metrics collector capability; both outcomes serialize only documents that pass this schema when a row is written.
+Field catalogs and Zod discriminant rules for `performance-metrics` and `security-posture` are normative above and in [data_model.md](data_model.md). Write-time mismatch rejection uses the existing `CollectionPayloadSchema` discriminated union at `CollectionRepository.insertCollection`. Performance-metrics unavailable ticks omit rows (no serialized unavailable marker); successful ticks serialize catalog documents with `source.available: true` (and optional utilization / ratios) that pass this schema.
 
 ### Resolved (retention metadata on query JSON)
 

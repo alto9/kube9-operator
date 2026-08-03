@@ -70,9 +70,9 @@ Queryable event, assessment, and collection history for Desktop Tier 2 (and simi
 
 Collectors (existing three and the two additive types) write through `CollectionRepository.insertCollection`. LocalStorage is off the durable path. See [data_model.md](data_model.md).
 
-### Degrade persistence — peer collector scope
+### Resolved (performance-metrics degrade persistence)
 
-Whether Prometheus-unavailable performance ticks omit rows, persist `source.available: false` success payloads, or fail without a row is owned by the performance-metrics collector capability (coordinate with runtime / integration).
+Prometheus-unavailable / unusable performance ticks **omit** rows and count as collection failures (no durable row). They do not persist `source.available: false` success payloads. See [data_model.md](data_model.md) and `.ai/specs/performance-metrics-collector.spec.md`.
 
 ### Optional future prune/cap
 

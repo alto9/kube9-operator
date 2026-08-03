@@ -171,9 +171,9 @@ Payload field catalogs for `performance-metrics` and `security-posture` are norm
 
 Exact Commander help text listing and table/compact column widths for new summary fields coordinate with interface once tokens ship (tracked with the query-collections CLI completion issue).
 
-### Optional status prometheus block — not required for pipeline types
+### Resolved (optional status prometheus block)
 
-Whether status ConfigMap gains an optional bounded `prometheus` (or equivalent) detection block analogous to `trivy` / `argocd` remains optional packaging/integration backlog; not required for five-type CollectionPayload acceptance.
+No required bounded `status.prometheus` (or equivalent) detection block for performance-metrics or five-type CollectionPayload acceptance. Optional packaging/integration backlog may add one later analogous to `trivy` / `argocd`; not part of collector accept for this initiative.
 
 ### Assessment API Contract
 

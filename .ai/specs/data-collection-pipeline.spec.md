@@ -24,9 +24,10 @@ Related capabilities: `performance-metrics-collector` and `security-posture-coll
 - **Payload catalogs:** Normative `data` shapes for `performance-metrics` and `security-posture` live in `.ai/data/data_model.md` and `.ai/data/serialization.md` (source marker, utilization/ratios bounds, privilegedHost / networkPolicyCoverage / nsaCisRollups, 64 KiB and key-count caps).
 - **Durable write:** Sole durable write is `CollectionRepository.insertCollection`. Status `collectionsStoredCount` equals SQLite row count. In-memory LocalStorage is not queryable truth and is off the durable write path.
 - **Status:** ConfigMap `collectionStats` remains aggregate-only (`totalSuccessCount`, `totalFailureCount`, `collectionsStoredCount`, `lastSuccessTime`); new types participate in those counters.
-- **Config:** Helm `metrics.intervals.*` and matching env interval seconds; optional Prometheus client config for performance only (exact keys / registration gate owned by collector + packaging peers).
+- **Config:** Helm `metrics.intervals.*` and matching env interval seconds; optional Prometheus client for performance (`PROMETHEUS_BASE_URL`, timeout, TLS; config-gated registration). Chart wiring is packaging peer; runtime semantics live in configuration + `performance-metrics-collector` spec.
 - **Trust / deploy:** Zero-ingress default; cluster-internal egress only for optional Prometheus; read-only ClusterRole for Kubernetes API collectors.
-- **Peer collector open items:** Degrade-row persistence when Prometheus is absent, PromQL/auth knobs, and security-posture partial-API tick classification remain in `performance-metrics-collector` / `security-posture-collector` and runtime/integration child docs.
+- **Performance degrade:** Unavailable Prometheus ticks omit rows and count as failed (see `performance-metrics-collector` spec).
+- **Peer collector open items:** Security-posture partial-API tick classification remains in `security-posture-collector` and runtime/integration child docs.
 
 ## Testing Strategy
 

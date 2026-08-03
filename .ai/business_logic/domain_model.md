@@ -127,10 +127,10 @@ User-facing operator docs (`charts/kube9-operator/README.md`) list **kube9-vscod
 
 Additive kebab-case tokens are `performance-metrics` and `security-posture`. Business logic, data Zod/TS literals, CLI `--type`, and observability `type` labels use the same strings. Do not rename or remove the three shipped type strings.
 
-### Interval seconds and minima — peer packaging / runtime scope
+### Resolved (performance-metrics interval and registration)
 
-Exact default seconds and enforced minima for the ~15m performance and ~24h security-posture collectors are locked with runtime and operations (Helm/env keys); product defaults remain ~15m and ~24h with random offset matching peer collectors.
+Performance-metrics defaults to `900` seconds (minimum `300`, offset `0–300`) via `PERFORMANCE_METRICS_INTERVAL_SECONDS`. Registration is config-gated on non-empty `PROMETHEUS_BASE_URL`. Unavailable Prometheus when registered omits rows and counts failed ticks without blocking ready or other collectors.
 
-### Performance collector registration gate — peer collector / runtime scope
+### Interval seconds — security-posture peer scope
 
-Whether the performance collector always registers on `CollectionScheduler` or registers only when a Prometheus endpoint is configured/enabled is locked with runtime and integration; either choice must preserve graceful degrade when Prometheus is absent or unreachable and must not block ready or other collectors.
+Exact default seconds and enforced minima for the ~24h security-posture collector remain locked with that collector / packaging peers; product default remains ~24h with random offset matching long-interval peers.
