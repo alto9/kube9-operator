@@ -22,11 +22,17 @@
 - **Retry behavior**: Collections retry on next scheduled interval (no immediate retry)
 
 ### External Endpoint Failures
-- **Prometheus unreachable**: Log warning, skip optional checks that depend on Prometheus
+- **Prometheus unreachable (optional assessment checks)**: Log warning, skip optional checks that depend on Prometheus
+- **Prometheus unreachable (performance metrics collector)**: Log warning; that collector tick degrades gracefully (no metrics-server / Kubernetes metrics API fallback). Operator continues; other collectors keep their schedules. Prometheus miss alone does **not** set operator `health` to `unhealthy`, and does **not** promote reserved `degraded` health. Exact tick classification (failed vs skipped vs success-with-unavailable) is under Open implementation decisions.
 - **ArgoCD endpoint unreachable**: Detection returns not detected, operator continues
 - **Trivy server unreachable**: Detection returns not detected; workload scans are skipped until a server is configured
 
 **Implementation**: All external dependencies wrapped with try-catch, errors logged but never thrown to operator main loop.
+
+### Security posture collection partial failures
+- **Partial cluster API reads**: When some reads for security-posture signals fail mid-tick while others succeed, classify per Open implementation decisions (partial snapshot vs failed tick). Log and record collection metrics; retry on the next scheduled interval; do not crash the operator.
+- **Health**: Security-posture partial or failed ticks alone do **not** set `health: unhealthy` and do not promote reserved `degraded` health.
+- **Non-overlap**: Trivy unreachable remains the vulnerability-scan path only; it is not a security-posture collector failure mode.
 
 ## Per-Check (Assessments)
 
@@ -71,6 +77,7 @@
 
 ### Empty history vs failure
 - **Success with zero rows**: Valid outcome when filters match nothing or retained rows have aged out / been removed. Does not change operator `health`. Clients report an evidence gap, not an operator failure.
+- **Empty collections query**: Successful `query collections` with zero rows (including a new type filter with no snapshots yet) is the same class as empty history: normal evidence gap, not unhealthy.
 - **Operator unhealthy or absent**: Consumers fall back per presence/`error_state.md` (toward basic). Tiered agent tooling that depends on history is gated off; live Kubernetes debugging paths remain independent of operator history.
 - **Query / exec / RBAC transport failure**: Distinct from empty history. Surface as consumer-side query failure (integration CLI/exec contracts); do not conflate with "no matching retained rows."
 - **Assessment history gaps**: Empty or partial assessment history after a successful query is a normal gap (no time-based retention SLA). Same success-vs-failure distinction as events.
@@ -82,3 +89,5 @@
 ### Open implementation decisions
 
 - **Consumer error copy:** Exact Desktop/vscode strings for empty history vs exec/RBAC failure stay in peer interface contracts; operator BL only distinguishes outcome classes.
+- **Performance collector tick classification:** When Prometheus is absent or unreachable, lock whether the tick is recorded as failed, skipped, or success-with-unavailable (coordinate with runtime and data). Must not invent a new operator `health` value.
+- **Security posture partial-failure classification:** When some cluster API reads fail mid-tick, lock whether the outcome is a failed tick, a partial persisted snapshot, or skipped (coordinate with runtime and data). Same health constraint as Prometheus miss.

@@ -88,7 +88,13 @@ Exposed in ConfigMap `kube9-operator-status` under `status.argocd`:
 
 **Consumption**: Scan results feed SQLite persistence, security assessment checks, operator CLI query commands, and Prometheus metrics (see `.ai/data/data_model.md` and `.ai/operations/observability.md` as those contracts are extended for M3).
 
+**Boundary vs security-posture collection**: Security-posture collection uses **Kubernetes API aggregates only** (privileged/hostPath/hostNetwork-style counts, NetworkPolicy coverage, basic NSA/CIS-oriented object rollups). It must **not** call Trivy HTTP/CLI, store CVE bodies, or treat Trivy detection as a prerequisite. Trivy remains the vulnerability path; configuration-pattern security-context counts remain a separate collection type.
+
 ## Prometheus
+
+Prometheus has two distinct roles for kube9-operator. They must not be conflated in contracts or Helm docs.
+
+### Role A: Operator metrics exposition (inbound scrape)
 
 **Metrics Endpoint**:
 - **Path**: `/metrics` on health server (port 8080)
@@ -100,16 +106,45 @@ Exposed in ConfigMap `kube9-operator-status` under `status.argocd`:
 - Event metrics (queue size, storage size, errors)
 - Assessment metrics (run counts, durations, results)
 
-**Configuration**:
-- **Endpoint override**: Planned for M1 milestone (not yet implemented)
-- **Auto-detection**: Default behavior (scrapes from `/metrics` endpoint)
-- **Service discovery**: Uses standard Kubernetes service discovery
-- **Scraping**: Configured via Prometheus ServiceMonitor or annotations (`prometheus.io/scrape: "true"`, `prometheus.io/port: "8080"`)
+**Inbound scrape configuration** (cluster / Prometheus Operator side):
+- **Service discovery**: Standard Kubernetes service discovery
+- **Scraping**: Configured via Prometheus ServiceMonitor / PodMonitor or annotations (`prometheus.io/scrape: "true"`, `prometheus.io/port: "8080"`)
+- kube9-operator does **not** require owning a ServiceMonitor for its own `/metrics` scrape to function
 
 **Health Server**:
 - Runs on port 8080 (configurable)
 - Provides `/healthz` (liveness), `/readyz` (readiness), and `/metrics` endpoints
 - Started early during operator initialization for probe availability
+
+### Role B: Optional outbound client (performance-metrics collector)
+
+**Scope boundary**: The performance-metrics collector may call an **in-cluster Prometheus** HTTP API (and/or scrape selected in-cluster targets) to build a **bounded aggregate snapshot** for SQLite `collections`. This path is **optional** and **additive** to Role A. The kube9-operator chart does **not** install Prometheus or Prometheus Operator. Absence or unreachability must not block other collectors, readiness, or serve startup.
+
+**Opt-in posture** (align with Trivy optional outbound):
+- No performance-metrics pull until an in-cluster Prometheus endpoint is configured (or explicitly enabled via chart/env).
+- Do **not** silently auto-query arbitrary discovered scrapers without configuration.
+- Default install stays zero-ingress: cluster-internal egress only when configured.
+- **Non-goals**: metrics-server / Kubernetes Metrics API fallback; multi-cluster federation; phone-home or upload of collections/metrics to kube9-api; replacing Prometheus Operator as a metrics stack.
+
+**Behavior**:
+- **Detection / readiness of the integration**: When configured, the operator may probe the configured Prometheus endpoint (timeouts and periodic refresh are implementation-defined, Trivy/Argo CD-adjacent). Exact Helm/env key names and whether a bounded `status.prometheus` (or equivalent) block is published are open implementation decisions below.
+- **Collection**: On CollectionScheduler ticks for the performance-metrics type, fetch a bounded utilization/ratio rollup snapshot. Persist as an append-only SQLite `collections` row when successful (see `.ai/data/`).
+- **Resilience**: Unreachable, auth-failed, timed-out, or empty Prometheus responses degrade **this collection type only** (log + metric + retry next interval). Operator global `health` does not become `unhealthy` solely because Prometheus is missing. Exact tick classification (failed vs skipped vs success-with-unavailable) is coordinated with runtime/data/error_handling.
+
+**Auth family** (shape):
+- Stay inside existing optional in-cluster HTTP patterns (base URL, timeout, TLS verify / insecure).
+- Prefer **not** sending the operator Kubernetes ServiceAccount token to Prometheus by default.
+- Dedicated optional credentials only when a platform admin configures them (Secret mount pattern may follow Argo CD / chart precedents). Exact schemes and defaults are open implementation decisions below.
+
+**Consumption**: Snapshots feed SQLite `collections`, `query collections`, status `collectionStats` participation, and observability `type` labels. kube9-vscode / kube9-desktop are progressive-enhancement consumers later; this initiative is operator-producer only.
+
+### Open implementation decisions (Prometheus outbound)
+
+- Discovery / URL keys: exact Helm values and env names for base URL, enable flag, namespace/service defaults, timeouts; whether any presence probe populates a bounded `status.prometheus` (or equivalent) analogous to `status.trivy`.
+- Call shape: PromQL HTTP API vs direct scrape of selected targets (or both); requirements-level query set / series allowlist; body/size bounds; retries.
+- Auth knobs: none vs bearer vs basic (and Secret mount if any); TLS verify / insecure default; confirm SA token is never used as an implicit Prometheus credential.
+- Degrade signals: failure codes for unreachable / auth failed / timeout / empty result, and how they surface in collectionStats / CLI without changing global health semantics beyond existing collector failure practice.
+- Registration gate consistency with runtime: Trivy-style opt-in until configured (integration default). Exact always-register-with-skip vs gated-register wiring must match `.ai/runtime/` after Phase D open-impl lock.
 
 ## In-cluster clients (kube9-vscode and kube9-desktop)
 
@@ -131,6 +166,7 @@ Exposed in ConfigMap `kube9-operator-status` under `status.argocd`:
    - Executes CLI commands via `kubectl exec` for:
      - Event history (`query events list`): vscode, Desktop historical context, and Desktop AI agent Tier 2
      - Assessment results (`query assessments summary`, `query assessments history`): same consumer set for history; agent wraps history for debugging turns
+     - Collections (`query collections list|get`): operator-owned; additive types include performance-metrics and security-posture. vscode/desktop consumer UX is progressive enhancement (not same-milestone)
      - Detailed status (`query status`)
    - **Non-goal**: No operator log query surface for these clients. Live logs stay on the Kubernetes API path in the client (Desktop Tier 1).
 

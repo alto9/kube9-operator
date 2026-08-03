@@ -16,9 +16,10 @@ The kube9-operator binary supports multiple execution modes via Commander.js CLI
   - Starts ArgoCD detection manager
   - Starts status writer (periodic ConfigMap updates)
   - Initializes collection scheduler
-  - Registers collectors (cluster metadata, resource inventory, configuration patterns)
+  - Registers collectors (cluster metadata, resource inventory, configuration patterns; security posture always-on; performance metrics when Prometheus client config is present per recommended gate; plus existing optional scheduler tasks)
   - Registers signal handlers (SIGTERM, SIGINT)
   - Runs indefinitely until shutdown signal
+  - Optional Prometheus outbound for performance metrics never gates readiness
 - **Use Case**: Primary operator deployment mode
 
 ### query (CLI Mode)
@@ -28,6 +29,7 @@ The kube9-operator binary supports multiple execution modes via Commander.js CLI
   - `query status` - Operator status and health from the status ConfigMap
   - `query events list` - List events with filters (type, severity, since)
   - `query events get <id>` - Get specific event by ID
+  - `query collections list|get` - Stored collection snapshots (additive types include performance metrics and security posture when present)
 - **Behavior**:
   - Reads from SQLite database
   - Outputs JSON/YAML/table format
@@ -126,8 +128,21 @@ The kube9-operator binary supports multiple execution modes via Commander.js CLI
      - Minimum: 3600s (1h)
      - Random offset: 0-1 hour
      - Collector: `ResourceConfigurationPatternsCollector`
+
+  4. **Performance Metrics Collection**
+     - Interval: ~15m class (exact default/min/offset in configuration Open implementation decisions)
+     - Collector: performance metrics collector (optional in-cluster Prometheus HTTP client)
+     - **Recommended registration:** Config-gated until Prometheus base URL configured; when registered, tick degrades on unreachable Prometheus without stopping the scheduler or failing ready
+     - Storage: existing SQLite `collections` path; no CRDs; no phone-home
+
+  5. **Security Posture Collection**
+     - Interval: ~24h class (exact default/min/offset in configuration Open implementation decisions)
+     - Collector: security posture collector (Kubernetes API aggregates only)
+     - **Registration:** Always register (core-collector pattern); independent of Prometheus and Trivy
+     - Storage: existing SQLite `collections` path; no CRDs; no phone-home
 - **Randomization**: Random offsets prevent thundering herd when multiple operators run
-- **Error Handling**: Collection failures are logged and metrics recorded, but don't stop scheduler
+- **Error Handling**: Collection failures are logged and metrics recorded, but don't stop scheduler. Prometheus miss for performance is collection/integration degrade for that type only; operator `health: degraded` remains reserved/narrow and is not flipped solely for optional Prometheus absence.
+- **Process model**: Single process; no worker threads or child processes for these collectors
 
 ### Kubernetes AI Conformance Scheduler
 - **Purpose**: Periodically evaluate bundled Kubernetes AI Conformance checklist requirements
@@ -193,4 +208,10 @@ The kube9-operator binary supports multiple execution modes via Commander.js CLI
 - **Memory**: 1Gi request/limit (Guaranteed QoS)
 - **CPU**: 500m request/limit
 - **Storage**: 5Gi PersistentVolume (when persistence enabled)
-- **Network**: HTTP health server (port 8080), Kubernetes API client
+- **Network**: HTTP health server (port 8080), Kubernetes API client, optional cluster-internal egress to Prometheus when performance metrics client is configured
+
+## Open implementation decisions
+
+- **Registration policy lock:** Confirm recommended config-gated performance registration vs always-register-with-degrade with integration contracts; security posture stays always-register. See configuration.md Open implementation decisions for the recommendation rationale.
+- **Degrade tick → stats/metrics:** How a Prometheus miss maps to `collectionStats` counters and `kube9_operator_collection_*` labels (`failed` vs skipped vs success-with-unavailable) is coordinated with business_logic and data; execution model only requires that the scheduler keeps running and ready stays up.
+- **Query mode process boundary unchanged:** `query collections` for the new types remains a separate CLI process via `kubectl exec`, same as today. No in-serve query API.

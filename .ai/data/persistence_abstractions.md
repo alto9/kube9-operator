@@ -4,7 +4,7 @@
 
 **Dual storage**:
 - **ConfigMap**: Status only. Simple, cacheable, backward compatible.
-- **SQLite**: Events, assessments, ArgoCD data (M9), and Kubernetes AI Conformance readiness runs (M10). Rich queries via CLI.
+- **SQLite**: Events, assessments, collections (five `CollectionPayload` types, no CRDs), ArgoCD data (M9), and Kubernetes AI Conformance readiness runs (M10). Rich queries via CLI.
 
 ## Kubernetes AI Conformance Persistence
 
@@ -54,7 +54,20 @@ When persistence is disabled (`events.persistence.enabled = false`), uses `empty
 
 ### Durable history for agent / Desktop consumers
 
-Queryable event and assessment history for Desktop Tier 2 (and similar agents) assumes chart-default PVC-backed SQLite at `/data/kube9.db`. With `emptyDir` (persistence disabled) or a missing/unhealthy operator, treat history as degraded or absent: empty results are expected, not a store failure to invent. Desktop does not own a peer durable ledger of operator rows. Retention semantics for still-stored rows are in [consistency.md](consistency.md): events are severity-split time-pruned; **assessments and `assessment_history` have no time-based TTL** (cascade on parent delete only). Operator SQLite does not store pod/workload logs.
+Queryable event, assessment, and collection history for Desktop Tier 2 (and similar agents) assumes chart-default PVC-backed SQLite at `/data/kube9.db`. With `emptyDir` (persistence disabled) or a missing/unhealthy operator, treat history as degraded or absent: empty results are expected, not a store failure to invent. Desktop does not own a peer durable ledger of operator rows. Retention semantics for still-stored rows are in [consistency.md](consistency.md): events are severity-split time-pruned; **assessments**, **`assessment_history`**, and **`collections`** have no time-based TTL and collections have no count-based cap (explicit remove / operational cleanup only). Operator SQLite does not store pod/workload logs.
+
+### Collections persistence boundary
+
+- **Store:** Existing SQLite `collections` table via `CollectionRepository` (append-only inserts). No CRDs, no phone-home / kube9-api sync, no second persistence engine.
+- **Queryable truth:** `query collections list|get` and status `collectionsStoredCount` reflect durable SQLite rows.
+- **Types:** `cluster-metadata`, `resource-inventory`, `resource-configuration-patterns`, `performance-metrics`, `security-posture`.
+- **Producer ownership:** Operator owns normative write shapes. Peer Desktop foreshadows are non-normative.
+
+## Open implementation decisions
+
+- **Single durable write path:** Wire collectors through `CollectionRepository.insertCollection` so CLI and `collectionsStoredCount` match SQLite. Decide fate of in-memory `LocalStorage` (cache vs removed vs transitional). See [data_model.md](data_model.md).
+- **Degrade persistence:** Whether Prometheus-unavailable performance ticks omit rows, persist unavailable success payloads, or fail without a row. Coordinate with runtime / integration.
+- **Optional future prune/cap:** Not in contract now; if introduced later, align Helm/env, `RetentionCleanup` (or peer service), and consumer prose via `/refine-issue`.
 
 ## Single Binary, Dual Modes
 

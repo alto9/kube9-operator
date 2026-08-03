@@ -96,11 +96,13 @@ All metrics are exposed at `/metrics` endpoint and follow Prometheus naming conv
 
 ### Collection Metrics
 
+Collection metrics use a bounded `type` label family shared with collection payload / CLI type ids (data + interface own the strings; operations documents Prometheus alignment). Existing type strings stay stable. Additive types for the finished collector set are `performance-metrics` and `security-posture` (exact lock with data/runtime if candidates change before implementation).
+
 #### `kube9_operator_collection_total`
 - **Type**: Counter
 - **Description**: Total number of collection attempts by type and status
 - **Labels**:
-  - `type`: Collection type (e.g., "cluster-metadata", "resource-inventory", "resource-configuration-patterns")
+  - `type`: Collection type (e.g., "cluster-metadata", "resource-inventory", "resource-configuration-patterns", "performance-metrics", "security-posture")
   - `status`: Collection status ("success" or "failed")
 
 #### `kube9_operator_collection_duration_seconds`
@@ -115,6 +117,12 @@ All metrics are exposed at `/metrics` endpoint and follow Prometheus naming conv
 - **Description**: Unix timestamp of last successful collection by type
 - **Labels**:
   - `type`: Collection type
+
+#### Status ConfigMap `collectionStats`
+
+Status ConfigMap `collectionStats` remains an **aggregate** counter set (`totalSuccessCount`, `totalFailureCount`, `collectionsStoredCount`, `lastSuccessTime`). New collectors participate in those totals without renaming or removing required aggregate fields. Optional per-type progressive enhancement is allowed only if peers that read aggregates stay compatible; do not replace the aggregate shape with a closed per-type enum.
+
+Prometheus-absent or unreachable ticks for performance metrics must not fail scrapes of the operator `/metrics` endpoint and must not mark the Deployment unready. Mapping of those ticks onto the `status` label (`success` / `failed` / skip-without-increment) is coordinated with runtime degrade semantics (open decision below).
 
 ### Assessment metrics
 
@@ -258,3 +266,8 @@ Agent or Desktop wrapping of `query events list` / `query assessments history` d
 ### Open implementation decisions
 
 - **Alert thresholds under query load:** Exact alert thresholds on `kube9_operator_events_dropped_total` / queue depth when clients issue more frequent history queries remain refine-issue backlog, not a packaging or deployment-band change.
+- **Canonical collection `type` label strings:** Confirm Prometheus `type` values match payload / CLI ids (`performance-metrics`, `security-posture` candidates). Do not rename or remove existing type strings; keep cardinality bounded to the known collection-type set.
+- **Prometheus-absent tick → `status` label:** How absent/unreachable Prometheus maps to `kube9_operator_collection_total` `status` (`success` / `failed` / skip-without-increment) so existing dashboards that filter known types keep working; coordinate with runtime degrade classification.
+- **`collectionStats` progressive enhancement:** Whether status ConfigMap stays aggregate-only for this initiative, or gains optional per-type fields under progressive enhancement without breaking required aggregate fields.
+- **Histogram buckets for ~15m performance ticks:** Confirm shared collection duration buckets remain adequate; any bucket tweak is refine-issue backlog, not a product packaging change.
+- **Collection-series alert thresholds:** Exact alert thresholds on the new type labels stay `/refine-issue` backlog like other collection metrics.

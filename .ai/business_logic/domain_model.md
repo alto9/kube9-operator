@@ -83,10 +83,21 @@ The evaluator must prefer `not-evaluated` or `needs-evidence` over inference whe
    - Limits/requests, replica counts, image pull policies, security contexts, probes, volume types, service types
    - Collector: `ResourceConfigurationPatternsCollector` (`src/collection/collectors/resource-configuration-patterns.ts`)
 
-4. Performance metrics (future, 15min)
-5. Security posture (future, 24h)
+4. **Performance metrics** (15m default, enforced minimum)
+   - Bounded aggregate utilization/ratio rollups from optional in-cluster Prometheus (outbound scrape/query)
+   - Graceful degrade when Prometheus is absent or unreachable; no metrics-server / Kubernetes metrics API fallback
+   - Distinct from operator `/metrics` exposition (inbound scrape of the operator itself)
+   - Collector: Performance metrics collector on `CollectionScheduler` (SQLite `collections`; existing collections query CLI)
 
-**Implementation**: Intervals configured via Helm values (`charts/kube9-operator/values.yaml`) and enforced with minimums. Collections scheduled with random offsets (0-1 hour) to distribute load. Default intervals: 86400s (24h), 21600s (6h), 43200s (12h).
+5. **Security posture** (24h default, enforced minimum)
+   - Cluster API aggregates only: privileged/hostPath/hostNetwork-style counts, NetworkPolicy coverage, and basic NSA/CIS-oriented rollups from Kubernetes objects
+   - Distinct from resource-configuration-patterns (including its security-context-style pattern counts) and from Trivy image/CVE scanning
+   - Non-goals for this category: Trivy CVE duplication, RBAC risk rollups, broader CIS/NSA families beyond the basic rollups above
+   - Collector: Security posture collector on `CollectionScheduler` (SQLite `collections`; existing collections query CLI)
+
+**Scheduler and storage**: Intervals configured via Helm values and enforced with minimums. Collections scheduled with random offsets (0-1 hour) matching existing collectors. Persistence stays on the SQLite `collections` path; no CRDs for these payloads; no phone-home / registration / kube9-api sync. Default intervals for the five categories: 86400s (24h metadata), 21600s (6h inventory), 43200s (12h config patterns), ~900s (15m performance), 86400s (24h security posture). Exact second values and minima for the two newer collectors are listed under Open implementation decisions.
+
+**Milestone consumer scope**: Operator-owned schedule, status `collectionStats`, and collections query are the user-visible outcomes for these collectors. vscode and Desktop remain progressive-enhancement co-consumers later; this surface does not add presence modes or AssessmentRunState/CheckStatus values.
 
 ## Queryable history for agent and client consumers
 
@@ -98,6 +109,7 @@ Paid Desktop products and vscode extensions may **co-consume** the same operator
 |---------|----------------------|-------|
 | Events | Severity-split defaults: **7** days for info/warning, **30** days for error/critical | Honest advertised window for agent/evidence outcomes that cite Operator history. Knobs and cleanup schedule live in data/runtime contracts. |
 | Assessments history | **No** time-based retention SLA in this product surface | **Posture / historical check signal** for agent and vscode consumers (not a live incident log stream). Rows persist until explicit remove or cascade delete of the parent assessment. Consumers may rely only on whatever is still stored. Empty or partial assessment history is a normal gap. |
+| Collections | **No** time-based retention SLA (assessments-class) | Snapshot rows for all collection categories, including performance metrics and security posture, persist until explicit remove or operational cleanup. No count-based cap. Consumers may rely only on whatever is still stored. Empty collections query results are a normal gap. |
 
 ### Non-goals (agent-consumer path)
 
@@ -108,3 +120,9 @@ Paid Desktop products and vscode extensions may **co-consume** the same operator
 ### Consumer documentation
 
 User-facing operator docs (`charts/kube9-operator/README.md`) list **kube9-vscode** and **kube9-desktop** (including Pro AI agent Tier 2 operator query tools) as first-class co-consumers on the ConfigMap read + `kubectl exec` query path. Integration contracts own CLI semantics; README owns operator-facing consumer naming.
+
+## Open implementation decisions
+
+- **Collection type tokens:** Exact kebab-case type strings for performance metrics and security posture (family candidates such as `performance-metrics` and `security-posture`) are locked with data and interface contracts; business logic treats them as additive members of the existing collections type set.
+- **Interval seconds and minima:** Exact default seconds and enforced minima for the ~15m performance and ~24h security-posture collectors are locked with runtime and operations (Helm/env keys); product defaults remain ~15m and ~24h with random offset matching peer collectors.
+- **Performance collector registration gate:** Whether the performance collector always registers on `CollectionScheduler` or registers only when a Prometheus endpoint is configured/enabled is locked with runtime and integration; either choice must preserve graceful degrade when Prometheus is absent or unreachable and must not block ready or other collectors.

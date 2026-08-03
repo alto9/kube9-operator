@@ -4,7 +4,7 @@ Core domain behavior and rules for the kube9-operator.
 
 - **Presence modes**: basic (no operator), operated (installed)
 - **Assessment**: WAF pillars, check lifecycle, run states
-- **Data collection**: Cluster metadata, resource inventory, config patterns (M8)
+- **Data collection**: Cluster metadata, resource inventory, config patterns, performance metrics, security posture
 - **Queryable history consumers**: Desktop/agent and vscode co-consume events list and assessments history; operator owns history semantics and retention outcomes (events 7/30 severity-split; assessments best-effort stored)
 
 ## Child Docs

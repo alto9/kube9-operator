@@ -80,6 +80,16 @@ Desktop Pro debugging (and other agent tooling) that reads operator event histor
 - Agent and Desktop consumers of `query assessments history` (and related assessment query paths) may rely **only on whatever is still stored**. Empty or partial assessment history is a normal gap, not a retention SLA.
 - This epic does **not** introduce an assessment TTL or a product retention window for assessment rows.
 
+### Collections retention (no time-based TTL, no count-based cap)
+
+`collections` rows are **not** time-pruned by `RetentionCleanup` and have **no** count-based eviction in this product surface:
+
+- Rows persist until explicit remove or operational cleanup (same class as assessments).
+- Append-only collectors (including ~15m `performance-metrics`) may grow the table; growth is an operational concern, not a product TTL or max-row SLA.
+- Agent and Desktop consumers of `query collections list|get` may rely **only on whatever is still stored**. Empty or partial collection history is a normal gap, not a retention window.
+- This initiative does **not** introduce per-type or global TTL windows, nor a durable max-row cap analogous to the historical in-memory `LocalStorage` buffer.
+- Query JSON does not expose retention metadata (same stance as events/assessments).
+
 ### Log storage (out of scope)
 
 The operator SQLite model does **not** store pod or workload container logs. There is no log table, log retention policy, or pruned-log recovery path in this data plane. Log evidence for debugging agents comes from live Kubernetes API reads (Desktop Tier 1), not from operator history.
@@ -124,12 +134,17 @@ Retention days can be configured via:
 - **Privacy by default**: Raw data never leaves cluster
 - **ACID compliance**: SQLite provides transaction guarantees
 - **Referential integrity**: Foreign keys ensure data consistency
-- **Automatic cleanup**: Event retention policies prevent unbounded growth of the events table; assessments rely on explicit remove / cascade, not time prune
+- **Automatic cleanup**: Event retention policies prevent unbounded growth of the events table; assessments and collections rely on explicit remove / cascade (or operational cleanup), not time prune or count-based eviction
 
 ## Open implementation decisions
 
 - **Assessment prune policy (if ever introduced):** days-by-severity or single window; whether prune targets `assessments` only (cascade history) vs both tables; cleanup schedule alignment with `RetentionCleanup`; Helm/env knobs and migration of consumer prose. Not product-committed now. Resolve via `/refine-issue` if a future epic adds TTL.
+- **Collections prune / cap policy (if ever introduced):** time window (global or per-type), count-based eviction, Helm/env knobs, indexes used for delete, and whether `collectionsStoredCount` reflects post-prune totals. Not product-committed now; current contract is no TTL and no count cap. Resolve via `/refine-issue` if a future epic adds either.
 
 ### Resolved (event retention consumer bounds)
 
 Event and assessment query JSON **does not** expose effective retention windows, configured day counts, or query “as of” prune bounds. Agent and Desktop consumers filter with `--since` / `--until` (ISO-8601 on the operator CLI) against **still-stored** rows after `RetentionCleanup`. Helm/env overrides change the effective store window but are not echoed as result metadata in this product surface. A future additive operator epic may introduce optional metadata; that is not committed here.
+
+### Resolved (collections retention)
+
+Collections use assessments-class retention: **no time-based TTL** and **no count-based cap** in this initiative. Consumers read still-stored rows only. Retention metadata is not added to collections list/get JSON.

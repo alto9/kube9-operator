@@ -60,3 +60,35 @@ The `status` key contains a JSON string with the following `OperatorStatus` stru
 - Client copy must not claim official CNCF conformance or certification from this status payload alone.
 - `not-evaluated` and `needs-evidence` rows are first-class outcomes. They should be shown as unresolved readiness evidence, not as passing or failing cluster checks.
 - Rows should group by checklist category and distinguish MUST from SHOULD counts.
+
+## Collections Query Presentation
+
+Operator CLI only this milestone (no vscode/desktop consumer UX contracts). Surface: `kube9-operator query collections list|get` via `kubectl exec`.
+
+### List
+
+- **Envelope (json/yaml):** `{ collections: [...summaries], pagination: { total, limit, offset, returned } }`.
+- **Table / compact columns:** `COLLECTION_ID`, `CLUSTER_ID`, `TYPE`, `COLLECTED_AT` (unchanged for the two new types).
+- **Empty success:** Zero matching rows (including `--type` for a new collector with no snapshots yet) is a normal success outcome. Table/compact print an empty-results line (today: `No results found`); json/yaml return an empty `collections` array with pagination totals of zero. Do not present empty list as unhealthy or as a transport failure.
+- **TYPE values:** Additive kebab-case strings for performance metrics and security posture participate in the same `TYPE` column as the three shipped types. No per-type list layouts.
+
+### Get
+
+- Returns the full `CollectionPayload` for `<collectionId>`.
+- Formats use the shared formatter: json/yaml for structured consumers; table/compact as generic key-value rendering of the payload object.
+- No type-specific get table layouts for performance metrics or security posture in v1.
+
+### Degrade and errors
+
+- Prometheus absence / performance degrade is not a distinct CLI presentation mode. Operators see missing or failed persisted rows (or empty type filters), not a special “Prometheus unavailable” list/get cue, unless a later data contract stores an explicit payload marker that json/yaml already surface.
+- Not-found get and validation/runtime failures keep the existing JSON-on-stderr pattern and non-zero exit; they are distinct from empty successful list.
+
+### Status ConfigMap
+
+- New collection types participate in aggregate `collectionStats` counters only. No new status fields or per-type presentation schema for this milestone. Peer extensions continue progressive enhancement on the existing status shape.
+
+## Open implementation decisions
+
+- **TYPE column truncation:** Confirm whether current table/compact TYPE truncation (24 compact / 36 table) remains sufficient for the final type tokens, or widen only the TYPE column.
+- **Get formatting:** Keep generic `formatOutput` for new payload bodies in v1 (no type-specific table columns). Any human-oriented summary view is deferred.
+- **Empty-list copy:** Keep existing empty-results language consistent with events/assessments; do not invent a type-specific “no collections of this type yet” string unless product copy requires it at implement time.

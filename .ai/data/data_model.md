@@ -94,11 +94,17 @@ Nested under `OperatorStatus.aiConformance`. This is the client-facing readiness
 
 ## Collection Models (M8)
 
-**Cluster Metadata** (24h interval): Kubernetes version, cluster identifier, node count, provider, region/zone.
+Five scheduled collectors persist append-only snapshot rows in SQLite `collections` as `CollectionPayload` documents (discriminated on `type`). No CRDs. Operator owns producer shapes; peer Desktop foreshadows (flat `metrics` / `security` sketches, CRD notes) are non-normative.
 
-**Resource Inventory** (6h interval): Namespace counts (hashed IDs), pod/deployment/statefulset/replicaset/service counts.
+**Cluster Metadata** (`cluster-metadata`, ~24h): Kubernetes version, cluster identifier, node count, provider, region/zone.
 
-**Resource Configuration Patterns** (12h interval): Limits/requests, replica counts, image pull policies, security contexts, probes, volume types, service types.
+**Resource Inventory** (`resource-inventory`, ~6h): Namespace counts (hashed IDs), pod/deployment/statefulset/replicaset/service counts.
+
+**Resource Configuration Patterns** (`resource-configuration-patterns`, ~12h): Limits/requests, replica counts, image pull policies, security contexts, probes, volume types, service types.
+
+**Performance Metrics** (`performance-metrics`, ~15m): Bounded aggregate snapshot from optional in-cluster Prometheus (utilization / ratio style rollups). Not a raw time-series warehouse. When Prometheus is absent or unreachable, the collector degrades gracefully and does not invent metrics-server / Kubernetes metrics API data. Field-level `data` keys remain open implementation decisions below.
+
+**Security Posture** (`security-posture`, ~24h): Bounded cluster-API aggregate counts and coverage rollups (privileged / hostPath / hostNetwork-style counts, NetworkPolicy coverage, basic NSA/CIS-oriented rollups from Kubernetes objects). Distinct from resource-configuration-patterns security-context counts and from Trivy image scanning (no CVE bodies). RBAC risk rollups and broader CIS/NSA families are out of scope for this payload. Field-level `data` keys remain open implementation decisions below.
 
 ## SQLite Tables (at /data/kube9.db)
 
@@ -239,19 +245,28 @@ Normalized vulnerability findings linked to a scan (and optionally to originatin
 
 ### collections (M8)
 
-Stores serialized periodic collection payloads (`ClusterMetadata`, `ResourceInventory`, `ResourceConfigurationPatternsData`) wrapped as `CollectionPayload` in `src/collection/types.ts`. Persisted JSON must match `CollectionPayload` at write time.
+Stores serialized periodic collection payloads wrapped as `CollectionPayload` (`version`, `type`, `data`, `sanitization` plus identity/timestamp fields). Persisted JSON must match `CollectionPayload` at write time. Row model is **append-only**: each successful tick inserts a new `collection_id`, not a latest-only upsert.
+
+**Retention (agent / Desktop consumers):** No time-based TTL (same class as assessments). No count-based cap. Rows persist until explicit remove or operational cleanup. Consumers rely only on whatever is still stored. See [consistency.md](consistency.md).
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | collection_id | TEXT | PRIMARY KEY | Matches payload `collectionId` (e.g. `coll_*`) |
 | cluster_id | TEXT | NOT NULL | Cluster identifier `cls_*` |
-| type | TEXT | NOT NULL | `cluster-metadata` \| `resource-inventory` \| `resource-configuration-patterns` |
+| type | TEXT | NOT NULL | `cluster-metadata` \| `resource-inventory` \| `resource-configuration-patterns` \| `performance-metrics` \| `security-posture` |
 | collected_at | TEXT | NOT NULL | ISO 8601 (payload `timestamp`) |
 | payload_json | TEXT | NOT NULL | Full `CollectionPayload` document as JSON |
 
-**Indexes (suggested):** `cluster_id`, `type`, `collected_at` (DESC).
+**Indexes:** `idx_collections_cluster_id`, `idx_collections_type`, `idx_collections_collected_at` (DESC). Queried via `CollectionRepository` / `query collections` CLI.
 
-**Status:** Target schema and CLI read path captured in [issue #53](https://github.com/alto9/kube9-operator/issues/53); implement before or with collector tickets (#50–#54, #51).
+**Type set:** Closed in application validation (Zod / TypeScript literals). SQLite `type` remains free TEXT (no DB CHECK). Additive kebab-case tokens only; do not rename existing type strings.
+
+**Payload classes:**
+- `performance-metrics`: bounded Prometheus aggregate snapshot (optional outbound source)
+- `security-posture`: bounded cluster-API aggregate / coverage rollups (no Trivy CVE bodies, no RBAC risk rollups in this payload)
+- Existing three types keep their current envelope roles unchanged
+
+**Producer ownership:** Operator defines normative `CollectionPayload` shapes. Desktop foreshadowed flat `metrics` / `security` documents and CRD storage notes are non-normative for these rows.
 
 ### argocd_apps (M9)
 
@@ -319,3 +334,29 @@ Stores per-requirement results for each conformance run.
 | evaluated_at | TEXT | NOT NULL | ISO 8601 timestamp for this result |
 
 **Indexes:** `idx_ai_conformance_requirement_results_run_id`, `idx_ai_conformance_requirement_results_category`, `idx_ai_conformance_requirement_results_status`, and unique `(run_id, requirement_id)`.
+
+## Open implementation decisions
+
+### Collection payload field catalogs (`performance-metrics`, `security-posture`)
+
+- Exact `data` object keys and nested shapes for `performance-metrics` (which utilization / ratio rollups; whether an explicit `prometheusAvailable` or source-status marker is required; max payload size / key count bounds).
+- Exact `data` object keys for `security-posture` (privileged / hostPath / hostNetwork-style counters; NetworkPolicy coverage representation; which basic NSA/CIS rollup keys). Must exclude Trivy CVE bodies and deferred RBAC risk fields.
+- Sanitization wrapping details for hashed / namespaced aggregates, aligned with peer collectors.
+- Resolve via `/refine-issue` into full field tables under Collection Models / serialization once implementation picks concrete keys.
+
+### Zod / TypeScript type literals
+
+- Extend `CollectionPayload` discriminated union, `CollectionRowType`, CLI `--type` enum, and `CollectionPayloadSchema` with `performance-metrics` and `security-posture`.
+- Write-time rejection rules when `type` and `data` shape mismatch.
+- Keep SQLite `type` as unconstrained TEXT; closed set stays in app validation only.
+
+### Degrade-row persistence (Prometheus unavailable)
+
+- Whether a Prometheus-absent/unreachable tick **omits** a `collections` row, stores a **success** payload with empty/unavailable metrics (and optional source-status marker), or counts as a **collection failure** with no durable row.
+- Coordinate with runtime / integration / error_handling for tick classification; data owns which documents are valid to persist.
+- Security posture (cluster API only) is not gated on Prometheus; degrade semantics above apply to performance-metrics only unless a shared pattern is chosen.
+
+### Durable write path vs in-memory
+
+- Wire both new collectors (and ideally existing ones) through durable `CollectionRepository.insertCollection` so `query collections` and status `collectionsStoredCount` reflect SQLite truth.
+- Document whether in-memory `LocalStorage` (historical max-100 buffer) remains a cache, is removed from the write path, or is transitional only. Single durable write path is the product contract for queryable history.

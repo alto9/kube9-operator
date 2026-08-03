@@ -6,30 +6,45 @@
 
 **Resource**: `ClusterRole` (created when `rbac.create: true` in Helm values)
 
-**Permissions Required**:
+**Permissions Required** (read-only cluster access; chart `ClusterRole` is authoritative when `rbac.create: true`):
 
 **Cluster Metadata**:
 - `get` on non-resource URL `/version` (cluster version)
 
 **Core Resources** (read-only):
 - `get`, `list`, `watch` on:
-  - `nodes` - For cluster metadata collection
-  - `namespaces` - For resource inventory and ArgoCD detection
-  - `pods` - For resource inventory
-  - `events` - For Kubernetes event watching and recording
-  - `services` - For resource inventory
+  - `nodes` - Cluster metadata collection
+  - `namespaces` - Resource inventory, ArgoCD detection, posture coverage denominators
+  - `pods` - Resource inventory and security-posture aggregates (privileged / hostPath / hostNetwork-style signals)
+  - `events` - Kubernetes event watching and recording
+  - `services` - Resource inventory
+  - `configmaps` - Cluster-scoped reads used by collectors/assessments (status ConfigMap writes remain Role-scoped)
+  - `resourcequotas`, `limitranges` - Assessment / governance signals
 
 **Apps Resources** (read-only):
 - `get`, `list`, `watch` on:
-  - `deployments` - For resource inventory and ArgoCD detection
-  - `replicasets` - For resource inventory
-  - `statefulsets` - For resource inventory
+  - `deployments`, `replicasets`, `statefulsets`, `daemonsets` - Inventory, ArgoCD detection, assessment
+
+**Networking / policy** (read-only):
+- `get`, `list`, `watch` on:
+  - `networkpolicies` (networking.k8s.io) - Security-posture NetworkPolicy coverage and related conformance/assessment checks
+  - `poddisruptionbudgets` (policy) - Assessment
+  - `horizontalpodautoscalers` (autoscaling) - Assessment
+  - `verticalpodautoscalers` (autoscaling.k8s.io) - Optional when CRD present
+
+**RBAC resources** (read-only; assessment analysis today):
+- `get`, `list` on `clusterroles`, `roles`, `clusterrolebindings`, `rolebindings` (rbac.authorization.k8s.io)
+- **Note:** Security-posture **v1** does **not** publish RBAC-risk rollups. These reads remain for assessment checks; posture v1 must not expand into RBAC-risk product scope via this initiative.
 
 **ArgoCD Detection**:
 - `get`, `list` on:
   - `customresourcedefinitions` (apiextensions.k8s.io) - To check for `applications.argoproj.io` CRD
   - `namespaces` - To verify ArgoCD namespace exists
   - `deployments` (apps) - To find ArgoCD server deployment
+
+**Security-posture collector**: Uses the same read-only Kubernetes API surface (pods, namespaces, networkpolicies, and related object fields already readable). No Secrets API, no `pods/exec`, no cluster-admin. Any additional API-group reads required for agreed NSA/CIS-oriented rollups are additive ClusterRole deltas coordinated with operations (open implementation decision below).
+
+**Prometheus outbound client**: Optional HTTP egress to a configured in-cluster Prometheus. Does **not** require new Kubernetes RBAC verbs for Prometheus itself. Credential mounts (if any) follow optional Secret patterns; do not imply SA token as Prometheus credential by default (see [external_systems.md](external_systems.md)).
 
 **Binding**: `ClusterRoleBinding` binds ServiceAccount to ClusterRole
 
@@ -113,8 +128,9 @@ rules:
 **Communication Patterns**:
 
 **Operator → In-Cluster Services** (outbound only):
-- Kubernetes API: Operator-initiated API calls
-- Prometheus: Metrics endpoint exposed, scraped by Prometheus (no ingress needed)
+- Kubernetes API: Operator-initiated API calls (includes security-posture aggregates; sole posture source)
+- Prometheus **exposition**: Operator `/metrics` exposed on the health server; scraped by in-cluster Prometheus / agents (no ingress needed). kube9 does not require owning the scraper.
+- Prometheus **outbound client** (optional, performance-metrics collector): Operator-initiated HTTP to a configured in-cluster Prometheus endpoint (query and/or scrape). Trivy-style opt-in; graceful degrade when absent/unreachable. No metrics-server / Metrics API path. No phone-home.
 - Argo CD: Detection uses the Kubernetes API (`src/argocd/detection.ts`). **M9** adds read-only HTTP to in-cluster `argocd-server` for Application list/status into SQLite. **M17** adds on-demand `GET /api/v1/applications/{name}/resource-tree` at CLI query time. All Argo CD HTTP is **zero ingress** (cluster-internal egress).
 - **M17 resource-tree auth:** Dedicated Argo CD API bearer only (`ARGOCD_API_BEARER_TOKEN` or `ARGOCD_API_TOKEN_FILE`). The resource-tree path **must not** fall back to the operator Kubernetes ServiceAccount token. Platform admin creates a Secret out-of-band and sets Helm `argocd.api.token.existingSecret` / `existingSecretKey` (default key `token`); the chart mounts the key at `/var/run/secrets/kube9/argocd-api-token` and sets `ARGOCD_API_TOKEN_FILE`. Unset `existingSecret` is default-off. Platform admin grants Argo CD RBAC `get` on Applications (resource-tree) for the token identity; the kube9-operator chart does not mutate Argo CD roles.
 
@@ -127,6 +143,7 @@ rules:
 **Outbound connections (operator core)**:
 - Kubernetes API (in-cluster or via kubeconfig)
 - Optional Trivy HTTP health/version probes when `TRIVY_SERVER_URL` / chart `trivy.serverUrl` is set
+- Optional Prometheus HTTP client when performance-metrics outbound is configured (base URL / enable knobs; see [external_systems.md](external_systems.md))
 - The operator does not register with or upload collections to `kube9-api`
 
 **Benefits**:
@@ -138,3 +155,6 @@ rules:
 ## Open implementation decisions
 
 - **Agent auth model**: Closed for this epic. Desktop AI agent Tier 2 uses the same Extension / Desktop User RBAC and kubectl-exec path; no new Role, ClusterRole, or token type.
+- **Security-posture RBAC delta vs live ClusterRole**: Chart already grants read on pods, namespaces, networkpolicies, and related assessment resources. Coordinate with operations any **additional** API-group/resource verbs required for agreed NSA/CIS-oriented rollups. Keep read-only; no Secrets, no pod exec, no cluster-admin. Document the final delta in Helm ClusterRole + this file together.
+- **Prometheus outbound auth knobs**: Exact none / bearer / basic / Secret-mount defaults and TLS verify vs insecure. Confirm operator SA token is never an implicit Prometheus credential. Align Secret mount patterns with chart precedents if dedicated credentials are supported.
+- **Degrade vs global health**: Prometheus miss and posture API list failures follow existing collector failure practice (log/metric/retry next interval). Do not widen `health: degraded` / `unhealthy` solely for optional Prometheus absence (coordinate wording with runtime/error_handling).

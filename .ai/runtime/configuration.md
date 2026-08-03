@@ -41,6 +41,31 @@
   - Minimum enforced: `3600` (1 hour)
   - Random offset range: 0-1 hour
 
+- **PERFORMANCE_METRICS_INTERVAL_SECONDS**: Performance metrics collection interval (Prometheus-backed)
+  - Default target: `900` (15 minutes); exact default/min/offset candidates under Open implementation decisions
+  - Enforced minimum and random offset required (same family as other `*_INTERVAL_SECONDS` collectors)
+  - Invalid or below-minimum values fail config load (match existing interval fail-fast), not silent clamp after ready
+
+- **SECURITY_POSTURE_INTERVAL_SECONDS**: Security posture collection interval (cluster API aggregates)
+  - Default target: `86400` (24 hours); exact default/min/offset candidates under Open implementation decisions
+  - Enforced minimum and random offset required
+  - Invalid or below-minimum values fail config load
+
+### Performance metrics / Prometheus outbound (optional)
+
+Optional **operator → in-cluster Prometheus** client used only by the performance metrics collector. Distinct from the operator’s own `/metrics` exposition on `HEALTH_PORT`. Same optional-outbound family as Trivy / Argo CD HTTP (not a new trust boundary and not a readiness gate).
+
+- **Registration (recommended default):** Register the performance collector on `CollectionScheduler` only when a Prometheus base URL (or equivalent enable+URL pair) is configured. When unset, do not schedule performance ticks and do not treat absence as config failure. See Open implementation decisions for exact env names and the alternate always-register path.
+- **When configured but unreachable:** Degrade that collection type on the tick only; do not fail `/readyz`, do not stop other collectors, and do not require metrics-server / Kubernetes metrics API fallback.
+- **Secrets vs config:** Endpoint, timeout, and TLS flags are configuration. Optional auth (if any) follows existing chart secret-mount precedents (Argo CD API token style). Prefer not sending the operator ServiceAccount token to Prometheus by default. Auth must not become a bootstrap readiness dependency.
+- Exact Prometheus env/Helm keys (URL, timeout, TLS, auth) are Open implementation decisions; Helm chart wiring for those keys is owned with operations (`deployment_environments.md` / chart values), with runtime as the env contract home.
+
+### Security posture collector
+
+- Always runnable from cluster API reads alone (no Prometheus, no Trivy dependency).
+- **Registration:** Always register on `CollectionScheduler` during serve bootstrap (core-collector pattern), unless an explicit enable flag is added for symmetry (Open implementation decisions; default remains always-on).
+- Uses `SECURITY_POSTURE_INTERVAL_SECONDS` and SQLite `collections` like peer collectors. No phone-home / kube9-api registration path.
+
 ### Kubernetes AI Conformance Environment Variables
 - **AI_CONFORMANCE_ENABLED**: Enable scheduled Kubernetes AI Conformance readiness evaluation
   - Default: `true` once the M10 feature is shipped
@@ -200,9 +225,12 @@ metrics:
     clusterMetadata: 86400                    # 24 hours (default), minimum 3600 (1h)
     resourceInventory: 21600                  # 6 hours (default), minimum 1800 (30m)
     resourceConfigurationPatterns: 43200     # 12 hours (default), minimum 3600 (1h)
+    performanceMetrics: 900                   # 15 minutes (target default); min/offset under Open implementation decisions
+    securityPosture: 86400                    # 24 hours (target default); min/offset under Open implementation decisions
 ```
 - Maps to `*_INTERVAL_SECONDS` environment variables
 - Operator enforces minimum intervals to prevent abuse
+- Performance metrics also need optional Prometheus client values (URL / timeout / TLS); exact keys under Open implementation decisions. Chart RBAC and ServiceMonitor ownership stay in operations; runtime only loads the env contract and must not treat Prometheus as required for ready.
 
 ### Kubernetes AI Conformance Configuration
 ```yaml
@@ -246,3 +274,17 @@ events:
   - Watching Kubernetes events
   - Updating status ConfigMap
   - Detecting ArgoCD installations
+  - Security posture cluster API aggregates (read-only)
+
+## Open implementation decisions
+
+- **Interval env / Helm keys:** Lock exact names. Recommended: `PERFORMANCE_METRICS_INTERVAL_SECONDS` ↔ `metrics.intervals.performanceMetrics`; `SECURITY_POSTURE_INTERVAL_SECONDS` ↔ `metrics.intervals.securityPosture`. Wire through `loadConfig()` and chart env like peer collectors.
+- **Numeric defaults, minima, offsets (candidates):**
+  - Performance: default `900` (15m), minimum `300` (5m), random offset `0–300` (0–5m). Shorter floor than inventory because the product default is already ~15m.
+  - Security posture: default `86400` (24h), minimum `3600` (1h), random offset `0–3600` (0–1h). Align with cluster-metadata long-interval peers.
+  - Config-load rejection for non-numeric / below-minimum values (fail-fast), matching existing `*_INTERVAL_SECONDS` behavior.
+- **Performance registration policy (recommended default):** **Config-gated registration** — register on `CollectionScheduler` only when an in-cluster Prometheus base URL is configured (optional explicit enable flag may AND with URL). Rationale: there is no useful performance tick without Prometheus (unlike workload-image-scan, which still collects image refs); matches integration’s Trivy-style “no pull until configured” and Argo CD API `collectionEnabled` family; avoids empty ~15m ticks and collectionStats noise when Prometheus was never intended. Alternate (not recommended): always-register and degrade/skip every tick when URL unset. Either choice must not invent a new readiness or secrets-before-traffic trust boundary.
+- **Enable flags:** Prefer URL-nonempty as the gate for performance (no separate `*_ENABLED` required in v1). Security posture: no enable flag (always-on) unless implementation adds one for chart symmetry (default on).
+- **Prometheus connection env / Helm keys (candidates):** `PROMETHEUS_BASE_URL` (or `PERFORMANCE_METRICS_PROMETHEUS_URL`), `PROMETHEUS_TIMEOUT_MS` (default class `30000`, minimum class `1000`), `PROMETHEUS_TLS_INSECURE` (default `false`). Optional auth only if needed: bearer env and/or token file + chart `existingSecret` mount patterned after Argo CD API token (do not default to SA token). Unset URL → soft miss (no register / no fail load). Invalid timeout or malformed URL when set → fail config load.
+- **Degrade tick semantics (runtime boundary):** When registered and Prometheus is missing/unreachable: log warn, do not throw out of the scheduler, retry next interval, do not flip `/readyz` or whole-operator `health` to unhealthy, and do not use reserved `health: degraded` for this miss. Exact tick classification in `collectionStats` / metrics (`failed` vs skipped vs success-with-unavailable) is locked with business_logic error_handling and data. When not registered (URL unset): no performance ticks at all.
+- **Ops vs runtime home:** Env semantics and load/validation live here. Helm value schema, RBAC for posture reads, and any ServiceMonitor for operator `/metrics` exposition stay in operations with a one-line pointer back to this doc for interval/Prometheus client env names.

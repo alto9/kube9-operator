@@ -91,8 +91,11 @@ Desktop and other clients may query retained events and assessments history via 
 - **Persistence disabled:** With `events.persistence.enabled = false` (`emptyDir`), history is ephemeral across pod restarts. Consumers treat that as operator-history degraded or absent, not as a separate environment tier.
 - **No log-capture ops:** Operations contracts do not add log retention, log PVC sizing, failure-log capture runbooks, or pruned-log recovery. That remains a separate epic.
 - **Assessment history:** No ops-owned time-based TTL or cleanup schedule for assessment rows. Storage growth under frequent assessments is a data-domain concern unless a later epic adds policy.
+- **Collections (append-only, no TTL):** SQLite `collections` has no time-based TTL or count-based cap in this product lane (same class as assessments). Finishing performance (~15m) and security-posture (~24h) collectors increases append volume on the chart-default PVC. That is an operational disk-growth concern for platform admins, not a new environment tier, retention SLA, or chart prune knob. No phone-home / kube9-api export path is introduced.
+- **No new delivery tier:** Performance Prometheus outbound and security-posture cluster-API reads stay on the existing Helm / GHCR / kind / minikube path. Zero-ingress default and optional-integration degrade posture are unchanged. Agent / Desktop remain read-only progressive-enhancement peers for this collector milestone.
 
 ### Open implementation decisions
 
 - **Local dogfood paths:** Whether minikube / kind checklists should call out an explicit operator-present vs operator-absent history query smoke step (Desktop owns acceptance scoring; operator side only needs confirmable query + chart defaults).
 - **emptyDir wording in install docs:** Exact operator install-doc phrasing that persistence-off means ephemeral history for agent/evidence consumers (packaging already documents the volume switch).
+- **Collector smoke in Helm Phase 5 / minikube:** Whether `test-helm-chart.sh` Phase 5 or deploy:minikube docs assert new interval env keys and (when Prometheus is absent) graceful performance-collector degrade without failing readiness; exact assertions stay refine-issue / harness work.

@@ -8,7 +8,7 @@
     "long_term_vision": {
       "strategic_goals": {
         "now": "Complete Well-Architected Framework validation across all 6 pillars (M2-M6); establish operator as standard for kube9 cluster integration; transparent security model; chart repository for easy installation (M7).",
-        "next": "Complete data collectors (cluster metadata, resource inventory, config patterns) per M8; ArgoCD Application sync and drift detection per M9; 1,000+ installations.",
+        "next": "Complete data collectors (cluster metadata, resource inventory, config patterns, performance metrics, security posture); ArgoCD Application sync and drift detection; 1,000+ installations.",
         "later": "Standard operator for Kubernetes observability; cross-cluster analytics; edge clusters and air-gapped environments; operator marketplace for extensibility."
       }
     },
@@ -20,6 +20,15 @@
       "Privacy & Compliance: RBAC-controlled access; no secrets or credentials collected; audit trail for operations."
     ],
     "market_strategy": {
+      "primary_competitor": {
+        "name": "Prometheus Operator",
+        "why_primary": "Purpose-built kube9 Well-Architected / cluster-insights operator vs general metrics collection; finishing performance and security-posture collectors deepens that wedge without becoming a generic metrics stack.",
+        "their_strengths": [
+          "Mature Prometheus-in-Kubernetes metrics collection and scraping ecosystem",
+          "Broad community adoption as the standard in-cluster Prometheus operator stack"
+        ],
+        "last_reviewed": "2026-08-02"
+      },
       "competitive_advantages": [
         "Zero Ingress Architecture: No ingress required—all communication is outbound to in-cluster services (Prometheus, ArgoCD, Kubernetes API).",
         "Operator status signals: Progressive enhancement in VS Code based on operator presence, health, and optional integrations.",
