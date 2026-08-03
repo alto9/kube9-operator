@@ -147,8 +147,9 @@ securityContext:
 
 ## Security posture collector (RBAC class)
 
-- Security posture v1 signals are cluster-API aggregates only (privileged / hostPath / hostNetwork-style counts, NetworkPolicy coverage, basic NSA/CIS-oriented rollups from Kubernetes objects). No Trivy overlap; no Secrets API; no pod exec; no cluster-admin.
-- Prefer deriving signals from already-granted pod/workload and NetworkPolicy reads. Chart grants already cover NetworkPolicy and broad workload reads used by assessments / ai-conformance; expand ClusterRole only for resources still missing for the agreed signal set.
+- Security posture v1 signals are cluster-API aggregates only (privileged / hostPath / hostNetwork-style counts, NetworkPolicy coverage, closed six-key `nsaCisRollups` from Kubernetes objects). No Trivy overlap; no Secrets API; no pod exec; no cluster-admin.
+- **v1 RBAC delta:** None. Locked rollups derive from already-granted reads on pods, apps workloads, namespaces, and networkpolicies in `charts/kube9-operator/templates/clusterrole.yaml`.
+- **NetworkPolicy purpose:** Same verbs serve AI conformance network-policy checks and security-posture coverage rollups. Chart template comment should name both purposes (packaging peer `#171`).
 - Deferred RBAC-risk rollups and broader CIS/NSA families must not expand ClusterRole in this initiative.
 
 ## Security Best Practices Summary
@@ -165,7 +166,8 @@ securityContext:
 
 ## Open implementation decisions
 
-- **RBAC delta vs live chart:** Diff agreed security-posture v1 reads against `charts/kube9-operator/templates/clusterrole.yaml`. Add only missing resources/verbs; keep read-only. Confirm privileged / hostPath / hostNetwork signals need no new API groups beyond current pod/workload grants.
-- **NetworkPolicy purpose comment:** Chart comment today cites ai-conformance; update template comment (and this doc) so NetworkPolicy reads also cover security-posture coverage rollups (same verbs).
-- **Additional API groups for basic NSA/CIS rollups:** If implementation needs resources not already listed (for example namespaces already granted, or other policy objects), list them explicitly here and in the ClusterRole before merge; do not silently widen to Secrets, pods/exec, or deferred RBAC-risk analysis.
-- **Prometheus credential mount:** Whether v1 ships URL/timeout/TLS only (no Secret mount) or includes an optional existingSecret path in the same release; coordinate with packaging and integration.
+- **Prometheus credential mount:** Whether v1 ships URL/timeout/TLS only (no Secret mount) or includes an optional existingSecret path in the same release; coordinate with packaging and integration / `#169` / `#171`.
+
+### Resolved (security-posture RBAC delta)
+
+For the locked v1 signal set (privilegedHost + networkPolicyCoverage + six `nsaCisRollups` keys), **no ClusterRole expansion** is required beyond the live chart grants listed above. Keep read-only. Do not add Secrets, pods/exec, or deferred RBAC-risk analysis. NetworkPolicy comment dual-purpose update is packaging (`#171`).

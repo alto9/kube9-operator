@@ -104,7 +104,7 @@ Both signals are handled identically and call `gracefulShutdown()` with all comp
     - Minimum interval: 3600s (1h)
     - Random offset: 0-1 hour
   - Performance metrics: Every ~15m class interval when registered (Prometheus optional outbound; exact seconds under configuration Open implementation decisions)
-  - Security posture: Every ~24h class interval (always registered; exact seconds under configuration Open implementation decisions)
+  - Security posture: Every `SECURITY_POSTURE_INTERVAL_SECONDS` (default `86400`, always registered)
   - Existing optional scheduler tasks (workload-image-scan, assessment, AI conformance, Argo CD application status) when their gates allow
 - **Component**: `CollectionScheduler`
 - **Stopped during shutdown**: Yes (clears all timers, including the two new collectors). No separate shutdown path for performance or security posture.

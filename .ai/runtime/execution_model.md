@@ -212,6 +212,9 @@ The kube9-operator binary supports multiple execution modes via Commander.js CLI
 
 ## Open implementation decisions
 
-- **Registration policy lock:** Confirm recommended config-gated performance registration vs always-register-with-degrade with integration contracts; security posture stays always-register. See configuration.md Open implementation decisions for the recommendation rationale.
-- **Degrade tick → stats/metrics:** How a Prometheus miss maps to `collectionStats` counters and `kube9_operator_collection_*` labels (`failed` vs skipped vs success-with-unavailable) is coordinated with business_logic and data; execution model only requires that the scheduler keeps running and ready stays up.
+- **Performance registration / degrade tick → stats:** Owned by the performance-metrics collector capability / peer refine (`#169`). Execution model only requires that the scheduler keeps running and ready stays up on Prometheus miss.
 - **Query mode process boundary unchanged:** `query collections` for the new types remains a separate CLI process via `kubectl exec`, same as today. No in-serve query API.
+
+### Resolved (security posture registration and failed ticks)
+
+Security posture **always registers** on `CollectionScheduler`. Failed/partial cluster-API ticks omit a row and increment failure counters; the scheduler continues and `/readyz` stays up. See configuration.md and error_handling.md.

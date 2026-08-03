@@ -6,4 +6,4 @@ Durable capability-level architecture and behavior specifications. Specs integra
 |------|-------|---------|--------|
 | `data-collection-pipeline` | Data collection pipeline | Scheduled in-cluster collectors: persist to SQLite `collections`, expose status `collectionStats`, and serve `query collections` | draft |
 | `performance-metrics-collector` | Performance metrics collector | Optional Prometheus-backed aggregate snapshots on the shared collection pipeline | draft |
-| `security-posture-collector` | Security posture collector | Kubernetes API aggregate security-posture snapshots on the shared collection pipeline | draft |
+| `security-posture-collector` | Security posture collector | Kubernetes API aggregate security-posture snapshots on the shared collection pipeline | active |

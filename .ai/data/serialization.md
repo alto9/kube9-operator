@@ -189,11 +189,11 @@ Reject raw series dumps and serialized `data` > 64 KiB. Zod discriminant `type: 
 | Field | Notes |
 |-------|-------|
 | `timestamp`, `collectionId`, `clusterId` | Required identity/time |
-| `privilegedHost.*` | required privileged/hostPath/hostNetwork counts; optional hostPID/hostIPC |
-| `networkPolicyCoverage.*` | required namespace totals; optional `coverageRatio` in `[0, 1]` |
-| `nsaCisRollups` | required object of non-negative int counters; ≤ 24 keys; key length ≤ 64 |
+| `privilegedHost.*` | required privileged/hostPath/hostNetwork counts; optional hostPID/hostIPC (v1 gather includes optionals when counted) |
+| `networkPolicyCoverage.*` | required namespace totals; optional `coverageRatio` in `[0, 1]` when total > 0 |
+| `nsaCisRollups` | required object; v1 must serialize exactly the six closed keys in [data_model.md](data_model.md); non-negative ints; key length ≤ 64; hard cap ≤ 24 |
 
-Reject CVE / vulnerabilities / RBAC-risk bodies and serialized `data` > 64 KiB. Zod discriminant `type: "security-posture"` must match this shape at write time.
+Reject CVE / vulnerabilities / RBAC-risk bodies, unknown rollup keys, and serialized `data` > 64 KiB. Zod discriminant `type: "security-posture"` must match this shape at write time. Failed/partial gathers do not serialize a row.
 
 ## Open implementation decisions
 
