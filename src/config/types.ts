@@ -1,3 +1,5 @@
+import type { PrometheusClientConfig } from '../prometheus/types.js';
+
 /**
  * Configuration interface for kube9-operator
  */
@@ -101,4 +103,15 @@ export interface Config {
    * Checklist source for conformance evaluation. Only bundled data is supported today.
    */
   aiConformanceChecklistSource: 'bundled';
+
+  /**
+   * Performance metrics collection interval in seconds (Prometheus-backed when configured).
+   * Default: 900 (15 minutes). Minimum: 300 (5 minutes).
+   */
+  performanceMetricsIntervalSeconds: number;
+
+  /**
+   * Optional Prometheus outbound client. Present only when PROMETHEUS_BASE_URL is non-empty.
+   */
+  prometheus?: PrometheusClientConfig;
 }

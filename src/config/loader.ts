@@ -1,6 +1,7 @@
 import type { Config } from './types.js';
 import { logger } from '../logging/logger.js';
 import { isPillar } from '../assessment/types.js';
+import { parsePrometheusConfigFromEnv } from '../prometheus/env-config.js';
 
 const ASSESSMENT_MODES = ['full', 'pillar', 'single-check'] as const;
 type AssessmentMode = (typeof ASSESSMENT_MODES)[number];
@@ -13,6 +14,8 @@ const ASSESSMENT_TIMEOUT_MAX_SECONDS = 7 * 24 * 3600;
 const RESOURCE_INVENTORY_INTERVAL_MIN_SECONDS = 1800;
 /** Minimum interval for Argo CD Application API collection (30 minutes). */
 const ARGOCD_APP_STATUS_INTERVAL_MIN_SECONDS = 1800;
+/** Minimum interval for performance metrics collection (5 minutes). */
+const PERFORMANCE_METRICS_INTERVAL_MIN_SECONDS = 300;
 
 /**
  * Parses a positive base-10 integer from env or a default string.
@@ -182,6 +185,13 @@ export async function loadConfig(): Promise<Config> {
   const aiConformanceChecklistSource = parseAiConformanceChecklistSource(
     process.env.AI_CONFORMANCE_CHECKLIST_SOURCE
   );
+  const performanceMetricsIntervalSeconds = parsePositiveInt(
+    'PERFORMANCE_METRICS_INTERVAL_SECONDS',
+    process.env.PERFORMANCE_METRICS_INTERVAL_SECONDS,
+    '900',
+    PERFORMANCE_METRICS_INTERVAL_MIN_SECONDS
+  );
+  const prometheus = parsePrometheusConfigFromEnv();
 
   const config: Config = {
     logLevel,
@@ -203,6 +213,8 @@ export async function loadConfig(): Promise<Config> {
     aiConformanceEnabled,
     aiConformanceIntervalSeconds,
     aiConformanceChecklistSource,
+    performanceMetricsIntervalSeconds,
+    ...(prometheus !== undefined ? { prometheus } : {}),
   };
 
   logger.info('Collection intervals configured', {
@@ -239,6 +251,14 @@ export async function loadConfig(): Promise<Config> {
     aiConformanceIntervalOverridden: process.env.AI_CONFORMANCE_INTERVAL_SECONDS !== undefined,
     aiConformanceChecklistSourceOverridden:
       process.env.AI_CONFORMANCE_CHECKLIST_SOURCE !== undefined,
+  });
+
+  logger.info('Performance metrics schedule configured', {
+    performanceMetricsIntervalSeconds: config.performanceMetricsIntervalSeconds,
+    performanceMetricsIntervalOverridden:
+      process.env.PERFORMANCE_METRICS_INTERVAL_SECONDS !== undefined,
+    prometheusConfigured: config.prometheus !== undefined,
+    prometheusBaseUrl: config.prometheus?.baseUrl ?? null,
   });
 
   return config;

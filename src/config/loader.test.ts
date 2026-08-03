@@ -169,3 +169,64 @@ describe('loadConfig — resource inventory interval', () => {
     await expect(loadConfig()).rejects.toThrow(/RESOURCE_INVENTORY_INTERVAL_SECONDS/);
   });
 });
+
+describe('loadConfig — performance metrics / Prometheus', () => {
+  const promKeys = [
+    'PROMETHEUS_BASE_URL',
+    'PROMETHEUS_TIMEOUT_MS',
+    'PROMETHEUS_TLS_INSECURE',
+    'PERFORMANCE_METRICS_INTERVAL_SECONDS',
+  ] as const;
+  const promSnapshots: Partial<Record<(typeof promKeys)[number], string | undefined>> = {};
+
+  beforeEach(() => {
+    for (const key of promKeys) {
+      promSnapshots[key] = process.env[key];
+      delete process.env[key];
+    }
+  });
+
+  afterEach(() => {
+    for (const key of promKeys) {
+      const v = promSnapshots[key];
+      if (v === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = v;
+      }
+    }
+  });
+
+  it('defaults performance interval to 900 seconds without Prometheus URL', async () => {
+    const config = await loadConfig();
+    expect(config.performanceMetricsIntervalSeconds).toBe(900);
+    expect(config.prometheus).toBeUndefined();
+  });
+
+  it('includes prometheus config when PROMETHEUS_BASE_URL is set', async () => {
+    process.env.PROMETHEUS_BASE_URL = 'http://prometheus.monitoring.svc:9090';
+    process.env.PROMETHEUS_TIMEOUT_MS = '45000';
+    const config = await loadConfig();
+    expect(config.prometheus).toEqual({
+      baseUrl: 'http://prometheus.monitoring.svc:9090',
+      timeoutMs: 45000,
+      tlsInsecure: false,
+    });
+  });
+
+  it('rejects performance interval below minimum', async () => {
+    process.env.PERFORMANCE_METRICS_INTERVAL_SECONDS = '299';
+    await expect(loadConfig()).rejects.toThrow(/PERFORMANCE_METRICS_INTERVAL_SECONDS/);
+  });
+
+  it('rejects invalid Prometheus URL during config load', async () => {
+    process.env.PROMETHEUS_BASE_URL = ':::bad:::';
+    await expect(loadConfig()).rejects.toThrow(/PROMETHEUS_BASE_URL/);
+  });
+
+  it('rejects invalid Prometheus timeout during config load', async () => {
+    process.env.PROMETHEUS_BASE_URL = 'http://prom.example:9090';
+    process.env.PROMETHEUS_TIMEOUT_MS = '999';
+    await expect(loadConfig()).rejects.toThrow(/PROMETHEUS_TIMEOUT_MS/);
+  });
+});

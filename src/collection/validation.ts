@@ -2,7 +2,12 @@
  * Schema validation utilities for collection data
  */
 
-import type { ClusterMetadata, ResourceInventory, ResourceConfigurationPatternsData } from './types.js';
+import type {
+  ClusterMetadata,
+  ResourceInventory,
+  ResourceConfigurationPatternsData,
+  PerformanceMetrics,
+} from './types.js';
 
 /**
  * Custom error class for validation failures
@@ -431,5 +436,108 @@ export function validateResourceConfigurationPatterns(data: unknown): ResourceCo
 
   // Return validated data (type assertion is safe after all validations)
   return data as ResourceConfigurationPatternsData;
+}
+
+function assertRatio(value: unknown, fieldPath: string): number {
+  const n = assertNumber(value, fieldPath);
+  if (n < 0 || n > 1) {
+    throw new ValidationError(fieldPath, `expected ratio in [0, 1], got ${n}`);
+  }
+  return n;
+}
+
+/**
+ * Validates performance metrics against schema
+ */
+export function validatePerformanceMetrics(data: unknown): PerformanceMetrics {
+  const obj = assertObject(data, 'root');
+
+  const timestamp = assertString(obj.timestamp, 'timestamp');
+  assertISO8601Timestamp(timestamp, 'timestamp');
+
+  const collectionId = assertString(obj.collectionId, 'collectionId');
+  assertPattern(collectionId, /^coll_[a-z0-9]{32}$/, 'collectionId', 'collection ID format "coll_[32-char-hash]"');
+
+  const clusterId = assertString(obj.clusterId, 'clusterId');
+  assertPattern(clusterId, /^cls_[a-z0-9]{32}$/, 'clusterId', 'cluster ID format "cls_[32-char-hash]"');
+
+  const sourceObj = assertObject(obj.source, 'source');
+  const available = sourceObj.available;
+  if (typeof available !== 'boolean') {
+    throw new ValidationError('source.available', `expected boolean, got ${typeof available}`);
+  }
+  let reason: string | undefined;
+  if (sourceObj.reason !== undefined) {
+    reason = assertString(sourceObj.reason, 'source.reason');
+    if (reason.length > 200) {
+      throw new ValidationError('source.reason', `expected max 200 characters, got ${reason.length}`);
+    }
+  }
+
+  let utilization: PerformanceMetrics['utilization'];
+  if (obj.utilization !== undefined) {
+    const utilObj = assertObject(obj.utilization, 'utilization');
+    const cpu = utilObj.cpu !== undefined ? assertObject(utilObj.cpu, 'utilization.cpu') : undefined;
+    const memory =
+      utilObj.memory !== undefined ? assertObject(utilObj.memory, 'utilization.memory') : undefined;
+
+    const cpuOut: NonNullable<PerformanceMetrics['utilization']>['cpu'] = {};
+    if (cpu?.clusterAvgRatio !== undefined) {
+      cpuOut.clusterAvgRatio = assertRatio(cpu.clusterAvgRatio, 'utilization.cpu.clusterAvgRatio');
+    }
+    if (cpu?.nodeHighWatermarkRatio !== undefined) {
+      cpuOut.nodeHighWatermarkRatio = assertRatio(
+        cpu.nodeHighWatermarkRatio,
+        'utilization.cpu.nodeHighWatermarkRatio'
+      );
+    }
+
+    const memoryOut: NonNullable<PerformanceMetrics['utilization']>['memory'] = {};
+    if (memory?.clusterAvgRatio !== undefined) {
+      memoryOut.clusterAvgRatio = assertRatio(
+        memory.clusterAvgRatio,
+        'utilization.memory.clusterAvgRatio'
+      );
+    }
+    if (memory?.nodeHighWatermarkRatio !== undefined) {
+      memoryOut.nodeHighWatermarkRatio = assertRatio(
+        memory.nodeHighWatermarkRatio,
+        'utilization.memory.nodeHighWatermarkRatio'
+      );
+    }
+
+    utilization = {
+      ...(Object.keys(cpuOut).length > 0 ? { cpu: cpuOut } : {}),
+      ...(Object.keys(memoryOut).length > 0 ? { memory: memoryOut } : {}),
+    };
+    if (Object.keys(utilization).length === 0) {
+      utilization = undefined;
+    }
+  }
+
+  let ratios: Record<string, number> | undefined;
+  if (obj.ratios !== undefined) {
+    const ratiosObj = assertObject(obj.ratios, 'ratios');
+    const keys = Object.keys(ratiosObj);
+    if (keys.length > 16) {
+      throw new ValidationError('ratios', `expected at most 16 keys, got ${keys.length}`);
+    }
+    ratios = {};
+    for (const key of keys) {
+      if (key.length > 64) {
+        throw new ValidationError(`ratios["${key}"]`, `key length must be <= 64, got ${key.length}`);
+      }
+      ratios[key] = assertRatio(ratiosObj[key], `ratios["${key}"]`);
+    }
+  }
+
+  return {
+    timestamp,
+    collectionId,
+    clusterId,
+    source: { available, ...(reason !== undefined ? { reason } : {}) },
+    ...(utilization !== undefined ? { utilization } : {}),
+    ...(ratios !== undefined ? { ratios } : {}),
+  };
 }
 
