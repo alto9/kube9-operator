@@ -7,7 +7,7 @@ import Database from 'better-sqlite3';
 import { logger } from '../logging/logger.js';
 
 /** Latest schema version - bump when adding migrations */
-const LATEST_SCHEMA_VERSION = 6;
+const LATEST_SCHEMA_VERSION = 7;
 
 /**
  * SchemaManager handles database schema initialization and migrations
@@ -65,6 +65,10 @@ export class SchemaManager {
       {
         version: 6,
         apply: () => this.migrateToV6(),
+      },
+      {
+        version: 7,
+        apply: () => this.migrateToV7(),
       },
     ];
 
@@ -269,6 +273,34 @@ export class SchemaManager {
         ON ai_conformance_requirement_results(status);
       CREATE UNIQUE INDEX IF NOT EXISTS idx_ai_conformance_requirement_results_run_requirement
         ON ai_conformance_requirement_results(run_id, requirement_id);
+    `);
+  }
+
+  /**
+   * Migration v7: Drop SQLite CHECK on collections.type (closed set enforced in app/Zod only).
+   */
+  private migrateToV7(): void {
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS collections_v7 (
+        collection_id TEXT PRIMARY KEY,
+        cluster_id TEXT NOT NULL,
+        type TEXT NOT NULL,
+        collected_at TEXT NOT NULL,
+        payload_json TEXT NOT NULL
+      );
+
+      INSERT INTO collections_v7 (
+        collection_id, cluster_id, type, collected_at, payload_json
+      )
+      SELECT collection_id, cluster_id, type, collected_at, payload_json
+      FROM collections;
+
+      DROP TABLE collections;
+      ALTER TABLE collections_v7 RENAME TO collections;
+
+      CREATE INDEX IF NOT EXISTS idx_collections_cluster_id ON collections(cluster_id);
+      CREATE INDEX IF NOT EXISTS idx_collections_type ON collections(type);
+      CREATE INDEX IF NOT EXISTS idx_collections_collected_at ON collections(collected_at DESC);
     `);
   }
 

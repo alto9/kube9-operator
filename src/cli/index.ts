@@ -198,7 +198,7 @@ export function createQueryCommands(): Command {
     .description('List stored collections')
     .option(
       '--type <type>',
-      'Filter by type: cluster-metadata, resource-inventory, resource-configuration-patterns'
+      'Filter by type: cluster-metadata, resource-inventory, resource-configuration-patterns, performance-metrics, security-posture'
     )
     .option('--cluster-id <id>', 'Filter by cluster id')
     .option('--since <date>', 'Collected on/after (ISO 8601)')

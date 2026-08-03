@@ -28,6 +28,8 @@ const collectionTypeEnum = z.enum([
   'cluster-metadata',
   'resource-inventory',
   'resource-configuration-patterns',
+  'performance-metrics',
+  'security-posture',
 ]);
 
 const ListOptionsSchema = z.object({

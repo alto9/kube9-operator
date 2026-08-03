@@ -12,7 +12,9 @@ import { ZodError } from 'zod';
 export type CollectionRowType =
   | 'cluster-metadata'
   | 'resource-inventory'
-  | 'resource-configuration-patterns';
+  | 'resource-configuration-patterns'
+  | 'performance-metrics'
+  | 'security-posture';
 
 export interface CollectionFilters {
   type?: CollectionRowType;

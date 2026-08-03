@@ -554,6 +554,62 @@ export interface ResourceConfigurationPatternsData {
 }
 
 /**
+ * Performance metrics collection data (bounded Prometheus aggregates)
+ */
+export interface PerformanceMetrics {
+  timestamp: string;
+  collectionId: string;
+  clusterId: string;
+  source: {
+    available: boolean;
+    reason?: string;
+  };
+  utilization?: {
+    cpu?: {
+      clusterAvgRatio?: number;
+      nodeHighWatermarkRatio?: number;
+    };
+    memory?: {
+      clusterAvgRatio?: number;
+      nodeHighWatermarkRatio?: number;
+    };
+  };
+  ratios?: Record<string, number>;
+}
+
+/** v1 closed nsaCisRollups key set for security-posture payloads */
+export type SecurityPostureNsaCisRollups = {
+  allowPrivilegeEscalationTrueContainers: number;
+  runAsNonRootFalseContainers: number;
+  readOnlyRootFilesystemFalseContainers: number;
+  capabilitiesNotDroppedAllContainers: number;
+  automountServiceAccountTokenTruePods: number;
+  hostNamespacesPods: number;
+};
+
+/**
+ * Security posture collection data (bounded cluster-API aggregates)
+ */
+export interface SecurityPosture {
+  timestamp: string;
+  collectionId: string;
+  clusterId: string;
+  privilegedHost: {
+    privilegedContainers: number;
+    hostPathVolumes: number;
+    hostNetworkPods: number;
+    hostPIDPods?: number;
+    hostIPCPods?: number;
+  };
+  networkPolicyCoverage: {
+    namespacesTotal: number;
+    namespacesWithNetworkPolicy: number;
+    coverageRatio?: number;
+  };
+  nsaCisRollups: SecurityPostureNsaCisRollups;
+}
+
+/**
  * Collection payload wrapper for all collection types
  */
 export interface CollectionPayload {
@@ -565,12 +621,22 @@ export interface CollectionPayload {
   /**
    * Collection type identifier
    */
-  type: "cluster-metadata" | "resource-inventory" | "resource-configuration-patterns";
+  type:
+    | "cluster-metadata"
+    | "resource-inventory"
+    | "resource-configuration-patterns"
+    | "performance-metrics"
+    | "security-posture";
 
   /**
    * Collection data (type-specific)
    */
-  data: ClusterMetadata | ResourceInventory | ResourceConfigurationPatternsData;
+  data:
+    | ClusterMetadata
+    | ResourceInventory
+    | ResourceConfigurationPatternsData
+    | PerformanceMetrics
+    | SecurityPosture;
 
   /**
    * Sanitization metadata
