@@ -227,12 +227,22 @@ metrics:
     clusterMetadata: 86400                    # 24 hours (default), minimum 3600 (1h)
     resourceInventory: 21600                  # 6 hours (default), minimum 1800 (30m)
     resourceConfigurationPatterns: 43200     # 12 hours (default), minimum 3600 (1h)
-    performanceMetrics: 900                   # 15 minutes (target default); min/offset under Open implementation decisions
-    securityPosture: 86400                    # 24 hours; min 3600; offset 0–3600 (runtime)
+    performanceMetrics: 900                   # 15 minutes (default), minimum 300; offset 0–300 (runtime)
+    securityPosture: 86400                    # 24 hours (default), minimum 3600; offset 0–3600 (runtime)
 ```
-- Maps to `*_INTERVAL_SECONDS` environment variables
-- Operator enforces minimum intervals to prevent abuse
-- Performance metrics also need optional Prometheus client values (URL / timeout / TLS); exact keys under Open implementation decisions. Chart RBAC and ServiceMonitor ownership stay in operations; runtime only loads the env contract and must not treat Prometheus as required for ready.
+- Maps to `CLUSTER_METADATA_INTERVAL_SECONDS`, `RESOURCE_INVENTORY_INTERVAL_SECONDS`, `RESOURCE_CONFIGURATION_PATTERNS_INTERVAL_SECONDS`, `PERFORMANCE_METRICS_INTERVAL_SECONDS`, `SECURITY_POSTURE_INTERVAL_SECONDS`
+- Operator enforces minimum intervals to prevent abuse; non-numeric / below-minimum values fail config load
+- Random offsets are runtime-only (not Helm values)
+
+### Optional Prometheus client (performance collector)
+```yaml
+prometheus:
+  baseUrl: ""              # empty = default-off (no PROMETHEUS_BASE_URL / no performance registration)
+  timeoutMs: 30000         # → PROMETHEUS_TIMEOUT_MS (minimum 1000)
+  tlsInsecure: false       # → PROMETHEUS_TLS_INSECURE
+```
+- Runtime loads `PROMETHEUS_BASE_URL`, `PROMETHEUS_TIMEOUT_MS`, `PROMETHEUS_TLS_INSECURE`. Register performance ticks only when base URL is non-empty. Malformed URL or invalid timeout when set → fail config load. Unset URL is a soft miss, not config failure.
+- Chart RBAC and ServiceMonitor ownership stay in operations; runtime must not treat Prometheus as required for ready.
 
 ### Kubernetes AI Conformance Configuration
 ```yaml
@@ -280,12 +290,22 @@ events:
 
 ## Open implementation decisions
 
-- **Performance interval / Prometheus / registration:** Owned by the performance-metrics collector capability / peer refine (`#169`). Candidates remain: `PERFORMANCE_METRICS_INTERVAL_SECONDS` ↔ `metrics.intervals.performanceMetrics`; config-gated registration on non-empty Prometheus URL; `PROMETHEUS_*` client env. Do not invent a new readiness or secrets-before-traffic trust boundary.
-- **Ops vs runtime home:** Env semantics and load/validation live here. Helm value schema, chart NetworkPolicy comment, and any ServiceMonitor for operator `/metrics` exposition stay in operations with a one-line pointer back to this doc for interval/Prometheus client env names.
+_(none for interval / Prometheus env packaging coordination)_
+
+### Resolved (performance interval / Prometheus / registration)
+
+- Env / Helm names: `PERFORMANCE_METRICS_INTERVAL_SECONDS` ↔ `metrics.intervals.performanceMetrics` (default `900`, min `300`, offset `0–300`).
+- Prometheus client env: `PROMETHEUS_BASE_URL`, `PROMETHEUS_TIMEOUT_MS` (default `30000`, min `1000`), `PROMETHEUS_TLS_INSECURE` (default `false`). Helm tree: top-level `prometheus.baseUrl` / `timeoutMs` / `tlsInsecure` (operations packaging).
+- Registration: config-gated on non-empty Prometheus base URL; no separate enable flag; no required bearer/existingSecret in v1.
+- Do not invent a new readiness or secrets-before-traffic trust boundary. Collector PromQL / unavailable-tick behavior remains the performance-metrics collector capability.
+
+### Resolved (ops vs runtime home)
+
+Env semantics and load/validation live here. Helm value schema, chart NetworkPolicy comment, harness assertions, and any ServiceMonitor for operator `/metrics` exposition stay in operations (`build_packaging.md` / `security.md`) with interval/Prometheus client env names matching this doc.
 
 ### Resolved (security posture interval and registration)
 
-- Env / Helm names: `SECURITY_POSTURE_INTERVAL_SECONDS` ↔ `metrics.intervals.securityPosture` (chart wiring is packaging peer `#171`).
+- Env / Helm names: `SECURITY_POSTURE_INTERVAL_SECONDS` ↔ `metrics.intervals.securityPosture`.
 - Numerics: default `86400`, minimum `3600`, random offset `0–3600`. Non-numeric / below-minimum values fail config load.
 - Registration: always-on; **no** enable flag in v1.
 - Failed/partial gather: omit row + failed metrics; health/`/readyz` unchanged (see error_handling).

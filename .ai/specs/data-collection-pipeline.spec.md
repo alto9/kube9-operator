@@ -20,21 +20,31 @@ Related capabilities: `performance-metrics-collector` and `security-posture-coll
 - **Runtime:** Node.js `>=22` (package engines); TypeScript operator process; better-sqlite3 for durable store at `{DB_PATH}/kube9.db`.
 - **Components:** CollectionScheduler; per-type collectors; CollectionRepository / SQLite `collections` table; Zod `CollectionPayload` validation; status publisher; CLI query path via `kubectl exec`.
 - **Type tokens (closed set for this pipeline):** `cluster-metadata`, `resource-inventory`, `resource-configuration-patterns`, `performance-metrics`, `security-posture`.
+- **Observability labels:** Collection Prometheus series `type` label values use exactly those five strings; do not invent aliases. Status ConfigMap `collectionStats` stays aggregate-only (`totalSuccessCount`, `totalFailureCount`, `collectionsStoredCount`, `lastSuccessTime`).
 - **Validation:** `CollectionPayloadSchema` is a Zod discriminated union on `type`. `CollectionRepository.insertCollection` rejects type/data mismatch and malformed envelopes (no row written). SQLite `type` stays unconstrained TEXT.
 - **Payload catalogs:** Normative `data` shapes for `performance-metrics` and `security-posture` live in `.ai/data/data_model.md` and `.ai/data/serialization.md` (source marker, utilization/ratios bounds, privilegedHost / networkPolicyCoverage / nsaCisRollups, 64 KiB and key-count caps).
 - **Durable write:** Sole durable write is `CollectionRepository.insertCollection`. Status `collectionsStoredCount` equals SQLite row count. In-memory LocalStorage is not queryable truth and is off the durable write path.
-- **Status:** ConfigMap `collectionStats` remains aggregate-only (`totalSuccessCount`, `totalFailureCount`, `collectionsStoredCount`, `lastSuccessTime`); new types participate in those counters.
-- **Config:** Helm `metrics.intervals.*` and matching env interval seconds; optional Prometheus client config for performance only (exact keys / registration gate owned by collector + packaging peers).
-- **Trust / deploy:** Zero-ingress default; cluster-internal egress only for optional Prometheus; read-only ClusterRole for Kubernetes API collectors.
-- **Peer collector items:** Performance Prometheus unavailable / PromQL / auth knobs live in `performance-metrics-collector` (`#169`). Security-posture partial-API tick classification is locked in `security-posture-collector` (omit row + failed; closed six-key `nsaCisRollups`).
+- **Status:** ConfigMap `collectionStats` remains aggregate-only; new types participate in those counters.
+- **Config / packaging:**
+  - Helm `metrics.intervals.performanceMetrics` (default `900`, min `300`) → `PERFORMANCE_METRICS_INTERVAL_SECONDS`
+  - Helm `metrics.intervals.securityPosture` (default `86400`, min `3600`) → `SECURITY_POSTURE_INTERVAL_SECONDS`
+  - Helm top-level `prometheus.baseUrl` / `timeoutMs` / `tlsInsecure` → `PROMETHEUS_BASE_URL` / `PROMETHEUS_TIMEOUT_MS` / `PROMETHEUS_TLS_INSECURE` (emit base URL env only when non-empty; v1 has no Secret mount)
+  - Performance registration is config-gated on non-empty Prometheus URL; security posture is always-on
+- **Trust / deploy:** Zero-ingress default; cluster-internal egress only for optional Prometheus; read-only ClusterRole with **no** posture-driven expansion; NetworkPolicy grant comment names AI conformance + security-posture coverage. Collections have no TTL / count cap (PVC growth is operational).
+- **Peer collector items:** Performance PromQL / unavailable omit+failed live in `performance-metrics-collector`. Security-posture partial-API tick classification lives in `security-posture-collector` (omit row + failed; closed six-key `nsaCisRollups`).
 
 ## Testing Strategy
 
 - Unit: payload schema accept/reject per type (including mismatch of `type` vs `data`); reject oversized or forbidden security-posture CVE/RBAC bodies; empty query success envelope.
 - Unit / integration: durable insert via `CollectionRepository.insertCollection`; `collectionsStoredCount` tracks SQLite count after inserts (not LocalStorage size); LocalStorage store alone does not change durable count or CLI visibility.
 - Integration: SQLite insert + `query collections --type performance-metrics|security-posture` round-trip with fixture payloads; status aggregates keep the four required fields when new types succeed/fail.
-- Contract / chart: collection Prometheus metric `type` labels stay within the closed five-type set (label wiring may land with packaging peer); Helm interval keys for the two new types remain packaging peer scope.
-- Manual / smoke (kind/minikube): deferred to collector shipping issues; pipeline contract issue proves schema + durable write with unit/integration fixtures without requiring live Prometheus.
+- Contract / chart (packaging):
+  - Collection metric `type` labels stay within the closed five-type set
+  - `helm template` / `./scripts/test-helm-chart.sh` Phase 2: default Deployment includes both new interval env vars; no `PROMETHEUS_BASE_URL` when `prometheus.baseUrl` empty; URL/timeout/TLS when baseUrl set
+  - `values.schema.json` accepts the new interval and `prometheus.*` keys
+  - Phase 5 (kind): default install pod Ready without Prometheus
+  - ClusterRole: no new rules; NetworkPolicy comment dual-purpose
+- Manual / smoke: collector shipping issues prove gather paths; packaging proves chart wiring and Ready-without-Prometheus.
 
 ## References
 

@@ -56,19 +56,25 @@ The Helm chart supports comprehensive configuration through `values.yaml`:
 - `metrics.intervals.clusterMetadata`: Cluster metadata collection interval in seconds (default: `86400` = 24 hours, minimum: `3600`)
 - `metrics.intervals.resourceInventory`: Resource inventory collection interval in seconds (default: `21600` = 6 hours, minimum: `1800`)
 - `metrics.intervals.resourceConfigurationPatterns`: Resource configuration patterns collection interval in seconds (default: `43200` = 12 hours, minimum: `3600`)
-- `metrics.intervals.performanceMetrics`: Performance metrics collection interval in seconds (default: `900` = 15 minutes; enforced minimum locked with runtime)
-- `metrics.intervals.securityPosture`: Security posture collection interval in seconds (default: `86400` = 24 hours; enforced minimum locked with runtime)
+- `metrics.intervals.performanceMetrics`: Performance metrics collection interval in seconds (default: `900` = 15 minutes, chart/schema minimum: `300`) → Deployment env `PERFORMANCE_METRICS_INTERVAL_SECONDS`. Runtime also applies random offset `0–300` (not a Helm value).
+- `metrics.intervals.securityPosture`: Security posture collection interval in seconds (default: `86400` = 24 hours, chart/schema minimum: `3600`) → Deployment env `SECURITY_POSTURE_INTERVAL_SECONDS`. Runtime also applies random offset `0–3600` (not a Helm value).
 
-Chart `values.yaml` also carries intervals for Argo CD Application status and workload image scan under the same `metrics.intervals` map; those stay documented in the chart README.
+Chart `values.yaml` also carries intervals for Argo CD Application status and workload image scan under the same `metrics.intervals` map; those stay documented in the chart README. `values.schema.json` must list the new interval keys (intervals object uses `additionalProperties: false`).
 
 #### Optional Prometheus (performance collector, outbound)
 
-Performance metrics use an optional in-cluster Prometheus HTTP client (query and/or scrape). Packaging posture mirrors Trivy / Argo CD optional integrations:
+Performance metrics use an optional in-cluster Prometheus HTTP client (PromQL). Packaging posture mirrors Trivy / Argo CD optional integrations as a **top-level `prometheus.*` sibling** of `trivy.*`:
 
-- Default install stays **zero-ingress**. Prometheus integration is **outbound** cluster-internal traffic when configured or discovered.
+| Helm value | Default | Deployment env | Notes |
+|------------|---------|----------------|-------|
+| `prometheus.baseUrl` | `""` | `PROMETHEUS_BASE_URL` | Emit env only when non-empty (mirror `trivy.serverUrl`). Empty = default-off; runtime does not register performance ticks. |
+| `prometheus.timeoutMs` | `30000` | `PROMETHEUS_TIMEOUT_MS` | Minimum `1000` in schema / runtime. |
+| `prometheus.tlsInsecure` | `false` | `PROMETHEUS_TLS_INSECURE` | Labs / mis-signed certs only. |
+
+- Default install stays **zero-ingress**. Prometheus traffic is **outbound** cluster-internal when `prometheus.baseUrl` is set.
 - Chart must not install Prometheus, create a ServiceMonitor for kube9 ownership of Prometheus, or invent an inbound scrape surface for this collector.
-- Chart must not create Secrets from plaintext credentials. If bearer/auth is ever required, use an existingSecret mount pattern (same class as `argocd.api.token.existingSecret`).
-- Exact values-tree keys (`prometheus.*` vs `performanceMetrics.*`), discovery defaults, timeout/TLS knobs, and enable vs always-register wiring are open implementation decisions below (coordinate with runtime + integration).
+- v1 chart ships **URL + timeout + TLS only**. No `autoDetect`, no enable flag, no `existingSecret` / Secret mount for Prometheus credentials. Chart does not create Secrets from plaintext. Operator ServiceAccount token must not be sent as an implicit Prometheus credential.
+- Readiness must not depend on Prometheus. Default install (empty `prometheus.baseUrl`) reaches Ready without Prometheus installed.
 
 #### Event Storage
 - `events.persistence.enabled`: Enable persistent storage (default: `true`)
@@ -138,8 +144,15 @@ Performance metrics use an optional in-cluster Prometheus HTTP client (query and
 - App version matches chart version
 - Chart versioning independent of operator binary version
 
-## Open implementation decisions
+### Chart harness, schema, and README (packaging acceptance)
 
-- **Exact Helm interval keys and env mapping:** Lock camelCase under `metrics.intervals` (candidates above: `performanceMetrics`, `securityPosture`) and Deployment env names (candidates: `PERFORMANCE_METRICS_INTERVAL_SECONDS`, `SECURITY_POSTURE_INTERVAL_SECONDS`). Defaults stay in the ~900s / ~86400s class; enforced minima and random-offset seconds align with runtime config loader.
-- **Prometheus values block shape:** Whether outbound client knobs live under `prometheus.*` (mirror `trivy.*` sibling) or nested under `performanceMetrics.*`; which of base URL, autoDetect/discovery, timeoutMs, tlsInsecure, and existingSecret auth are chart-first vs env-only; default-off until configured vs always-register collector with graceful degrade (must match runtime + integration).
-- **Chart harness / README tables:** `test-helm-chart.sh` Phase 5 assertions and README value tables for new interval env keys, optional Prometheus knobs, and any status fields; consumer wording that performance needs optional Prometheus and security posture is cluster-API only.
+- **`values.schema.json`:** Add `metrics.intervals.performanceMetrics` (min `300`, default `900`), `metrics.intervals.securityPosture` (min `3600`, default `86400`), and a `prometheus` object (`baseUrl`, `timeoutMs` min `1000` default `30000`, `tlsInsecure` default `false`) with `additionalProperties: false`.
+- **`./scripts/test-helm-chart.sh`:** Phase 2 template output must include `PERFORMANCE_METRICS_INTERVAL_SECONDS` and `SECURITY_POSTURE_INTERVAL_SECONDS` on default install; must not emit `PROMETHEUS_BASE_URL` when `prometheus.baseUrl` is empty; with `--set prometheus.baseUrl=http://prometheus.monitoring.svc:9090` must emit that URL plus timeout/TLS env. Phase 5 (when kind is available) must show the operator pod Ready on default install without Prometheus. Chart unit tests under `charts/kube9-operator/` may cover the same env mappings.
+- **README:** Document the two interval keys, the `prometheus.*` table, consumer wording that performance needs optional Prometheus and security posture is cluster-API only, and that SQLite `collections` has no TTL / count cap (PVC growth under ~15m performance ticks is an operational concern).
+- **ClusterRole:** No new rules for this packaging deliverable. Update the NetworkPolicy grant comment to name both AI conformance and security-posture coverage purposes.
+
+### Resolved (Helm intervals, Prometheus values, harness)
+
+- Interval Helm↔env mapping and numerics are locked above (aligned with runtime peers).
+- Prometheus values live under top-level `prometheus.*` (not nested under `performanceMetrics.*`); v1 is URL/timeout/TLS only, default-off until `baseUrl` is set.
+- Harness / schema / README expectations are locked in the packaging acceptance bullets above.
