@@ -25,7 +25,9 @@
 - **degraded** → reserved for future operator-side semantics
 - **unhealthy** → show error message, fall back to basic mode (kubectl-only)
 
-Empty events or assessments-history query results do **not** change operator health. Absence of matching retained rows is a consumer evidence gap, not an unhealthy signal (see `error_handling.md`).
+Empty events, assessments-history, or collections query results do **not** change operator health. Absence of matching retained rows is a consumer evidence gap, not an unhealthy signal (see `error_handling.md`).
+
+Optional performance-metrics Prometheus miss and security-posture collection partial or failed ticks do **not** alone set `health` to `unhealthy`, and do **not** promote reserved `degraded`. Those outcomes stay collection/integration degrade classes (see `error_handling.md`).
 
 ## Stale Status
 - **Threshold**: `lastUpdate > 5 minutes` → treat as degraded regardless of reported health

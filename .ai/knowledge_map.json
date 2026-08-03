@@ -72,6 +72,25 @@
             ".ai/operations/observability.md",
             ".ai/operations/security.md"
           ]
+        },
+        {
+          "name": "schemas",
+          "primary_doc": ".ai/schemas/vision.schema.json",
+          "description": "JSON Schema validators for structured .ai product documents (vision, project).",
+          "children": [
+            ".ai/schemas/vision.schema.json",
+            ".ai/schemas/project.schema.json"
+          ]
+        },
+        {
+          "name": "specs",
+          "primary_doc": ".ai/specs/index.md",
+          "description": "Durable capability-level architecture and behavior specifications.",
+          "children": [
+            ".ai/specs/data-collection-pipeline.spec.md",
+            ".ai/specs/performance-metrics-collector.spec.md",
+            ".ai/specs/security-posture-collector.spec.md"
+          ]
         }
       ]
     }

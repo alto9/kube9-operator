@@ -56,6 +56,19 @@ The Helm chart supports comprehensive configuration through `values.yaml`:
 - `metrics.intervals.clusterMetadata`: Cluster metadata collection interval in seconds (default: `86400` = 24 hours, minimum: `3600`)
 - `metrics.intervals.resourceInventory`: Resource inventory collection interval in seconds (default: `21600` = 6 hours, minimum: `1800`)
 - `metrics.intervals.resourceConfigurationPatterns`: Resource configuration patterns collection interval in seconds (default: `43200` = 12 hours, minimum: `3600`)
+- `metrics.intervals.performanceMetrics`: Performance metrics collection interval in seconds (default: `900` = 15 minutes; enforced minimum locked with runtime)
+- `metrics.intervals.securityPosture`: Security posture collection interval in seconds (default: `86400` = 24 hours; enforced minimum locked with runtime)
+
+Chart `values.yaml` also carries intervals for Argo CD Application status and workload image scan under the same `metrics.intervals` map; those stay documented in the chart README.
+
+#### Optional Prometheus (performance collector, outbound)
+
+Performance metrics use an optional in-cluster Prometheus HTTP client (query and/or scrape). Packaging posture mirrors Trivy / Argo CD optional integrations:
+
+- Default install stays **zero-ingress**. Prometheus integration is **outbound** cluster-internal traffic when configured or discovered.
+- Chart must not install Prometheus, create a ServiceMonitor for kube9 ownership of Prometheus, or invent an inbound scrape surface for this collector.
+- Chart must not create Secrets from plaintext credentials. If bearer/auth is ever required, use an existingSecret mount pattern (same class as `argocd.api.token.existingSecret`).
+- Exact values-tree keys (`prometheus.*` vs `performanceMetrics.*`), discovery defaults, timeout/TLS knobs, and enable vs always-register wiring are open implementation decisions below (coordinate with runtime + integration).
 
 #### Event Storage
 - `events.persistence.enabled`: Enable persistent storage (default: `true`)
@@ -70,6 +83,7 @@ The Helm chart supports comprehensive configuration through `values.yaml`:
 **Packaging non-goals (agent-consumer path):**
 - No Helm values, PVC sizing, or image packaging for operator **log** capture or failure-log retention
 - No assessment-history TTL / prune knobs in the chart (assessments persist until explicit remove or cascade; data owns lifecycle)
+- No collections TTL or count-cap knobs in the chart (SQLite `collections` rows persist until explicit remove / operational cleanup; same class as assessments). Operators should expect PVC growth under frequent append-only collectors (notably ~15m performance ticks); sizing stays an operational concern, not a product retention SLA.
 
 #### Namespace
 - **Default Namespace**: `kube9-system`
@@ -123,3 +137,9 @@ The Helm chart supports comprehensive configuration through `values.yaml`:
 - Chart version follows SemVer
 - App version matches chart version
 - Chart versioning independent of operator binary version
+
+## Open implementation decisions
+
+- **Exact Helm interval keys and env mapping:** Lock camelCase under `metrics.intervals` (candidates above: `performanceMetrics`, `securityPosture`) and Deployment env names (candidates: `PERFORMANCE_METRICS_INTERVAL_SECONDS`, `SECURITY_POSTURE_INTERVAL_SECONDS`). Defaults stay in the ~900s / ~86400s class; enforced minima and random-offset seconds align with runtime config loader.
+- **Prometheus values block shape:** Whether outbound client knobs live under `prometheus.*` (mirror `trivy.*` sibling) or nested under `performanceMetrics.*`; which of base URL, autoDetect/discovery, timeoutMs, tlsInsecure, and existingSecret auth are chart-first vs env-only; default-off until configured vs always-register collector with graceful degrade (must match runtime + integration).
+- **Chart harness / README tables:** `test-helm-chart.sh` Phase 5 assertions and README value tables for new interval env keys, optional Prometheus knobs, and any status fields; consumer wording that performance needs optional Prometheus and security posture is cluster-API only.

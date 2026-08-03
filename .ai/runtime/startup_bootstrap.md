@@ -12,7 +12,8 @@ The operator follows a strict initialization sequence defined in `src/operator.t
 
 **Configuration loaded:**
 - `logLevel`, `statusUpdateIntervalSeconds`
-- Collection intervals (`clusterMetadataIntervalSeconds`, `resourceInventoryIntervalSeconds`, `resourceConfigurationPatternsIntervalSeconds`, `workloadImageScanIntervalSeconds`)
+- Collection intervals (`clusterMetadataIntervalSeconds`, `resourceInventoryIntervalSeconds`, `resourceConfigurationPatternsIntervalSeconds`, `workloadImageScanIntervalSeconds`, plus performance metrics and security posture intervals when wired)
+- Optional Prometheus outbound client settings for performance metrics (URL / timeout / TLS / auth). Unset Prometheus URL must not fail config load; invalid set values fail load like other typed env.
 - Event retention policies (`eventRetentionInfoWarningDays`, `eventRetentionErrorCriticalDays`)
 
 ### 2. Start Health Server
@@ -74,7 +75,7 @@ The operator follows a strict initialization sequence defined in `src/operator.t
 ### 9. Initialize Collection Scheduler
 - Creates `CollectionScheduler` instance
 - Creates `LocalStorage` instance for local data storage
-- Initializes collectors:
+- Initializes collectors (same in-process scheduler; no new serve mode or worker):
   - **ClusterMetadataCollector**: Collects cluster metadata
     - Interval: `clusterMetadataIntervalSeconds` (default: 86400 = 24h)
     - Minimum interval: 3600s (1 hour)
@@ -87,10 +88,18 @@ The operator follows a strict initialization sequence defined in `src/operator.t
     - Interval: `resourceConfigurationPatternsIntervalSeconds` (default: 43200 = 12h)
     - Minimum interval: 3600s (1 hour)
     - Random offset: 0-1 hour
-- Registers each collector with scheduler
+  - **Performance metrics collector**: Bounded Prometheus aggregate snapshots into SQLite `collections`
+    - Interval: ~15m class (`performanceMetricsIntervalSeconds`; exact default/min/offset in configuration Open implementation decisions)
+    - **Recommended registration:** Register only when Prometheus base URL (or enable+URL) is configured. Do not probe Prometheus as a hard dependency before ready. When registered and Prometheus is unreachable, degrade that tick only (log/metric/retry next interval).
+    - Persistence remains `{DB_PATH}/kube9.db` collections store. No metrics-server fallback. No phone-home.
+  - **Security posture collector**: Cluster API aggregate rollups into SQLite `collections`
+    - Interval: ~24h class (`securityPostureIntervalSeconds`; exact default/min/offset in configuration Open implementation decisions)
+    - **Registration:** Always register (core-collector pattern). Independent of Prometheus and Trivy.
+- Also registers existing gated / always-on optional tasks on the same scheduler as today (workload-image-scan, assessment, AI conformance, Argo CD application status) without changing their enable semantics.
 - Starts scheduler (begins periodic collection tasks)
-- Collection failures are logged but don't stop operator
+- Per-collector init or tick failures are logged; operator continues (same “log and continue” family as ArgoCD/K8s client tests)
 - Collection metrics are recorded for monitoring
+- Prometheus absence must not block this step from completing or from reaching step 11 (`/readyz`)
 
 ### 10. Register Signal Handlers
 - Registers `SIGTERM` handler for graceful shutdown
@@ -135,4 +144,12 @@ Each step logs its progress:
 - Event system starts before main reconcile loop
 - Initial ArgoCD detection has timeout to prevent blocking
 - Collection scheduler starts after all other systems
+- Optional Prometheus client for performance metrics is not probed as a gate before ready
 - Total startup time typically < 5 seconds
+
+## Open implementation decisions
+
+- **Bootstrap registration order:** Register performance (when gated condition met) and security posture after the three core collectors and before or alongside existing optional scheduler tasks; exact order among optional tasks is TW as long as failures for one collector still “log and continue.”
+- **Performance gate check at bootstrap:** Whether the gate is “non-empty Prometheus URL”, “explicit enable + URL”, or “enable with default-off until URL set” is locked with configuration Open implementation decisions. Recommended: non-empty URL (no separate enable required).
+- **First-tick vs scheduled-tick when Prometheus miss:** Prefer the same degrade path for first tick and later ticks (no special bootstrap scrape). Do not delay `setInitialized(true)` waiting on a Prometheus probe.
+- **Init failure isolation:** Constructing or registering either new collector must follow today’s collection-init catch: log error, continue serve without that collector if needed, still mark ready when the rest of bootstrap succeeds.

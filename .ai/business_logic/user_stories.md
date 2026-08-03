@@ -150,12 +150,54 @@ Assessment check history is queryable via CLI (`kube9-operator query assessments
    - Interval: 12h default (43200s), 3600s minimum
    - Random offset: 0-1 hour
 
+4. **Performance metrics collector**
+   - Collects: Bounded aggregate utilization/ratio rollups from optional in-cluster Prometheus (outbound scrape/query)
+   - Interval: ~15m default, enforced minimum; random offset 0-1 hour
+   - Degrade: When Prometheus is absent or unreachable, that collector tick degrades gracefully; the operator continues and other collectors stay on schedule. No metrics-server / Kubernetes metrics API fallback.
+
+5. **Security posture collector**
+   - Collects: Cluster API aggregates only (privileged/hostPath/hostNetwork-style counts, NetworkPolicy coverage, basic NSA/CIS-oriented rollups)
+   - Interval: ~24h default, enforced minimum; random offset 0-1 hour
+   - Distinct from resource-configuration-patterns and from Trivy vulnerability scanning
+
 ### Collection Behavior
 - **Scheduled**: Collections registered with `CollectionScheduler` (`src/collection/scheduler.ts`)
 - **Random offset**: Each collection scheduled with 0-1 hour random offset to distribute load
+- **Persistence**: SQLite `collections` path; append-only snapshot rows; no CRDs; no phone-home
+- **Retention**: No time-based TTL (assessments-class); rows persist until explicit remove or operational cleanup; no count-based cap
+- **Query**: Existing `query collections` CLI/types extended with additive `--type` values for the new collectors
 - **Error handling**: Collection errors logged, metrics recorded, but don't crash operator
 - **Retry**: Failed collections retry on next scheduled interval (no immediate retry)
-- **Statistics**: Collection success/failure tracked in `CollectionStatsTracker` and exposed in status ConfigMap
+- **Statistics**: Collection success/failure tracked in `CollectionStatsTracker` and exposed in status ConfigMap for all five types without changing the aggregate `collectionStats` field set
+- **Consumer scope**: Operator schedule, status, and query are the outcomes of this surface; vscode/Desktop progressive enhancement of new types ships later
+
+**Acceptance (schedule success):**
+- **Given** the operator is running with collectors registered,
+- **When** a performance-metrics or security-posture interval elapses,
+- **Then** a successful tick persists a collections snapshot and participates in status `collectionStats` like the three peer collectors.
+
+**Acceptance (Prometheus absent degrade):**
+- **Given** in-cluster Prometheus is not configured, absent, or unreachable,
+- **When** the performance-metrics collector would tick,
+- **Then** the operator continues serving; health does not become unhealthy for that reason alone; other collectors keep their schedules; there is no metrics-server fallback.
+
+**Acceptance (security posture queryable):**
+- **Given** at least one successful security-posture snapshot is stored,
+- **When** an operator issues `query collections` filtered to that type,
+- **Then** the snapshot is returned on the existing collections list/get surface (no parallel query API).
+
+**Acceptance (empty list for new type):**
+- **Given** no rows yet exist for a new collections `--type`,
+- **When** `query collections list` succeeds with an empty result for that filter,
+- **Then** the outcome is a normal success / evidence gap, not an operator unhealthy state.
+
+### Non-goals (this surface)
+- vscode/Desktop consumer UX in the same milestone (progressive enhancement later)
+- New Well-Architected assessment checks that consume these collections
+- Trivy CVE duplication in security posture; RBAC risk rollups; broader CIS/NSA families beyond basic rollups
+- metrics-server / Kubernetes metrics API as a performance source
+- Phone-home, registration, or kube9-api sync of collection payloads
+- CRDs or a parallel query API for these collectors
 
 **Implementation**: Collectors initialized in `src/operator.ts`, scheduled via `CollectionScheduler`, stored locally via `LocalStorage` (`src/collection/storage.ts`).
 
@@ -164,3 +206,8 @@ Assessment check history is queryable via CLI (`kube9-operator query assessments
 ### Resolved (events retention copy coordination)
 
 Operator business-logic and integration contracts state the user-visible outcome: info/warning **7** days, error/critical **30** days by default, with cleanup every **6 hours** and Helm/env overrides of the effective store window. kube9-desktop interface contracts own evidence-footer and Pro retention microcopy; those surfaces must cite the severity-split pair (or both bands), not a single longer “N days” promise. No 90-day (or other unified) agent/history retention claim belongs in operator consumer prose.
+
+### Performance metrics and security posture (collections)
+
+- **CLI `--type` presentation:** Exact enum strings, help text, and table column widths for the two new types are locked with interface contracts; behavior stays on the existing collections list/get archetype (filters, formats, pagination, stderr errors).
+- **Empty-list and degrade copy:** User-facing wording for empty successful lists vs Prometheus-degrade tick outcomes stays coordinated with interface and error_handling; business logic only fixes the outcome classes above.

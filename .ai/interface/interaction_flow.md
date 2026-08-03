@@ -58,3 +58,18 @@
 3. Extension processes results:
    - Parses JSON/YAML output based on `--format` option
    - Handles pagination metadata for list queries
+
+## Collections Query Flow
+Operator CLI / kubectl-exec consumers only for this milestone (no vscode/desktop UX flow). Same pod resolution and stderr error pattern as [CLI Query Flow](#cli-query-flow).
+
+1. Operator or peer lists collections:
+   - `kube9-operator query collections list [--type=] [--cluster-id=] [--since=] [--until=] [--limit=] [--offset=] [--format=]`
+   - `--type` accepts the shipped types plus additive performance-metrics and security-posture values (exact tokens in [input_handling.md](input_handling.md))
+   - Pagination envelope matches other list queries (`total`, `limit`, `offset`, `returned`)
+2. Operator or peer retrieves one collection:
+   - `kube9-operator query collections get <collectionId> [--format=]`
+   - Returns full `CollectionPayload` (generic json/yaml/table/compact rendering; no type-specific get layout in v1)
+3. Consumer processes results:
+   - Empty list (including filter to a new type with no rows yet) is success; treat as evidence gap, not failure
+   - Parse stdout by `--format`; validation/not-found failures remain JSON on stderr with non-zero exit
+   - Prometheus degrade for performance collection does not add a separate interactive recovery branch on this surface

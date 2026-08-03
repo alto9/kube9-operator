@@ -16,11 +16,13 @@
 - `lastUpdate`: string - ISO 8601 timestamp
 - `error`: string | null - Error message if unhealthy
 - `namespace`: string - Operator deployment namespace (used for subsequent operations)
-- `collectionStats`: object - Collection activity statistics
+- `collectionStats`: object - Aggregate collection activity statistics (new collection types participate without changing this field set)
 - `argocd`: object - ArgoCD detection status (`detected`, `namespace`, `version`, `lastChecked`, optional `resourceTreeCapable`, optional `resourceTreeLastError`)
 - `trivy`: object - Trivy detection status (`detected`, `serverUrl`, `version`, `lastChecked`)
 - `assessment`: object - Bounded Well-Architected assessment status summary
 - `aiConformance`: object - Bounded Kubernetes AI Conformance readiness status summary
+
+Clients must tolerate unknown top-level status keys and unknown collection `type` values (progressive enhancement). An optional bounded Prometheus detection block (if introduced for outbound client capability) follows the same omit-when-absent pattern as `trivy` / `argocd` capability fields.
 
 **Discovery Flow**:
 1. Extension checks default namespace (`kube9-system`) for ConfigMap
@@ -122,6 +124,49 @@ kube9-operator query assessments history [--pillar=<pillar>] [--result=<result>]
 - `yaml`: YAML output for human-readable structured data
 - `table`: Human-readable tabular output
 - `compact`: Compact format for assessments (assessment-specific)
+
+### Collections Query Contract
+
+**Command surface** (existing; additive types only):
+```bash
+kube9-operator query collections list [--type=<type>] [--cluster-id=<id>] [--since=<ISO8601>] [--until=<ISO8601>] [--limit=<number>] [--offset=<number>] [--format=json|yaml|table|compact]
+kube9-operator query collections get <collectionId> [--format=json|yaml|table|compact]
+```
+
+**Producer ownership**: kube9-operator owns collection type tokens, SQLite `collections` persistence, payload schemas, and this CLI. This initiative ships **performance-metrics** and **security-posture** as additive `--type` / payload `type` values alongside the shipped set:
+- `cluster-metadata`
+- `resource-inventory`
+- `resource-configuration-patterns`
+- `performance-metrics` (optional Prometheus-backed aggregate snapshot)
+- `security-posture` (Kubernetes API aggregate snapshot; no Trivy CVE bodies)
+
+**Naming note**: Assessment pillar name `performance` is unrelated to the collection type token `performance-metrics`. Do not collapse the two strings in filters or docs.
+
+**Non-breaking stance**:
+- Prefer additive `--type` enum values and additive JSON fields inside typed payloads.
+- Do not rename or remove shipped type strings.
+- Empty successful list (including a valid `--type` with zero stored rows) remains normal success / evidence gap, not an error.
+- `collectionStats` on the status ConfigMap stays an **aggregate** counter object (`totalSuccessCount`, `totalFailureCount`, `collectionsStoredCount`, `lastSuccessTime`). New types participate in those aggregates without changing the CollectionStats field set. Clients must tolerate unknown collection types when present (progressive enhancement).
+
+**JSON shape (collections list, programmatic default)**: Object with `collections` (summary array) and `pagination` (`total`, `limit`, `offset`, `returned`). `get` returns the full sanitization-wrapped `CollectionPayload` for one `collection_id`.
+
+**Wire path / consumers**:
+- Same kubectl-exec + Extension/Desktop User RBAC as other query commands.
+- **This initiative**: operator-only producer (schedule, persist, status participation, CLI). kube9-vscode and kube9-desktop do not ship consumer UX in the same milestone; they remain read-only progressive-enhancement peers.
+- Desktop foreshadowed flat `metrics` / `security` sketches, CRD `SecurityScan` notes, and any api.kube9.io metrics posting paths are **non-normative** for operator v1 collection payloads. Operator contracts win for in-cluster query JSON.
+
+**Failure / degrade (consumer-facing)**:
+- CLI validation and not-found follow existing collections stderr JSON + non-zero exit patterns.
+- Prometheus absence affects whether new `performance-metrics` rows appear over time; it does not invent a separate query error family for list/get of stored rows. Exact collector tick failure codes are open implementation decisions (see [external_systems.md](external_systems.md)).
+
+**Retention (consumer narrative)**: No time-based TTL and no count-based cap for `collections` rows in this initiative (assessments-class: rows persist until explicit remove / operational cleanup). Consumers rely only on rows still stored. Authoritative persistence wording lives in `.ai/data/consistency.md`.
+
+### Open implementation decisions (collections query / status wire)
+
+- Exact CLI help text / `--type` enum listing once both new tokens ship; table/compact column widths for new summary fields (coordinate with interface).
+- Whether status ConfigMap gains an optional bounded `prometheus` (or equivalent) detection block analogous to `trivy` / `argocd` (coordinate with external_systems + data serialization).
+- Payload field catalogs for `performance-metrics` and `security-posture` (owned by data; integration requires only that wire types stay additive and peer-tolerant).
+- Confirm peers that ignore unknown `type` values need no same-milestone `.ai` edits (default: yes).
 
 ### Assessment API Contract
 

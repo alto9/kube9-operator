@@ -140,13 +140,54 @@ Extension reads `status` key from ConfigMap `kube9-operator-status` in operator 
 
 ## Collection Payloads
 
-M8 collectors store data as JSON blobs in `collections` table. Schema validated before storage. (Note: collections table not yet implemented in current schema)
+Collectors store data as JSON documents in the SQLite `collections` table. Schema validated before storage (`CollectionPayload` / `CollectionPayloadSchema`). Query surface: `kube9-operator query collections list|get` (additive `--type` values; same list/get pagination envelope as today).
+
+### Envelope
+
+Each stored document is a `CollectionPayload`:
+
+| Field | Role |
+|-------|------|
+| `version` | Payload schema version |
+| `type` | Discriminant: `cluster-metadata` \| `resource-inventory` \| `resource-configuration-patterns` \| `performance-metrics` \| `security-posture` |
+| `data` | Type-specific bounded aggregate object (not a raw dump) |
+| `sanitization` | Sanitization metadata / wrapping consistent with peer collectors |
+| identity / time fields | `collectionId`, `clusterId`, `timestamp` (and peers as already defined for existing types) |
+
+Persisted `payload_json` must match this envelope at write time. Operator owns the normative producer shape. Desktop foreshadowed flat `metrics` / `security` sketches and CRD notes are non-normative.
+
+### Type semantics (serialization class)
+
+| `type` | `data` class | Source class |
+|--------|--------------|--------------|
+| `cluster-metadata` | Cluster identity / topology aggregates | Kubernetes API |
+| `resource-inventory` | Hashed namespace and workload counts | Kubernetes API |
+| `resource-configuration-patterns` | Config-pattern rollups (limits, probes, security contexts, …) | Kubernetes API |
+| `performance-metrics` | Bounded utilization / ratio aggregates | Optional in-cluster Prometheus (outbound); degrade when absent |
+| `security-posture` | Bounded privileged/host* counts, NetworkPolicy coverage, basic NSA/CIS-oriented rollups | Kubernetes API only (no Trivy CVE bodies; no RBAC risk rollups in this type) |
+
+Empty successful `query collections list` (including `--type` with no rows) remains normal success serialization. No retention-window fields on list/get JSON (see [consistency.md](consistency.md)).
+
+### Status surface
+
+`collectionStats` stays aggregate counters (`totalSuccessCount`, `totalFailureCount`, `collectionsStoredCount`, `lastSuccessTime`). New types participate in those counters without changing the CollectionStats field set.
 
 ## Open implementation decisions
+
+### Collection payload field-level serialization
+
+- Concrete `data` property catalogs and nested JSON shapes for `performance-metrics` and `security-posture` (including optional Prometheus source-status marker and size bounds).
+- Exact Zod / TypeScript literal updates for the two new discriminants and write-time mismatch rejection.
+- Whether degrade ticks serialize a durable unavailable payload vs omit the row (see [data_model.md](data_model.md) open decisions).
+- Resolve via `/refine-issue` into field tables once implementation picks keys.
 
 ### Resolved (retention metadata on query JSON)
 
 Event list/get and assessments history JSON keep existing shapes (`events` / `history` plus `pagination`). No retention-window, configured-day, or prune “as of” fields are added for agent or Desktop consumers in this epic. Consumers bound queries with `--since` / `--until` against rows still present after severity-split retention (see [consistency.md](consistency.md)).
+
+### Resolved (collections query JSON)
+
+Collections list/get keep the generic envelope and pagination. New types appear as additive `type` / `--type` values only. No retention metadata, TTL, or count-cap fields are added to collections query JSON. Consumers read still-stored rows (assessments-class retention; see [consistency.md](consistency.md)).
 
 ### Out of scope (operator `--since` value forms)
 
