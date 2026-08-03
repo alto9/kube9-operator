@@ -42,9 +42,9 @@
   - `namespaces` - To verify ArgoCD namespace exists
   - `deployments` (apps) - To find ArgoCD server deployment
 
-**Security-posture collector**: Uses the same read-only Kubernetes API surface (pods, namespaces, networkpolicies, and related object fields already readable). No Secrets API, no `pods/exec`, no cluster-admin. Any additional API-group reads required for agreed NSA/CIS-oriented rollups are additive ClusterRole deltas coordinated with operations (open implementation decision below).
+**Security-posture collector**: Uses the same read-only Kubernetes API surface (pods, namespaces, networkpolicies, and related object fields already readable). No Secrets API, no `pods/exec`, no cluster-admin. Locked v1 signals require **no ClusterRole expansion**; packaging only updates the NetworkPolicy purpose comment.
 
-**Prometheus outbound client**: Optional HTTP egress to a configured in-cluster Prometheus. Does **not** require new Kubernetes RBAC verbs for Prometheus itself. Credential mounts (if any) follow optional Secret patterns; do not imply SA token as Prometheus credential by default (see [external_systems.md](external_systems.md)).
+**Prometheus outbound client**: Optional HTTP egress to a configured in-cluster Prometheus. Does **not** require new Kubernetes RBAC verbs for Prometheus itself. v1 uses URL + timeout + TLS only (no Secret mount); never use the operator SA token as an implicit Prometheus credential (see [external_systems.md](external_systems.md)).
 
 **Binding**: `ClusterRoleBinding` binds ServiceAccount to ClusterRole
 
@@ -155,9 +155,12 @@ rules:
 ## Open implementation decisions
 
 - **Agent auth model**: Closed for this epic. Desktop AI agent Tier 2 uses the same Extension / Desktop User RBAC and kubectl-exec path; no new Role, ClusterRole, or token type.
-- **Prometheus outbound auth knobs**: Exact none / bearer / basic / Secret-mount defaults and TLS verify vs insecure. Confirm operator SA token is never an implicit Prometheus credential. Align Secret mount patterns with chart precedents if dedicated credentials are supported. Peer scope `#169` / `#171`.
+
+### Resolved (Prometheus outbound auth knobs)
+
+v1 uses URL + timeout + TLS only (`PROMETHEUS_BASE_URL` / `PROMETHEUS_TIMEOUT_MS` / `PROMETHEUS_TLS_INSECURE`; Helm `prometheus.*`). No bearer, basic, or Secret mount for Prometheus. Operator ServiceAccount token is never an implicit Prometheus credential. Chart does not create Secrets from plaintext.
 
 ### Resolved (security-posture RBAC and health)
 
-- **RBAC delta:** None for the locked v1 posture signal set (pods, apps workloads, namespaces, networkpolicies already granted). Keep read-only; no Secrets, no pod exec, no cluster-admin.
+- **RBAC delta:** None for the locked v1 posture signal set (pods, apps workloads, namespaces, networkpolicies already granted). Keep read-only; no Secrets, no pod exec, no cluster-admin. Packaging only updates the NetworkPolicy purpose comment (no new rules).
 - **Degrade vs global health:** Posture API list failures follow omit-row + failed metrics + retry next interval. Do not widen `health: degraded` / `unhealthy` or fail `/readyz` solely for posture collect failures (coordinate with runtime/error_handling).

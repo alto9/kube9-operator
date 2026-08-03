@@ -118,33 +118,34 @@ Prometheus has two distinct roles for kube9-operator. They must not be conflated
 
 ### Role B: Optional outbound client (performance-metrics collector)
 
-**Scope boundary**: The performance-metrics collector may call an **in-cluster Prometheus** HTTP API (and/or scrape selected in-cluster targets) to build a **bounded aggregate snapshot** for SQLite `collections`. This path is **optional** and **additive** to Role A. The kube9-operator chart does **not** install Prometheus or Prometheus Operator. Absence or unreachability must not block other collectors, readiness, or serve startup.
+**Scope boundary**: The performance-metrics collector may call an **in-cluster Prometheus** PromQL HTTP API to build a **bounded aggregate snapshot** for SQLite `collections`. This path is **optional** and **additive** to Role A. The kube9-operator chart does **not** install Prometheus or Prometheus Operator. Absence or unreachability must not block other collectors, readiness, or serve startup.
 
 **Opt-in posture** (align with Trivy optional outbound):
-- No performance-metrics pull until an in-cluster Prometheus endpoint is configured (or explicitly enabled via chart/env).
-- Do **not** silently auto-query arbitrary discovered scrapers without configuration.
+- No performance-metrics pull until `PROMETHEUS_BASE_URL` / Helm `prometheus.baseUrl` is non-empty (config-gated registration; no separate enable flag).
+- Do **not** silently auto-query arbitrary discovered scrapers without configuration. No chart `autoDetect` for Prometheus in v1.
 - Default install stays zero-ingress: cluster-internal egress only when configured.
-- **Non-goals**: metrics-server / Kubernetes Metrics API fallback; multi-cluster federation; phone-home or upload of collections/metrics to kube9-api; replacing Prometheus Operator as a metrics stack.
+- **Non-goals**: metrics-server / Kubernetes Metrics API fallback; multi-cluster federation; phone-home or upload of collections/metrics to kube9-api; replacing Prometheus Operator as a metrics stack; required `status.prometheus` block.
+
+**Helm / env (packaging + runtime):**
+- `prometheus.baseUrl` → `PROMETHEUS_BASE_URL` (emit only when non-empty)
+- `prometheus.timeoutMs` (default `30000`, min `1000`) → `PROMETHEUS_TIMEOUT_MS`
+- `prometheus.tlsInsecure` (default `false`) → `PROMETHEUS_TLS_INSECURE`
 
 **Behavior**:
-- **Detection / readiness of the integration**: When configured, the operator may probe the configured Prometheus endpoint (timeouts and periodic refresh are implementation-defined, Trivy/Argo CD-adjacent). Exact Helm/env key names and whether a bounded `status.prometheus` (or equivalent) block is published are open implementation decisions below.
+- **Call shape (v1):** PromQL HTTP instant queries against the configured base URL (`/api/v1/query` class). Direct target scrape is out of scope for v1.
 - **Collection**: On CollectionScheduler ticks for the performance-metrics type, fetch a bounded utilization/ratio rollup snapshot. Persist as an append-only SQLite `collections` row when successful (see `.ai/data/`).
-- **Resilience**: Unreachable, auth-failed, timed-out, or empty Prometheus responses degrade **this collection type only** (log + metric + retry next interval). Operator global `health` does not become `unhealthy` solely because Prometheus is missing. Exact tick classification (failed vs skipped vs success-with-unavailable) is coordinated with runtime/data/error_handling.
+- **Resilience**: Unreachable, auth-failed, timed-out, or empty/unusable Prometheus responses **omit** a `collections` row, count the tick as **failed** on collection metrics / `totalFailureCount`, and retry next interval. Operator global `health` does not become `unhealthy` and `/readyz` stays ready. Do not persist `source.available: false` marker rows.
 
-**Auth family** (shape):
-- Stay inside existing optional in-cluster HTTP patterns (base URL, timeout, TLS verify / insecure).
-- Prefer **not** sending the operator Kubernetes ServiceAccount token to Prometheus by default.
-- Dedicated optional credentials only when a platform admin configures them (Secret mount pattern may follow Argo CD / chart precedents). Exact schemes and defaults are open implementation decisions below.
+**Auth family** (v1):
+- URL + timeout + TLS only. No bearer, basic, or Secret mount for Prometheus credentials in v1.
+- Never send the operator Kubernetes ServiceAccount token as an implicit Prometheus credential.
 
 **Consumption**: Snapshots feed SQLite `collections`, `query collections`, status `collectionStats` participation, and observability `type` labels. kube9-vscode / kube9-desktop are progressive-enhancement consumers later; this initiative is operator-producer only.
 
-### Open implementation decisions (Prometheus outbound)
+### Resolved (Prometheus outbound packaging + client contract)
 
-- Discovery / URL keys: exact Helm values and env names for base URL, enable flag, namespace/service defaults, timeouts; whether any presence probe populates a bounded `status.prometheus` (or equivalent) analogous to `status.trivy`.
-- Call shape: PromQL HTTP API vs direct scrape of selected targets (or both); requirements-level query set / series allowlist; body/size bounds; retries.
-- Auth knobs: none vs bearer vs basic (and Secret mount if any); TLS verify / insecure default; confirm SA token is never used as an implicit Prometheus credential.
-- Degrade signals: failure codes for unreachable / auth failed / timeout / empty result, and how they surface in collectionStats / CLI without changing global health semantics beyond existing collector failure practice.
-- Registration gate consistency with runtime: Trivy-style opt-in until configured (integration default). Exact always-register-with-skip vs gated-register wiring must match `.ai/runtime/` after Phase D open-impl lock.
+- Discovery / URL keys, registration gate, auth (none), call shape (PromQL instant), and unavailable degrade (omit + failed) are locked above and in `.ai/runtime/configuration.md` / performance-metrics collector capability.
+- Exact PromQL query set / series allowlist and body/size bounds remain the performance-metrics collector implementation detail within the bounded payload catalog.
 
 ## In-cluster clients (kube9-vscode and kube9-desktop)
 

@@ -166,8 +166,12 @@ securityContext:
 
 ## Open implementation decisions
 
-- **Prometheus credential mount:** Whether v1 ships URL/timeout/TLS only (no Secret mount) or includes an optional existingSecret path in the same release; coordinate with packaging and integration / `#169` / `#171`.
+_(none for packaging / Prometheus credential mount or security-posture RBAC)_
+
+### Resolved (Prometheus credential mount)
+
+v1 ships **URL + timeout + TLS only** via Helm `prometheus.baseUrl` / `prometheus.timeoutMs` / `prometheus.tlsInsecure` → `PROMETHEUS_BASE_URL` / `PROMETHEUS_TIMEOUT_MS` / `PROMETHEUS_TLS_INSECURE`. No Secret mount, no `existingSecret`, no bearer env for Prometheus in this release. Do not send the operator ServiceAccount token as an implicit Prometheus credential. A future existingSecret path would follow the Argo CD API token class and is out of scope for v1.
 
 ### Resolved (security-posture RBAC delta)
 
-For the locked v1 signal set (privilegedHost + networkPolicyCoverage + six `nsaCisRollups` keys), **no ClusterRole expansion** is required beyond the live chart grants listed above. Keep read-only. Do not add Secrets, pods/exec, or deferred RBAC-risk analysis. NetworkPolicy comment dual-purpose update is packaging (`#171`).
+For the locked v1 signal set (privilegedHost + networkPolicyCoverage + six `nsaCisRollups` keys), **no ClusterRole expansion** is required beyond the live chart grants listed above. Keep read-only. Do not add Secrets, pods/exec, or deferred RBAC-risk analysis. Packaging updates the NetworkPolicy resource comment in `charts/kube9-operator/templates/clusterrole.yaml` to name both AI conformance and security-posture coverage (no rule change).

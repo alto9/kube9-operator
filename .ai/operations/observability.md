@@ -265,11 +265,14 @@ Agent or Desktop wrapping of `query events list` / `query assessments history` d
 
 ### Open implementation decisions
 
+- **Alert thresholds under query load:** Exact alert thresholds on `kube9_operator_events_dropped_total` / queue depth when clients issue more frequent history queries remain refine-issue backlog, not a packaging or deployment-band change.
+- **Histogram buckets for ~15m performance ticks:** Confirm shared collection duration buckets remain adequate; any bucket tweak is refine-issue backlog, not a product packaging change.
+- **Collection-series alert thresholds:** Exact alert thresholds on the new type labels stay refine-issue backlog like other collection metrics.
+
 ### Resolved (collection type labels and collectionStats)
 
-Prometheus collection-series `type` label values match payload / CLI ids: `cluster-metadata`, `resource-inventory`, `resource-configuration-patterns`, `performance-metrics`, `security-posture`. Do not rename or remove existing type strings; cardinality stays within this closed set. Status ConfigMap `collectionStats` stays aggregate-only (`totalSuccessCount`, `totalFailureCount`, `collectionsStoredCount`, `lastSuccessTime`) for this initiative; no required per-type status fields.
+Prometheus collection-series `type` label values match payload / CLI ids: `cluster-metadata`, `resource-inventory`, `resource-configuration-patterns`, `performance-metrics`, `security-posture`. Do not rename or remove existing type strings; cardinality stays within this closed set. Status ConfigMap `collectionStats` stays aggregate-only (`totalSuccessCount`, `totalFailureCount`, `collectionsStoredCount`, `lastSuccessTime`) for this initiative; no required per-type status fields. Packaging and chart docs must not invent additional type label strings.
 
-- **Alert thresholds under query load:** Exact alert thresholds on `kube9_operator_events_dropped_total` / queue depth when clients issue more frequent history queries remain refine-issue backlog, not a packaging or deployment-band change.
-- **Prometheus-absent tick → `status` label:** How absent/unreachable Prometheus maps to `kube9_operator_collection_total` `status` (`success` / `failed` / skip-without-increment) so existing dashboards that filter known types keep working; coordinate with runtime degrade classification (performance-metrics collector scope).
-- **Histogram buckets for ~15m performance ticks:** Confirm shared collection duration buckets remain adequate; any bucket tweak is refine-issue backlog, not a product packaging change.
-- **Collection-series alert thresholds:** Exact alert thresholds on the new type labels stay `/refine-issue` backlog like other collection metrics.
+### Resolved (Prometheus-absent tick → `status` label)
+
+When the performance-metrics collector is registered and Prometheus is unreachable, auth-failed, timed out, or returns unusable/empty results: increment `kube9_operator_collection_total` with `type="performance-metrics"` and `status="failed"` (and aggregate `totalFailureCount`). Do not use skip-without-increment for that path. Unset Prometheus URL means the collector is not registered (no series increments for that type until configured).

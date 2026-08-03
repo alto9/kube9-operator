@@ -98,4 +98,11 @@ Desktop and other clients may query retained events and assessments history via 
 
 - **Local dogfood paths:** Whether minikube / kind checklists should call out an explicit operator-present vs operator-absent history query smoke step (Desktop owns acceptance scoring; operator side only needs confirmable query + chart defaults).
 - **emptyDir wording in install docs:** Exact operator install-doc phrasing that persistence-off means ephemeral history for agent/evidence consumers (packaging already documents the volume switch).
-- **Collector smoke in Helm Phase 5 / minikube:** Whether `test-helm-chart.sh` Phase 5 or deploy:minikube docs assert new interval env keys and (when Prometheus is absent) graceful performance-collector degrade without failing readiness; exact assertions stay refine-issue / harness work.
+
+### Resolved (collector smoke in Helm Phase 5 / chart harness)
+
+For the packaging deliverable that wires performance-metrics and security-posture intervals plus optional Prometheus client values:
+
+- **`./scripts/test-helm-chart.sh` Phase 2:** Assert default-rendered Deployment includes `PERFORMANCE_METRICS_INTERVAL_SECONDS` and `SECURITY_POSTURE_INTERVAL_SECONDS`; assert `PROMETHEUS_BASE_URL` is absent when `prometheus.baseUrl` is empty; assert URL/timeout/TLS env appear when `prometheus.baseUrl` is set via `--set`.
+- **Phase 5 (kind, when available):** Default install reaches pod Ready without Prometheus installed (Prometheus absence must not fail readiness).
+- **README / chart docs:** Note collections append-only growth (no TTL) and that performance is optional-Prometheus while security posture is cluster-API only. Minikube deploy docs do not need a separate Prometheus install step for default smoke.
