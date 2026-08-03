@@ -8,7 +8,7 @@ vi.mock('../../cluster/identifier.js', () => ({
 
 import { ResourceInventoryCollector } from './resource-inventory.js';
 import type { KubernetesClient } from '../../kubernetes/client.js';
-import type { LocalStorage } from '../storage.js';
+import type { CollectionRepository } from '../../database/collection-repository.js';
 
 function nsId(name: string): string {
   return `namespace-${createHash('sha256').update(name).digest('hex').substring(0, 12)}`;
@@ -69,7 +69,7 @@ function mockKubernetesClient(): KubernetesClient {
 describe('ResourceInventoryCollector', () => {
   it('collect() hashes namespace names and aggregates counts', async () => {
     const k8sClient = mockKubernetesClient();
-    const collector = new ResourceInventoryCollector(k8sClient, {} as LocalStorage);
+    const collector = new ResourceInventoryCollector(k8sClient, {} as CollectionRepository);
 
     const inv = await collector.collect();
 
@@ -109,24 +109,24 @@ describe('ResourceInventoryCollector', () => {
       items: [{ metadata: {}, spec: {} }],
     });
 
-    const collector = new ResourceInventoryCollector(k8sClient, {} as LocalStorage);
+    const collector = new ResourceInventoryCollector(k8sClient, {} as CollectionRepository);
     const inv = await collector.collect();
 
     expect(inv.resources.services.total).toBe(1);
     expect(inv.resources.services.byType.ClusterIP).toBe(1);
   });
 
-  it('processCollection() stores a validated resource-inventory payload', async () => {
+  it('processCollection() persists a validated resource-inventory payload', async () => {
     const k8sClient = mockKubernetesClient();
-    const store = vi.fn().mockResolvedValue(undefined);
-    const localStorage = { store } as unknown as LocalStorage;
+    const insertCollection = vi.fn().mockReturnValue(true);
+    const collectionRepository = { insertCollection } as unknown as CollectionRepository;
 
-    const collector = new ResourceInventoryCollector(k8sClient, localStorage);
+    const collector = new ResourceInventoryCollector(k8sClient, collectionRepository);
     const inv = await collector.collect();
     await collector.processCollection(inv);
 
-    expect(store).toHaveBeenCalledTimes(1);
-    const payload = store.mock.calls[0][0] as {
+    expect(insertCollection).toHaveBeenCalledTimes(1);
+    const payload = insertCollection.mock.calls[0][0] as {
       type: string;
       sanitization: { rulesApplied: string[] };
     };
@@ -137,28 +137,44 @@ describe('ResourceInventoryCollector', () => {
     ]);
   });
 
-  it('processCollection() does not store when validation fails', async () => {
-    const store = vi.fn().mockResolvedValue(undefined);
-    const localStorage = { store } as unknown as LocalStorage;
+  it('processCollection() does not persist when validation fails', async () => {
+    const insertCollection = vi.fn().mockReturnValue(true);
+    const collectionRepository = { insertCollection } as unknown as CollectionRepository;
     const collector = new ResourceInventoryCollector(
       mockKubernetesClient(),
-      localStorage
+      collectionRepository
     );
 
-    await collector.processCollection({
-      timestamp: new Date().toISOString(),
-      collectionId: 'bad-id',
-      clusterId: 'cls_' + 'a'.repeat(32),
-      namespaces: { count: 0, list: [] },
-      resources: {
-        pods: { total: 0, byNamespace: {} },
-        deployments: { total: 0 },
-        statefulSets: { total: 0 },
-        replicaSets: { total: 0 },
-        services: { total: 0, byType: {} },
-      },
-    });
+    await expect(
+      collector.processCollection({
+        timestamp: new Date().toISOString(),
+        collectionId: 'bad-id',
+        clusterId: 'cls_' + 'a'.repeat(32),
+        namespaces: { count: 0, list: [] },
+        resources: {
+          pods: { total: 0, byNamespace: {} },
+          deployments: { total: 0 },
+          statefulSets: { total: 0 },
+          replicaSets: { total: 0 },
+          services: { total: 0, byType: {} },
+        },
+      })
+    ).rejects.toThrow();
 
-    expect(store).not.toHaveBeenCalled();
+    expect(insertCollection).not.toHaveBeenCalled();
+  });
+
+  it('processCollection() throws when durable insert fails', async () => {
+    const insertCollection = vi.fn().mockReturnValue(false);
+    const collectionRepository = { insertCollection } as unknown as CollectionRepository;
+    const collector = new ResourceInventoryCollector(
+      mockKubernetesClient(),
+      collectionRepository
+    );
+
+    const inv = await collector.collect();
+    await expect(collector.processCollection(inv)).rejects.toThrow(
+      /Failed to persist resource inventory/i
+    );
   });
 });

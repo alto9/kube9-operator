@@ -8,6 +8,7 @@ import { stopHealthServer } from '../health/server.js';
 import type { OperatorStatus } from '../status/types.js';
 import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
+import { CollectionRepository } from '../database/collection-repository.js';
 import { argocdStatusTracker } from '../argocd/state.js';
 import { trivyStatusTracker } from '../trivy/state.js';
 import { withPersistedArgoApplicationsSummary } from '../status/argocd-for-status.js';
@@ -100,6 +101,8 @@ export async function gracefulShutdown(
 
     await stopHealthServer();
 
+    const collectionRepository = new CollectionRepository();
+    collectionStatsTracker.updateStoredCount(collectionRepository.countCollections({}));
     const collectionStats = collectionStatsTracker.getStats();
     const argocdStatus = withPersistedArgoApplicationsSummary(argocdStatusTracker.getStatus());
     const trivyStatus = trivyStatusTracker.getStatus();

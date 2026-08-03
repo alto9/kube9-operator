@@ -9,28 +9,29 @@ import { randomBytes } from 'crypto';
 import * as k8s from '@kubernetes/client-node';
 import type { ClusterMetadata, CollectionPayload } from '../types.js';
 import { validateClusterMetadata } from '../validation.js';
-import { LocalStorage } from '../storage.js';
+import type { CollectionRepository } from '../../database/collection-repository.js';
+import { persistCollection } from '../persist-collection.js';
 import { KubernetesClient } from '../../kubernetes/client.js';
 import { generateClusterIdForCollection } from '../../cluster/identifier.js';
 import { logger } from '../../logging/logger.js';
 
 /**
  * ClusterMetadataCollector collects cluster metadata and processes it
- * through validation and local storage.
+ * through validation and durable SQLite persistence.
  */
 export class ClusterMetadataCollector {
   private readonly kubernetesClient: KubernetesClient;
-  private readonly localStorage: LocalStorage;
+  private readonly collectionRepository: CollectionRepository;
 
   /**
    * Creates a new ClusterMetadataCollector instance
    *
    * @param kubernetesClient - Kubernetes client for API access
-   * @param localStorage - Local storage for collection payloads
+   * @param collectionRepository - Durable collection persistence
    */
-  constructor(kubernetesClient: KubernetesClient, localStorage: LocalStorage) {
+  constructor(kubernetesClient: KubernetesClient, collectionRepository: CollectionRepository) {
     this.kubernetesClient = kubernetesClient;
-    this.localStorage = localStorage;
+    this.collectionRepository = collectionRepository;
   }
 
   /**
@@ -104,8 +105,8 @@ export class ClusterMetadataCollector {
   }
 
   /**
-   * Processes collected metadata: validates, wraps in payload, and stores locally
-   * 
+   * Processes collected metadata: validates, wraps in payload, and persists durably
+   *
    * @param metadata - Collected cluster metadata
    * @returns Promise that resolves when processing is complete
    */
@@ -125,10 +126,15 @@ export class ClusterMetadataCollector {
         },
       };
 
-      logger.info('Storing cluster metadata collection locally', {
+      logger.info('Persisting cluster metadata collection', {
         collectionId: validatedMetadata.collectionId,
       });
-      await this.localStorage.store(payload);
+      const inserted = persistCollection(this.collectionRepository, payload);
+      if (!inserted) {
+        throw new Error(
+          `Failed to persist cluster metadata collection: ${validatedMetadata.collectionId}`
+        );
+      }
 
       logger.info('Cluster metadata collection processed successfully', {
         collectionId: validatedMetadata.collectionId,

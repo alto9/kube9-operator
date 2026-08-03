@@ -13,7 +13,7 @@ import { CollectionScheduler } from './collection/scheduler.js';
 import { ClusterMetadataCollector } from './collection/collectors/cluster-metadata.js';
 import { ResourceInventoryCollector } from './collection/collectors/resource-inventory.js';
 import { ResourceConfigurationPatternsCollector } from './collection/collectors/resource-configuration-patterns.js';
-import { LocalStorage } from './collection/storage.js';
+import { CollectionRepository } from './database/collection-repository.js';
 import { recordCollection } from './collection/metrics.js';
 import { collectionStatsTracker } from './collection/stats-tracker.js';
 import { logger } from './logging/logger.js';
@@ -225,10 +225,13 @@ export async function startOperator() {
       logger.info('Collection scheduler created successfully');
 
       // Initialize collection infrastructure
-      const localStorage = new LocalStorage();
+      const collectionRepository = new CollectionRepository();
 
       // Initialize cluster metadata collector
-      const clusterMetadataCollector = new ClusterMetadataCollector(kubernetesClient, localStorage);
+      const clusterMetadataCollector = new ClusterMetadataCollector(
+        kubernetesClient,
+        collectionRepository
+      );
     
     // Register cluster metadata collection task
     collectionScheduler.register(
@@ -260,7 +263,10 @@ export async function startOperator() {
     );
     
     // Initialize resource inventory collector
-    const resourceInventoryCollector = new ResourceInventoryCollector(kubernetesClient, localStorage);
+    const resourceInventoryCollector = new ResourceInventoryCollector(
+      kubernetesClient,
+      collectionRepository
+    );
     
     // Register resource inventory collection task
     collectionScheduler.register(
@@ -294,7 +300,7 @@ export async function startOperator() {
     // Initialize resource configuration patterns collector
     const resourceConfigurationPatternsCollector = new ResourceConfigurationPatternsCollector(
       kubernetesClient,
-      localStorage
+      collectionRepository
     );
     
     // Register resource configuration patterns collection task

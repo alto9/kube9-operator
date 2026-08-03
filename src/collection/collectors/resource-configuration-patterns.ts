@@ -22,7 +22,8 @@ import type {
   CollectionPayload,
 } from '../types.js';
 import { validateResourceConfigurationPatterns } from '../validation.js';
-import { LocalStorage } from '../storage.js';
+import type { CollectionRepository } from '../../database/collection-repository.js';
+import { persistCollection } from '../persist-collection.js';
 import { KubernetesClient } from '../../kubernetes/client.js';
 import { generateClusterIdForCollection } from '../../cluster/identifier.js';
 import { logger } from '../../logging/logger.js';
@@ -526,21 +527,21 @@ export function processServiceType(
 
 /**
  * ResourceConfigurationPatternsCollector collects resource configuration patterns
- * and processes them through validation and local storage.
+ * and processes them through validation and durable SQLite persistence.
  */
 export class ResourceConfigurationPatternsCollector {
   private readonly kubernetesClient: KubernetesClient;
-  private readonly localStorage: LocalStorage;
+  private readonly collectionRepository: CollectionRepository;
 
   /**
    * Creates a new ResourceConfigurationPatternsCollector instance
    *
    * @param kubernetesClient - Kubernetes client for API access
-   * @param localStorage - Local storage for collection payloads
+   * @param collectionRepository - Durable collection persistence
    */
-  constructor(kubernetesClient: KubernetesClient, localStorage: LocalStorage) {
+  constructor(kubernetesClient: KubernetesClient, collectionRepository: CollectionRepository) {
     this.kubernetesClient = kubernetesClient;
-    this.localStorage = localStorage;
+    this.collectionRepository = collectionRepository;
   }
 
   /**
@@ -631,8 +632,8 @@ export class ResourceConfigurationPatternsCollector {
   }
 
   /**
-   * Processes collected data: validates, wraps in payload, and stores locally
-   * 
+   * Processes collected data: validates, wraps in payload, and persists durably
+   *
    * @param data - Collected resource configuration patterns data
    * @returns Promise that resolves when processing is complete
    */
@@ -652,10 +653,15 @@ export class ResourceConfigurationPatternsCollector {
         },
       };
 
-      logger.info('Storing resource configuration patterns collection locally', {
+      logger.info('Persisting resource configuration patterns collection', {
         collectionId: validatedData.collectionId,
       });
-      await this.localStorage.store(payload);
+      const inserted = persistCollection(this.collectionRepository, payload);
+      if (!inserted) {
+        throw new Error(
+          `Failed to persist resource configuration patterns collection: ${validatedData.collectionId}`
+        );
+      }
 
       logger.info('Resource configuration patterns collection processed successfully', {
         collectionId: validatedData.collectionId,
@@ -666,7 +672,7 @@ export class ResourceConfigurationPatternsCollector {
         error: errorMessage,
         collectionId: data.collectionId,
       });
-      // Don't throw - graceful degradation
+      throw error;
     }
   }
 

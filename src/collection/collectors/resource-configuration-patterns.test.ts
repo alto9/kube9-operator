@@ -966,11 +966,11 @@ it('ResourceConfigurationPatternsCollector - collect() invokes cluster-wide pod,
     },
   };
 
-  const mockLocalStorage = { store: async () => {} };
+  const mockCollectionRepository = { insertCollection: () => true };
 
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any
+    mockCollectionRepository as any
   );
 
   await collector.collect();
@@ -997,14 +997,11 @@ it('ResourceConfigurationPatternsCollector - collect() generates valid collectio
     },
   };
 
-  // Mock LocalStorage
-  const mockLocalStorage = {
-    store: async () => {},
-  };
+  const mockCollectionRepository = { insertCollection: () => true };
 
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any
+    mockCollectionRepository as any
   );
 
   const data = await collector.collect();
@@ -1028,11 +1025,11 @@ it('ResourceConfigurationPatternsCollector - collect() includes timestamp', asyn
     },
   };
 
-  const mockLocalStorage = { store: async () => {} };
+  const mockCollectionRepository = { insertCollection: () => true };
 
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any
+    mockCollectionRepository as any
   );
 
   const data = await collector.collect();
@@ -1075,11 +1072,11 @@ it('ResourceConfigurationPatternsCollector - collect() processes pods', async ()
     },
   };
 
-  const mockLocalStorage = { store: async () => {} };
+  const mockCollectionRepository = { insertCollection: () => true };
 
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any
+    mockCollectionRepository as any
   );
 
   const data = await collector.collect();
@@ -1116,11 +1113,11 @@ it('ResourceConfigurationPatternsCollector - collect() processes deployments', a
     },
   };
 
-  const mockLocalStorage = { store: async () => {} };
+  const mockCollectionRepository = { insertCollection: () => true };
 
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any
+    mockCollectionRepository as any
   );
 
   const data = await collector.collect();
@@ -1155,11 +1152,11 @@ it('ResourceConfigurationPatternsCollector - collect() processes services', asyn
     },
   };
 
-  const mockLocalStorage = { store: async () => {} };
+  const mockCollectionRepository = { insertCollection: () => true };
 
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any
+    mockCollectionRepository as any
   );
 
   const data = await collector.collect();
@@ -1171,8 +1168,8 @@ it('ResourceConfigurationPatternsCollector - collect() processes services', asyn
     expect(data.services.portsPerService).toEqual([1, 2]);
 });
 
-it('ResourceConfigurationPatternsCollector - processCollection() stores data locally', async () => {
-  let storedPayload: any = null;
+it('ResourceConfigurationPatternsCollector - processCollection() persists data durably', async () => {
+  let persistedPayload: any = null;
 
   const mockKubernetesClient = {
     coreApi: {
@@ -1186,28 +1183,28 @@ it('ResourceConfigurationPatternsCollector - processCollection() stores data loc
     },
   };
 
-  const mockLocalStorage = {
-    store: async (payload: any) => {
-      storedPayload = payload;
+  const mockCollectionRepository = {
+    insertCollection: (payload: any) => {
+      persistedPayload = payload;
+      return true;
     },
   };
 
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any
+    mockCollectionRepository as any
   );
 
   const data = await collector.collect();
   await collector.processCollection(data);
 
-  // Verify data was stored
-  expect(storedPayload, 'Payload should be stored');
-  expect(storedPayload.version).toBe('v1.0.0');
-  expect(storedPayload.type).toBe('resource-configuration-patterns');
-    expect(storedPayload.sanitization.rulesApplied).toEqual(['no-resource-names', 'aggregated-configuration-data']);
+  expect(persistedPayload, 'Payload should be persisted').toBeTruthy();
+  expect(persistedPayload.version).toBe('v1.0.0');
+  expect(persistedPayload.type).toBe('resource-configuration-patterns');
+    expect(persistedPayload.sanitization.rulesApplied).toEqual(['no-resource-names', 'aggregated-configuration-data']);
 });
 
-it('ResourceConfigurationPatternsCollector - processCollection() handles errors gracefully', async () => {
+it('ResourceConfigurationPatternsCollector - processCollection() throws when durable insert fails', async () => {
   const mockKubernetesClient = {
     coreApi: {
       listPodForAllNamespaces: async () => ({ body: { items: [] } }),
@@ -1220,20 +1217,19 @@ it('ResourceConfigurationPatternsCollector - processCollection() handles errors 
     },
   };
 
-  const mockLocalStorage = {
-    store: async () => {
-      throw new Error('Storage error');
-    },
+  const mockCollectionRepository = {
+    insertCollection: () => false,
   };
 
   const collector = new ResourceConfigurationPatternsCollector(
     mockKubernetesClient as any,
-    mockLocalStorage as any
+    mockCollectionRepository as any
   );
 
   const data = await collector.collect();
 
-  // Should not throw - graceful degradation
-  await expect(collector.processCollection(data)).resolves.not.toThrow();
+  await expect(collector.processCollection(data)).rejects.toThrow(
+    /Failed to persist resource configuration patterns/i
+  );
 });
 

@@ -21,6 +21,7 @@ import { AssessmentRepository } from '../database/assessment-repository.js';
 import { AiConformanceRepository } from '../database/ai-conformance-repository.js';
 import { logger } from '../logging/logger.js';
 import { collectionStatsTracker } from '../collection/stats-tracker.js';
+import { CollectionRepository } from '../database/collection-repository.js';
 import { argocdStatusTracker } from '../argocd/state.js';
 import { trivyStatusTracker } from '../trivy/state.js';
 import { withPersistedArgoApplicationsSummary } from './argocd-for-status.js';
@@ -172,6 +173,8 @@ export class StatusWriter {
     try {
       const canWriteConfigMap = true;
 
+      const collectionRepository = new CollectionRepository();
+      collectionStatsTracker.updateStoredCount(collectionRepository.countCollections({}));
       const collectionStats = collectionStatsTracker.getStats();
       const argocdStatus = withPersistedArgoApplicationsSummary(argocdStatusTracker.getStatus());
       const trivyStatus = trivyStatusTracker.getStatus();

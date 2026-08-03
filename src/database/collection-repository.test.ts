@@ -118,4 +118,89 @@ describe('CollectionRepository', () => {
     expect(repo.insertCollection(payload)).toBe(true);
     expect(repo.insertCollection(payload)).toBe(false);
   });
+
+  it('inserts and retrieves valid performance-metrics payload', () => {
+    const repo = new CollectionRepository();
+    const ts = new Date().toISOString();
+    const payload: CollectionPayload = {
+      version: 'v1.0.0',
+      type: 'performance-metrics',
+      data: {
+        timestamp: ts,
+        collectionId: 'coll_perf123456789012345678901234',
+        clusterId: 'cls_testabc1234567890123456789012',
+        source: { available: true },
+        utilization: { cpu: { clusterAvgRatio: 0.25 } },
+      },
+      sanitization: { rulesApplied: ['hash-identifiers'], timestamp: ts },
+    };
+    expect(repo.insertCollection(payload)).toBe(true);
+    const got = repo.getCollectionById('coll_perf123456789012345678901234');
+    expect(got?.type).toBe('performance-metrics');
+    expect(got?.data).toEqual(payload.data);
+  });
+
+  it('inserts and retrieves valid security-posture payload', () => {
+    const repo = new CollectionRepository();
+    const ts = new Date().toISOString();
+    const payload: CollectionPayload = {
+      version: 'v1.0.0',
+      type: 'security-posture',
+      data: {
+        timestamp: ts,
+        collectionId: 'coll_sec1234567890123456789012345',
+        clusterId: 'cls_testabc1234567890123456789012',
+        privilegedHost: {
+          privilegedContainers: 1,
+          hostPathVolumes: 0,
+          hostNetworkPods: 0,
+        },
+        networkPolicyCoverage: {
+          namespacesTotal: 5,
+          namespacesWithNetworkPolicy: 3,
+        },
+        nsaCisRollups: {
+          allowPrivilegeEscalationTrueContainers: 0,
+          runAsNonRootFalseContainers: 1,
+          readOnlyRootFilesystemFalseContainers: 2,
+          capabilitiesNotDroppedAllContainers: 0,
+          automountServiceAccountTokenTruePods: 1,
+          hostNamespacesPods: 0,
+        },
+      },
+      sanitization: { rulesApplied: ['hash-identifiers'], timestamp: ts },
+    };
+    expect(repo.insertCollection(payload)).toBe(true);
+    const got = repo.getCollectionById('coll_sec1234567890123456789012345');
+    expect(got?.type).toBe('security-posture');
+    expect(got?.data).toEqual(payload.data);
+  });
+
+  it('rejects security-posture payload with vulnerabilities field', () => {
+    const repo = new CollectionRepository();
+    const ts = new Date().toISOString();
+    const bad = {
+      version: 'v1.0.0',
+      type: 'security-posture',
+      data: {
+        timestamp: ts,
+        collectionId: 'coll_bad123456789012345678901234',
+        clusterId: 'cls_testabc1234567890123456789012',
+        privilegedHost: { privilegedContainers: 0, hostPathVolumes: 0, hostNetworkPods: 0 },
+        networkPolicyCoverage: { namespacesTotal: 1, namespacesWithNetworkPolicy: 0 },
+        nsaCisRollups: {
+          allowPrivilegeEscalationTrueContainers: 0,
+          runAsNonRootFalseContainers: 0,
+          readOnlyRootFilesystemFalseContainers: 0,
+          capabilitiesNotDroppedAllContainers: 0,
+          automountServiceAccountTokenTruePods: 0,
+          hostNamespacesPods: 0,
+        },
+        vulnerabilities: [],
+      },
+      sanitization: { rulesApplied: [], timestamp: ts },
+    };
+    expect(repo.insertCollection(bad)).toBe(false);
+    expect(repo.countCollections({})).toBe(0);
+  });
 });
