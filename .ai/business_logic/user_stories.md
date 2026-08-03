@@ -212,7 +212,6 @@ Assessment check history is queryable via CLI (`kube9-operator query assessments
 
 Operator business-logic and integration contracts state the user-visible outcome: info/warning **7** days, error/critical **30** days by default, with cleanup every **6 hours** and Helm/env overrides of the effective store window. kube9-desktop interface contracts own evidence-footer and Pro retention microcopy; those surfaces must cite the severity-split pair (or both bands), not a single longer “N days” promise. No 90-day (or other unified) agent/history retention claim belongs in operator consumer prose.
 
-### Performance metrics and security posture (collections)
+### Resolved (performance metrics and security posture collections CLI)
 
-- **CLI `--type` presentation:** Exact enum strings, help text, and table column widths for the two new types are locked with interface contracts; behavior stays on the existing collections list/get archetype (filters, formats, pagination, stderr errors).
-- **Empty-list and degrade copy:** User-facing wording for empty successful lists vs Prometheus-degrade tick outcomes stays coordinated with interface and error_handling; business logic only fixes the outcome classes above.
+CLI `--type` tokens are `performance-metrics` and `security-posture` (with the three shipped types). Help lists all five kebab-case values. Behavior stays on the existing collections list/get archetype (filters, formats, pagination, stderr errors). Empty successful list is a normal evidence gap. Prometheus-absent ticks are producer omit+failed (no special CLI degrade mode); interface owns the shared `No results found` empty-list string and TYPE column widths.

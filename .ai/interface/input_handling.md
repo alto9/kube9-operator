@@ -99,6 +99,12 @@ Persisted M8 collection snapshots (SQLite). Extends the existing `query collecti
 - Filtering to a type with no stored rows is a valid list input; empty success is presentation, not an error (see [presentation.md](presentation.md)).
 - Invalid `--type` values fail option validation (Zod/Commander) with the existing JSON-on-stderr error pattern.
 
+**Collections help / Commander copy:**
+- `query collections list` description names persisted collection snapshots and does not invent parallel subcommands per type.
+- `query collections get` description names retrieval by `collectionId`.
+- The `--type` option description lists all five tokens in kebab-case, comma-separated: `cluster-metadata`, `resource-inventory`, `resource-configuration-patterns`, `performance-metrics`, `security-posture`.
+- Help must not claim Prometheus presence, retention windows, or vscode/desktop consumer UX.
+
 ## Output Formats
 - `json` (default): Pretty-printed JSON with 2-space indentation
 - `yaml`: YAML format with 2-space indentation
@@ -122,6 +128,6 @@ kubectl exec -n <namespace> deploy/kube9-operator -- kube9-operator <command> [o
 
 CLI `--type`, payload discriminants, and observability labels use `cluster-metadata` | `resource-inventory` | `resource-configuration-patterns` | `performance-metrics` | `security-posture`. Invalid values fail option validation with the existing JSON-on-stderr pattern.
 
-### Help / description copy — peer CLI issue scope
+### Resolved (collections help / Commander copy)
 
-Exact Commander descriptions for `query collections` and the `--type` option once help text lists all five types (today help may still list only the three shipped types until the CLI completion issue lands).
+`query collections list|get` and `--type` help list all five kebab-case tokens (comma-separated in the `--type` description). No new flags or subcommands. Help does not mention Prometheus presence, retention windows, or peer UX.

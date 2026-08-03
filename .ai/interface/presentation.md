@@ -80,15 +80,23 @@ Operator CLI only this milestone (no vscode/desktop consumer UX contracts). Surf
 
 ### Degrade and errors
 
-- Prometheus absence / performance degrade is not a distinct CLI presentation mode. Operators see missing or failed persisted rows (or empty type filters), not a special “Prometheus unavailable” list/get cue, unless a later data contract stores an explicit payload marker that json/yaml already surface.
+- Prometheus absence / performance degrade is not a distinct CLI presentation mode. Unavailable performance ticks omit durable rows (collector contract); operators see empty type filters or missing rows, not a special “Prometheus unavailable” list/get cue.
 - Not-found get and validation/runtime failures keep the existing JSON-on-stderr pattern and non-zero exit; they are distinct from empty successful list.
 
 ### Status ConfigMap
 
 - New collection types participate in aggregate `collectionStats` counters only. No new status fields or per-type presentation schema for this milestone. Peer extensions continue progressive enhancement on the existing status shape.
 
+### Table / compact TYPE column
+
+- TYPE truncation stays **24** characters (compact) and **36** (table). New tokens (`performance-metrics`, `security-posture`) fit both widths. Longest shipped token `resource-configuration-patterns` (32) truncates in compact only; do not widen TYPE solely for the two new types.
+
+### Empty-list copy
+
+- Table/compact empty success uses the shared empty-results line `No results found` (same family as events/assessments). Do not invent a type-specific “no collections of this type yet” string.
+
 ## Open implementation decisions
 
-- **TYPE column truncation:** Confirm whether current table/compact TYPE truncation (24 compact / 36 table) remains sufficient for the final type tokens, or widen only the TYPE column.
-- **Get formatting:** Keep generic `formatOutput` for new payload bodies in v1 (no type-specific table columns). Any human-oriented summary view is deferred.
-- **Empty-list copy:** Keep existing empty-results language consistent with events/assessments; do not invent a type-specific “no collections of this type yet” string unless product copy requires it at implement time.
+### Resolved (TYPE truncation, get formatting, empty-list copy)
+
+Keep TYPE truncation at 24 compact / 36 table. Keep generic `formatOutput` for get of new payload bodies in v1 (no type-specific table columns; human-oriented summary views deferred). Keep shared `No results found` empty-list copy; no type-specific empty string.

@@ -157,7 +157,9 @@ kube9-operator query collections get <collectionId> [--format=json|yaml|table|co
 
 **Failure / degrade (consumer-facing)**:
 - CLI validation and not-found follow existing collections stderr JSON + non-zero exit patterns.
-- Prometheus absence affects whether new `performance-metrics` rows appear over time; it does not invent a separate query error family for list/get of stored rows. Exact collector tick failure codes are open implementation decisions (see [external_systems.md](external_systems.md)).
+- Prometheus absence affects whether new `performance-metrics` rows appear over time; it does not invent a separate query error family for list/get of stored rows. Unavailable performance ticks omit a row and count failed (see [external_systems.md](external_systems.md)); CLI presents empty filters or missing rows only.
+
+**CLI help / table presentation**: Commander `--type` help lists all five kebab-case tokens. List table/compact columns stay `COLLECTION_ID`, `CLUSTER_ID`, `TYPE`, `COLLECTED_AT` with TYPE truncation 24 compact / 36 table. Empty table/compact copy is `No results found`. Get uses generic payload formatting. No retention metadata fields on list/get JSON.
 
 **Retention (consumer narrative)**: No time-based TTL and no count-based cap for `collections` rows in this initiative (assessments-class: rows persist until explicit remove / operational cleanup). Consumers rely only on rows still stored. Authoritative persistence wording lives in `.ai/data/consistency.md`.
 
@@ -167,13 +169,13 @@ kube9-operator query collections get <collectionId> [--format=json|yaml|table|co
 
 Payload field catalogs for `performance-metrics` and `security-posture` are normative in data contracts. Wire types stay additive; `collectionStats` remains the aggregate four-field object; peers that ignore unknown `type` values need no same-milestone peer-repo `.ai` edits.
 
-### CLI help / table polish — peer CLI issue scope
+### Resolved (CLI help / table polish)
 
-Exact Commander help text listing and table/compact column widths for new summary fields coordinate with interface once tokens ship (tracked with the query-collections CLI completion issue).
+Collections CLI help lists all five `--type` tokens. Table/compact column set and TYPE truncation (24/36), shared empty-list copy, and generic get formatting are locked in interface contracts. No retention metadata on collections JSON.
 
 ### Optional status prometheus block — not required for pipeline types
 
-Whether status ConfigMap gains an optional bounded `prometheus` (or equivalent) detection block analogous to `trivy` / `argocd` remains optional packaging/integration backlog; not required for five-type CollectionPayload acceptance.
+Whether status ConfigMap gains an optional bounded `prometheus` (or equivalent) detection block analogous to `trivy` / `argocd` remains optional packaging/integration backlog; not required for five-type CollectionPayload acceptance or collections CLI.
 
 ### Assessment API Contract
 
