@@ -32,6 +32,7 @@ const baseConfig: Config = {
   aiConformanceEnabled: true,
   aiConformanceIntervalSeconds: 86400,
   aiConformanceChecklistSource: 'bundled',
+  performanceMetricsIntervalSeconds: 900,
 };
 
 describe('ai-conformance status summary', () => {

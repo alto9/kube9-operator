@@ -13,6 +13,7 @@ import { CollectionScheduler } from './collection/scheduler.js';
 import { ClusterMetadataCollector } from './collection/collectors/cluster-metadata.js';
 import { ResourceInventoryCollector } from './collection/collectors/resource-inventory.js';
 import { ResourceConfigurationPatternsCollector } from './collection/collectors/resource-configuration-patterns.js';
+import { PerformanceMetricsCollector } from './collection/collectors/performance-metrics.js';
 import { CollectionRepository } from './database/collection-repository.js';
 import { recordCollection } from './collection/metrics.js';
 import { collectionStatsTracker } from './collection/stats-tracker.js';
@@ -331,6 +332,45 @@ export async function startOperator() {
         }
       }
     );
+
+    if (config.prometheus) {
+      try {
+        const performanceMetricsCollector = new PerformanceMetricsCollector(
+          config.prometheus,
+          collectionRepository
+        );
+
+        collectionScheduler.register(
+          'performance-metrics',
+          config.performanceMetricsIntervalSeconds,
+          300,
+          300,
+          async () => {
+            const startTime = Date.now();
+            try {
+              const metrics = await performanceMetricsCollector.collect();
+              await performanceMetricsCollector.processCollection(metrics);
+
+              const durationSeconds = (Date.now() - startTime) / 1000;
+              recordCollection('performance-metrics', 'success', durationSeconds);
+              collectionStatsTracker.recordSuccess('performance-metrics');
+            } catch (error) {
+              const errorMessage = error instanceof Error ? error.message : String(error);
+              logger.error('Performance metrics collection failed', { error: errorMessage });
+
+              const durationSeconds = (Date.now() - startTime) / 1000;
+              recordCollection('performance-metrics', 'failed', durationSeconds);
+              collectionStatsTracker.recordFailure('performance-metrics');
+            }
+          }
+        );
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error('Failed to register performance-metrics collector', { error: errorMessage });
+      }
+    } else {
+      logger.info('Performance metrics collector not registered (PROMETHEUS_BASE_URL unset)');
+    }
 
     collectionScheduler.register(
       'workload-image-scan',
