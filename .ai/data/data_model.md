@@ -419,6 +419,6 @@ Normative `data` catalogs for `performance-metrics` and `security-posture` are u
 
 Security-posture ticks that cannot produce a complete schema-valid snapshot (including mid-tick cluster-API list failures) **omit** a `collections` row and count as **failed**. Partial snapshots are not persisted.
 
-### Degrade-row persistence (Prometheus unavailable) — peer collector scope
+### Resolved (Prometheus unavailable degrade-row)
 
-Whether a Prometheus-absent/unreachable tick **omits** a `collections` row, stores a **success** payload with `source.available: false`, or counts as a **collection failure** with no durable row is owned by the performance-metrics collector capability (coordinate with runtime / error_handling). Schema accepts `source.available` either way. Security posture is not gated on Prometheus.
+Unavailable / unreachable / empty Prometheus ticks for registered performance-metrics collectors **omit** a `collections` row and count as **failed** (no durable `source.available: false` marker rows). Locked in `performance-metrics-collector` / external_systems / observability. Schema still requires `source.available` on success rows (`true`). Security posture is not gated on Prometheus. Collections CLI has no Prometheus-specific presentation mode.

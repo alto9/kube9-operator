@@ -25,6 +25,7 @@ Related capabilities: `performance-metrics-collector` and `security-posture-coll
 - **Payload catalogs:** Normative `data` shapes for `performance-metrics` and `security-posture` live in `.ai/data/data_model.md` and `.ai/data/serialization.md` (source marker, utilization/ratios bounds, privilegedHost / networkPolicyCoverage / nsaCisRollups, 64 KiB and key-count caps).
 - **Durable write:** Sole durable write is `CollectionRepository.insertCollection`. Status `collectionsStoredCount` equals SQLite row count. In-memory LocalStorage is not queryable truth and is off the durable write path.
 - **Status:** ConfigMap `collectionStats` remains aggregate-only; new types participate in those counters.
+- **CLI query surface:** `kube9-operator query collections list|get` via kubectl-exec. Additive `--type` enum accepts all five closed tokens. Commander `--type` help lists the five kebab-case values. Formats `json|yaml|table|compact`; list columns `COLLECTION_ID`, `CLUSTER_ID`, `TYPE`, `COLLECTED_AT` with TYPE truncation 24 compact / 36 table; empty table/compact is `No results found`; get uses generic `formatOutput`. No retention metadata on list/get JSON. Invalid `--type` → JSON-on-stderr + non-zero exit. No parallel query API or Prometheus-specific CLI mode.
 - **Config / packaging:**
   - Helm `metrics.intervals.performanceMetrics` (default `900`, min `300`) → `PERFORMANCE_METRICS_INTERVAL_SECONDS`
   - Helm `metrics.intervals.securityPosture` (default `86400`, min `3600`) → `SECURITY_POSTURE_INTERVAL_SECONDS`
@@ -36,15 +37,17 @@ Related capabilities: `performance-metrics-collector` and `security-posture-coll
 ## Testing Strategy
 
 - Unit: payload schema accept/reject per type (including mismatch of `type` vs `data`); reject oversized or forbidden security-posture CVE/RBAC bodies; empty query success envelope.
+- Unit / CLI: `--type` Zod/Commander enum accepts `performance-metrics` and `security-posture` alongside the three shipped types; rejects unknown type strings with JSON-on-stderr + non-zero exit; help/`--help` text lists all five tokens.
+- Unit / presentation: list table/compact for rows of either new type still emit headers `COLLECTION_ID`, `CLUSTER_ID`, `TYPE`, `COLLECTED_AT`; empty list prints `No results found`; TYPE cells use 24/36 truncation; get formatting stays generic `formatOutput` (no type-specific get tables).
 - Unit / integration: durable insert via `CollectionRepository.insertCollection`; `collectionsStoredCount` tracks SQLite count after inserts (not LocalStorage size); LocalStorage store alone does not change durable count or CLI visibility.
-- Integration: SQLite insert + `query collections --type performance-metrics|security-posture` round-trip with fixture payloads; status aggregates keep the four required fields when new types succeed/fail.
+- Integration: SQLite insert of fixture `performance-metrics` and `security-posture` payloads + `query collections list --type …` / `get <id>` round-trip for json and at least one of table|compact; empty `--type` filter for a type with zero rows returns success with empty `collections` and zero pagination totals (not an error); status aggregates keep the four required fields when new types succeed/fail; list/get JSON has no retention-window metadata fields.
 - Contract / chart (packaging):
   - Collection metric `type` labels stay within the closed five-type set
   - `helm template` / `./scripts/test-helm-chart.sh` Phase 2: default Deployment includes both new interval env vars; no `PROMETHEUS_BASE_URL` when `prometheus.baseUrl` empty; URL/timeout/TLS when baseUrl set
   - `values.schema.json` accepts the new interval and `prometheus.*` keys
   - Phase 5 (kind): default install pod Ready without Prometheus
   - ClusterRole: no new rules; NetworkPolicy comment dual-purpose
-- Manual / smoke: collector shipping issues prove gather paths; packaging proves chart wiring and Ready-without-Prometheus.
+- Manual / smoke: collector shipping issues prove gather paths; packaging proves chart wiring and Ready-without-Prometheus; after collectors persist rows, exec `query collections list --type performance-metrics|security-posture` against a live pod confirms CLI visibility.
 
 ## References
 
