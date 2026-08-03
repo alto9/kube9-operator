@@ -16,6 +16,8 @@ const RESOURCE_INVENTORY_INTERVAL_MIN_SECONDS = 1800;
 const ARGOCD_APP_STATUS_INTERVAL_MIN_SECONDS = 1800;
 /** Minimum interval for performance metrics collection (5 minutes). */
 const PERFORMANCE_METRICS_INTERVAL_MIN_SECONDS = 300;
+/** Minimum interval for security posture collection (1 hour). */
+const SECURITY_POSTURE_INTERVAL_MIN_SECONDS = 3600;
 
 /**
  * Parses a positive base-10 integer from env or a default string.
@@ -191,6 +193,12 @@ export async function loadConfig(): Promise<Config> {
     '900',
     PERFORMANCE_METRICS_INTERVAL_MIN_SECONDS
   );
+  const securityPostureIntervalSeconds = parsePositiveInt(
+    'SECURITY_POSTURE_INTERVAL_SECONDS',
+    process.env.SECURITY_POSTURE_INTERVAL_SECONDS,
+    '86400',
+    SECURITY_POSTURE_INTERVAL_MIN_SECONDS
+  );
   const prometheus = parsePrometheusConfigFromEnv();
 
   const config: Config = {
@@ -214,6 +222,7 @@ export async function loadConfig(): Promise<Config> {
     aiConformanceIntervalSeconds,
     aiConformanceChecklistSource,
     performanceMetricsIntervalSeconds,
+    securityPostureIntervalSeconds,
     ...(prometheus !== undefined ? { prometheus } : {}),
   };
 
@@ -259,6 +268,12 @@ export async function loadConfig(): Promise<Config> {
       process.env.PERFORMANCE_METRICS_INTERVAL_SECONDS !== undefined,
     prometheusConfigured: config.prometheus !== undefined,
     prometheusBaseUrl: config.prometheus?.baseUrl ?? null,
+  });
+
+  logger.info('Security posture schedule configured', {
+    securityPostureIntervalSeconds: config.securityPostureIntervalSeconds,
+    securityPostureIntervalOverridden:
+      process.env.SECURITY_POSTURE_INTERVAL_SECONDS !== undefined,
   });
 
   return config;

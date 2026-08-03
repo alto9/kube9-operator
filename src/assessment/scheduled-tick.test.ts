@@ -31,6 +31,7 @@ const baseConfig = {
   aiConformanceIntervalSeconds: 86400,
   aiConformanceChecklistSource: 'bundled' as const,
   performanceMetricsIntervalSeconds: 900,
+  securityPostureIntervalSeconds: 86400,
 } satisfies Config;
 
 const mockKubernetes = {
