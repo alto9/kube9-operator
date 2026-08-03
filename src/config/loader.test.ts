@@ -230,3 +230,42 @@ describe('loadConfig — performance metrics / Prometheus', () => {
     await expect(loadConfig()).rejects.toThrow(/PROMETHEUS_TIMEOUT_MS/);
   });
 });
+
+describe('loadConfig — security posture interval', () => {
+  const keys = ['SECURITY_POSTURE_INTERVAL_SECONDS'] as const;
+  const snapshots: Partial<Record<(typeof keys)[number], string | undefined>> = {};
+
+  beforeEach(() => {
+    for (const key of keys) {
+      snapshots[key] = process.env[key];
+      delete process.env[key];
+    }
+  });
+
+  afterEach(() => {
+    for (const key of keys) {
+      const v = snapshots[key];
+      if (v === undefined) {
+        delete process.env[key];
+      } else {
+        process.env[key] = v;
+      }
+    }
+  });
+
+  it('defaults security posture interval to 86400 seconds', async () => {
+    const config = await loadConfig();
+    expect(config.securityPostureIntervalSeconds).toBe(86400);
+  });
+
+  it('accepts SECURITY_POSTURE_INTERVAL_SECONDS at minimum 3600', async () => {
+    process.env.SECURITY_POSTURE_INTERVAL_SECONDS = '3600';
+    const config = await loadConfig();
+    expect(config.securityPostureIntervalSeconds).toBe(3600);
+  });
+
+  it('rejects security posture interval below minimum', async () => {
+    process.env.SECURITY_POSTURE_INTERVAL_SECONDS = '3599';
+    await expect(loadConfig()).rejects.toThrow(/SECURITY_POSTURE_INTERVAL_SECONDS/);
+  });
+});

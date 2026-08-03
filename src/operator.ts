@@ -14,6 +14,7 @@ import { ClusterMetadataCollector } from './collection/collectors/cluster-metada
 import { ResourceInventoryCollector } from './collection/collectors/resource-inventory.js';
 import { ResourceConfigurationPatternsCollector } from './collection/collectors/resource-configuration-patterns.js';
 import { PerformanceMetricsCollector } from './collection/collectors/performance-metrics.js';
+import { SecurityPostureCollector } from './collection/collectors/security-posture.js';
 import { CollectionRepository } from './database/collection-repository.js';
 import { recordCollection } from './collection/metrics.js';
 import { collectionStatsTracker } from './collection/stats-tracker.js';
@@ -332,6 +333,41 @@ export async function startOperator() {
         }
       }
     );
+
+    try {
+      const securityPostureCollector = new SecurityPostureCollector(
+        kubernetesClient,
+        collectionRepository
+      );
+
+      collectionScheduler.register(
+        'security-posture',
+        config.securityPostureIntervalSeconds,
+        3600,
+        3600,
+        async () => {
+          const startTime = Date.now();
+          try {
+            const posture = await securityPostureCollector.collect();
+            await securityPostureCollector.processCollection(posture);
+
+            const durationSeconds = (Date.now() - startTime) / 1000;
+            recordCollection('security-posture', 'success', durationSeconds);
+            collectionStatsTracker.recordSuccess('security-posture');
+          } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            logger.warn('Security posture collection failed', { error: errorMessage });
+
+            const durationSeconds = (Date.now() - startTime) / 1000;
+            recordCollection('security-posture', 'failed', durationSeconds);
+            collectionStatsTracker.recordFailure('security-posture');
+          }
+        }
+      );
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      logger.error('Failed to register security-posture collector', { error: errorMessage });
+    }
 
     if (config.prometheus) {
       try {

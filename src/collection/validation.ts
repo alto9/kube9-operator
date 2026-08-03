@@ -7,6 +7,8 @@ import type {
   ResourceInventory,
   ResourceConfigurationPatternsData,
   PerformanceMetrics,
+  SecurityPosture,
+  SecurityPostureNsaCisRollups,
 } from './types.js';
 
 /**
@@ -538,6 +540,145 @@ export function validatePerformanceMetrics(data: unknown): PerformanceMetrics {
     source: { available, ...(reason !== undefined ? { reason } : {}) },
     ...(utilization !== undefined ? { utilization } : {}),
     ...(ratios !== undefined ? { ratios } : {}),
+  };
+}
+
+const NSA_CIS_ROLLUP_KEYS = [
+  'allowPrivilegeEscalationTrueContainers',
+  'runAsNonRootFalseContainers',
+  'readOnlyRootFilesystemFalseContainers',
+  'capabilitiesNotDroppedAllContainers',
+  'automountServiceAccountTokenTruePods',
+  'hostNamespacesPods',
+] as const satisfies ReadonlyArray<keyof SecurityPostureNsaCisRollups>;
+
+function validateNsaCisRollups(data: unknown): SecurityPostureNsaCisRollups {
+  const obj = assertObject(data, 'nsaCisRollups');
+  const keys = Object.keys(obj);
+  if (keys.length !== NSA_CIS_ROLLUP_KEYS.length) {
+    throw new ValidationError(
+      'nsaCisRollups',
+      `expected exactly ${NSA_CIS_ROLLUP_KEYS.length} keys, got ${keys.length}`
+    );
+  }
+
+  const rollups = {} as SecurityPostureNsaCisRollups;
+  for (const key of NSA_CIS_ROLLUP_KEYS) {
+    if (!(key in obj)) {
+      throw new ValidationError(`nsaCisRollups.${key}`, 'required key missing');
+    }
+    const value = assertInteger(obj[key], `nsaCisRollups.${key}`);
+    if (value < 0) {
+      throw new ValidationError(`nsaCisRollups.${key}`, `expected integer >= 0, got ${value}`);
+    }
+    rollups[key] = value;
+  }
+
+  for (const key of keys) {
+    if (!(NSA_CIS_ROLLUP_KEYS as readonly string[]).includes(key)) {
+      throw new ValidationError(`nsaCisRollups.${key}`, 'unknown rollup key');
+    }
+  }
+
+  return rollups;
+}
+
+/**
+ * Validates security posture against schema
+ */
+export function validateSecurityPosture(data: unknown): SecurityPosture {
+  const obj = assertObject(data, 'root');
+
+  const timestamp = assertString(obj.timestamp, 'timestamp');
+  assertISO8601Timestamp(timestamp, 'timestamp');
+
+  const collectionId = assertString(obj.collectionId, 'collectionId');
+  assertPattern(collectionId, /^coll_[a-z0-9]{32}$/, 'collectionId', 'collection ID format "coll_[32-char-hash]"');
+
+  const clusterId = assertString(obj.clusterId, 'clusterId');
+  assertPattern(clusterId, /^cls_[a-z0-9]{32}$/, 'clusterId', 'cluster ID format "cls_[32-char-hash]"');
+
+  const privilegedHostObj = assertObject(obj.privilegedHost, 'privilegedHost');
+  const privilegedContainers = assertInteger(
+    privilegedHostObj.privilegedContainers,
+    'privilegedHost.privilegedContainers'
+  );
+  const hostPathVolumes = assertInteger(privilegedHostObj.hostPathVolumes, 'privilegedHost.hostPathVolumes');
+  const hostNetworkPods = assertInteger(privilegedHostObj.hostNetworkPods, 'privilegedHost.hostNetworkPods');
+
+  for (const [field, value] of [
+    ['privilegedHost.privilegedContainers', privilegedContainers],
+    ['privilegedHost.hostPathVolumes', hostPathVolumes],
+    ['privilegedHost.hostNetworkPods', hostNetworkPods],
+  ] as const) {
+    if (value < 0) {
+      throw new ValidationError(field, `expected integer >= 0, got ${value}`);
+    }
+  }
+
+  let hostPIDPods: number | undefined;
+  if (privilegedHostObj.hostPIDPods !== undefined) {
+    hostPIDPods = assertInteger(privilegedHostObj.hostPIDPods, 'privilegedHost.hostPIDPods');
+    if (hostPIDPods < 0) {
+      throw new ValidationError('privilegedHost.hostPIDPods', `expected integer >= 0, got ${hostPIDPods}`);
+    }
+  }
+
+  let hostIPCPods: number | undefined;
+  if (privilegedHostObj.hostIPCPods !== undefined) {
+    hostIPCPods = assertInteger(privilegedHostObj.hostIPCPods, 'privilegedHost.hostIPCPods');
+    if (hostIPCPods < 0) {
+      throw new ValidationError('privilegedHost.hostIPCPods', `expected integer >= 0, got ${hostIPCPods}`);
+    }
+  }
+
+  const networkPolicyCoverageObj = assertObject(obj.networkPolicyCoverage, 'networkPolicyCoverage');
+  const namespacesTotal = assertInteger(
+    networkPolicyCoverageObj.namespacesTotal,
+    'networkPolicyCoverage.namespacesTotal'
+  );
+  const namespacesWithNetworkPolicy = assertInteger(
+    networkPolicyCoverageObj.namespacesWithNetworkPolicy,
+    'networkPolicyCoverage.namespacesWithNetworkPolicy'
+  );
+
+  if (namespacesTotal < 0) {
+    throw new ValidationError('networkPolicyCoverage.namespacesTotal', `expected integer >= 0, got ${namespacesTotal}`);
+  }
+  if (namespacesWithNetworkPolicy < 0) {
+    throw new ValidationError(
+      'networkPolicyCoverage.namespacesWithNetworkPolicy',
+      `expected integer >= 0, got ${namespacesWithNetworkPolicy}`
+    );
+  }
+
+  let coverageRatio: number | undefined;
+  if (networkPolicyCoverageObj.coverageRatio !== undefined) {
+    coverageRatio = assertRatio(
+      networkPolicyCoverageObj.coverageRatio,
+      'networkPolicyCoverage.coverageRatio'
+    );
+  }
+
+  const nsaCisRollups = validateNsaCisRollups(obj.nsaCisRollups);
+
+  return {
+    timestamp,
+    collectionId,
+    clusterId,
+    privilegedHost: {
+      privilegedContainers,
+      hostPathVolumes,
+      hostNetworkPods,
+      ...(hostPIDPods !== undefined ? { hostPIDPods } : {}),
+      ...(hostIPCPods !== undefined ? { hostIPCPods } : {}),
+    },
+    networkPolicyCoverage: {
+      namespacesTotal,
+      namespacesWithNetworkPolicy,
+      ...(coverageRatio !== undefined ? { coverageRatio } : {}),
+    },
+    nsaCisRollups,
   };
 }
 

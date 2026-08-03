@@ -111,6 +111,12 @@ export interface Config {
   performanceMetricsIntervalSeconds: number;
 
   /**
+   * Security posture collection interval in seconds (always-on cluster-API aggregates).
+   * Default: 86400 (24 hours). Minimum: 3600 (1 hour).
+   */
+  securityPostureIntervalSeconds: number;
+
+  /**
    * Optional Prometheus outbound client. Present only when PROMETHEUS_BASE_URL is non-empty.
    */
   prometheus?: PrometheusClientConfig;
