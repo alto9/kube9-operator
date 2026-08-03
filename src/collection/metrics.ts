@@ -18,7 +18,7 @@ export const register = new Registry();
  * Counter for collection attempts by type and status
  * 
  * Labels:
- * - type: Collection type (e.g., "cluster-metadata", "resource-inventory")
+ * - type: Collection type (cluster-metadata, resource-inventory, resource-configuration-patterns, performance-metrics, security-posture)
  * - status: Collection status ("success" or "failed")
  */
 const collectionTotal = new Counter({
@@ -32,7 +32,7 @@ const collectionTotal = new Counter({
  * Histogram for collection duration in seconds
  * 
  * Labels:
- * - type: Collection type (e.g., "cluster-metadata", "resource-inventory")
+ * - type: Collection type (cluster-metadata, resource-inventory, resource-configuration-patterns, performance-metrics, security-posture)
  * 
  * Buckets: [0.1, 0.5, 1, 2.5, 5, 10, 30, 60, 120] seconds
  */
@@ -48,7 +48,7 @@ const collectionDurationSeconds = new Histogram({
  * Gauge for last successful collection timestamp (Unix epoch seconds)
  * 
  * Labels:
- * - type: Collection type (e.g., "cluster-metadata", "resource-inventory")
+ * - type: Collection type (cluster-metadata, resource-inventory, resource-configuration-patterns, performance-metrics, security-posture)
  */
 const collectionLastSuccess = new Gauge({
   name: 'kube9_operator_collection_last_success',
@@ -60,7 +60,7 @@ const collectionLastSuccess = new Gauge({
 /**
  * Records a collection attempt with metrics
  * 
- * @param type - Collection type (e.g., "cluster-metadata", "resource-inventory")
+ * @param type - Collection type (cluster-metadata, resource-inventory, resource-configuration-patterns, performance-metrics, security-posture)
  * @param status - Collection status ("success" or "failed")
  * @param durationSeconds - Duration of the collection operation in seconds
  */

@@ -100,9 +100,44 @@
               "description": "Argo CD Application API status collection interval in seconds. Default: 3600 (1 hour). Minimum: 1800 (30 minutes).",
               "minimum": 1800,
               "default": 3600
+            },
+            "performanceMetrics": {
+              "type": "integer",
+              "description": "Performance metrics collection interval in seconds. Default: 900 (15 minutes). Minimum: 300 (5 minutes). Requires optional Prometheus client (prometheus.baseUrl).",
+              "minimum": 300,
+              "default": 900
+            },
+            "securityPosture": {
+              "type": "integer",
+              "description": "Security posture collection interval in seconds. Default: 86400 (24 hours). Minimum: 3600 (1 hour). Cluster API only.",
+              "minimum": 3600,
+              "default": 86400
             }
           },
           "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "prometheus": {
+      "type": "object",
+      "description": "Optional Prometheus HTTP client for performance-metrics collector (outbound; chart does not install Prometheus)",
+      "properties": {
+        "baseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Prometheus base URL. Empty = default-off (no PROMETHEUS_BASE_URL env; performance collector not registered)."
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "default": 30000,
+          "description": "PROMETHEUS_TIMEOUT_MS — HTTP timeout for Prometheus queries"
+        },
+        "tlsInsecure": {
+          "type": "boolean",
+          "default": false,
+          "description": "PROMETHEUS_TLS_INSECURE — skip TLS verification (labs only)"
         }
       },
       "additionalProperties": false
