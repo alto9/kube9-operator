@@ -10,28 +10,29 @@ import { randomBytes, createHash } from 'crypto';
 import * as k8s from '@kubernetes/client-node';
 import type { ResourceInventory, CollectionPayload } from '../types.js';
 import { validateResourceInventory } from '../validation.js';
-import { LocalStorage } from '../storage.js';
+import type { CollectionRepository } from '../../database/collection-repository.js';
+import { persistCollection } from '../persist-collection.js';
 import { KubernetesClient } from '../../kubernetes/client.js';
 import { generateClusterIdForCollection } from '../../cluster/identifier.js';
 import { logger } from '../../logging/logger.js';
 
 /**
  * ResourceInventoryCollector collects resource inventory and processes it
- * through validation and local storage.
+ * through validation and durable SQLite persistence.
  */
 export class ResourceInventoryCollector {
   private readonly kubernetesClient: KubernetesClient;
-  private readonly localStorage: LocalStorage;
+  private readonly collectionRepository: CollectionRepository;
 
   /**
    * Creates a new ResourceInventoryCollector instance
    *
    * @param kubernetesClient - Kubernetes client for API access
-   * @param localStorage - Local storage for collection payloads
+   * @param collectionRepository - Durable collection persistence
    */
-  constructor(kubernetesClient: KubernetesClient, localStorage: LocalStorage) {
+  constructor(kubernetesClient: KubernetesClient, collectionRepository: CollectionRepository) {
     this.kubernetesClient = kubernetesClient;
-    this.localStorage = localStorage;
+    this.collectionRepository = collectionRepository;
   }
 
   /**
@@ -126,10 +127,10 @@ export class ResourceInventoryCollector {
         },
       };
 
-      logger.info('Storing resource inventory collection locally', {
+      logger.info('Persisting resource inventory collection', {
         collectionId: validatedInventory.collectionId,
       });
-      await this.localStorage.store(payload);
+      persistCollection(this.collectionRepository, payload);
 
       logger.info('Resource inventory collection processed successfully', {
         collectionId: validatedInventory.collectionId,

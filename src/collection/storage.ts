@@ -5,7 +5,6 @@
 
 import type { CollectionPayload } from './types.js';
 import { logger } from '../logging/logger.js';
-import { collectionStatsTracker } from './stats-tracker.js';
 
 /**
  * Default maximum number of collections to store in memory
@@ -93,9 +92,6 @@ export class LocalStorage {
       currentSize: this.order.length,
       maxCollections: this.maxCollections,
     });
-    
-    // Update stats tracker with new stored count
-    collectionStatsTracker.updateStoredCount(this.order.length);
   }
 
   /**
@@ -169,9 +165,6 @@ export class LocalStorage {
       clearedCount: size,
       action: 'clear',
     });
-    
-    // Update stats tracker with new stored count (0)
-    collectionStatsTracker.updateStoredCount(0);
   }
 }
 

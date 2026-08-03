@@ -8,7 +8,7 @@ vi.mock('../../cluster/identifier.js', () => ({
 import { ClusterMetadataCollector } from './cluster-metadata.js';
 import type { KubernetesClient } from '../../kubernetes/client.js';
 import type { ClusterMetadata } from '../types.js';
-import type { LocalStorage } from '../storage.js';
+import type { CollectionRepository } from '../../database/collection-repository.js';
 
 function mockKubernetesClient(
   versionResponse: { gitVersion?: string },
@@ -24,11 +24,17 @@ function mockKubernetesClient(
   } as unknown as KubernetesClient;
 }
 
+function mockCollectionRepository(
+  insertCollection: ReturnType<typeof vi.fn> = vi.fn().mockReturnValue(true)
+): CollectionRepository {
+  return { insertCollection } as unknown as CollectionRepository;
+}
+
 describe('ClusterMetadataCollector', () => {
   it('collect() rejects when the node list is empty', async () => {
     const collector = new ClusterMetadataCollector(
       mockKubernetesClient({ gitVersion: 'v1.28.0' }, []),
-      {} as LocalStorage
+      mockCollectionRepository()
     );
 
     await expect(collector.collect()).rejects.toThrow(/node list is empty/i);
@@ -46,7 +52,7 @@ describe('ClusterMetadataCollector', () => {
 
     const collector = new ClusterMetadataCollector(
       mockKubernetesClient({ gitVersion: 'v1.28.2' }, [node]),
-      {} as LocalStorage
+      mockCollectionRepository()
     );
 
     const meta = await collector.collect();
@@ -59,12 +65,10 @@ describe('ClusterMetadataCollector', () => {
   });
 
   it('processCollection() propagates validation errors (metrics alignment)', async () => {
-    const store = vi.fn().mockResolvedValue(undefined);
-    const localStorage = { store } as unknown as LocalStorage;
-
+    const insertCollection = vi.fn().mockReturnValue(true);
     const collector = new ClusterMetadataCollector(
       mockKubernetesClient({ gitVersion: 'v1.28.0' }, [{ metadata: {} }]),
-      localStorage
+      mockCollectionRepository(insertCollection)
     );
 
     const invalid: ClusterMetadata = {
@@ -76,23 +80,32 @@ describe('ClusterMetadataCollector', () => {
     };
 
     await expect(collector.processCollection(invalid)).rejects.toThrow(/nodeCount/i);
-    expect(store).not.toHaveBeenCalled();
+    expect(insertCollection).not.toHaveBeenCalled();
   });
 
-  it('processCollection() stores a validated payload on success', async () => {
-    const store = vi.fn().mockResolvedValue(undefined);
-    const localStorage = { store } as unknown as LocalStorage;
-
+  it('processCollection() persists a validated payload on success', async () => {
+    const insertCollection = vi.fn().mockReturnValue(true);
     const collector = new ClusterMetadataCollector(
       mockKubernetesClient({ gitVersion: 'v1.29.0' }, [{ metadata: {} }]),
-      localStorage
+      mockCollectionRepository(insertCollection)
     );
 
     const meta = await collector.collect();
     await collector.processCollection(meta);
 
-    expect(store).toHaveBeenCalledTimes(1);
-    const payload = store.mock.calls[0][0] as { type: string };
+    expect(insertCollection).toHaveBeenCalledTimes(1);
+    const payload = insertCollection.mock.calls[0][0] as { type: string };
     expect(payload.type).toBe('cluster-metadata');
+  });
+
+  it('processCollection() throws when durable insert fails', async () => {
+    const insertCollection = vi.fn().mockReturnValue(false);
+    const collector = new ClusterMetadataCollector(
+      mockKubernetesClient({ gitVersion: 'v1.29.0' }, [{ metadata: {} }]),
+      mockCollectionRepository(insertCollection)
+    );
+
+    const meta = await collector.collect();
+    await expect(collector.processCollection(meta)).rejects.toThrow(/Failed to persist cluster metadata/i);
   });
 });

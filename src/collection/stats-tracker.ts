@@ -82,9 +82,9 @@ export class CollectionStatsTracker {
   }
 
   /**
-   * Updates the count of collections stored locally
-   * 
-   * @param count - Current number of stored collections
+   * Updates the count of collections stored durably in SQLite.
+   *
+   * @param count - Current SQLite collections row count
    */
   updateStoredCount(count: number): void {
     this.collectionsStoredCount = count;
