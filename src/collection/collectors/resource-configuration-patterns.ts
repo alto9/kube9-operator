@@ -632,8 +632,8 @@ export class ResourceConfigurationPatternsCollector {
   }
 
   /**
-   * Processes collected data: validates, wraps in payload, and stores locally
-   * 
+   * Processes collected data: validates, wraps in payload, and persists durably
+   *
    * @param data - Collected resource configuration patterns data
    * @returns Promise that resolves when processing is complete
    */
@@ -656,7 +656,12 @@ export class ResourceConfigurationPatternsCollector {
       logger.info('Persisting resource configuration patterns collection', {
         collectionId: validatedData.collectionId,
       });
-      persistCollection(this.collectionRepository, payload);
+      const inserted = persistCollection(this.collectionRepository, payload);
+      if (!inserted) {
+        throw new Error(
+          `Failed to persist resource configuration patterns collection: ${validatedData.collectionId}`
+        );
+      }
 
       logger.info('Resource configuration patterns collection processed successfully', {
         collectionId: validatedData.collectionId,
@@ -667,7 +672,7 @@ export class ResourceConfigurationPatternsCollector {
         error: errorMessage,
         collectionId: data.collectionId,
       });
-      // Don't throw - graceful degradation
+      throw error;
     }
   }
 

@@ -105,8 +105,8 @@ export class ClusterMetadataCollector {
   }
 
   /**
-   * Processes collected metadata: validates, wraps in payload, and stores locally
-   * 
+   * Processes collected metadata: validates, wraps in payload, and persists durably
+   *
    * @param metadata - Collected cluster metadata
    * @returns Promise that resolves when processing is complete
    */

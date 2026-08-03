@@ -106,8 +106,8 @@ export class ResourceInventoryCollector {
   }
 
   /**
-   * Processes collected inventory: validates, wraps in payload, and stores locally
-   * 
+   * Processes collected inventory: validates, wraps in payload, and persists durably
+   *
    * @param inventory - Collected resource inventory
    * @returns Promise that resolves when processing is complete
    */
@@ -130,7 +130,12 @@ export class ResourceInventoryCollector {
       logger.info('Persisting resource inventory collection', {
         collectionId: validatedInventory.collectionId,
       });
-      persistCollection(this.collectionRepository, payload);
+      const inserted = persistCollection(this.collectionRepository, payload);
+      if (!inserted) {
+        throw new Error(
+          `Failed to persist resource inventory collection: ${validatedInventory.collectionId}`
+        );
+      }
 
       logger.info('Resource inventory collection processed successfully', {
         collectionId: validatedInventory.collectionId,
@@ -141,7 +146,7 @@ export class ResourceInventoryCollector {
         error: errorMessage,
         collectionId: inventory.collectionId,
       });
-      // Don't throw - graceful degradation
+      throw error;
     }
   }
 

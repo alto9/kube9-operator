@@ -1204,7 +1204,7 @@ it('ResourceConfigurationPatternsCollector - processCollection() persists data d
     expect(persistedPayload.sanitization.rulesApplied).toEqual(['no-resource-names', 'aggregated-configuration-data']);
 });
 
-it('ResourceConfigurationPatternsCollector - processCollection() handles errors gracefully', async () => {
+it('ResourceConfigurationPatternsCollector - processCollection() throws when durable insert fails', async () => {
   const mockKubernetesClient = {
     coreApi: {
       listPodForAllNamespaces: async () => ({ body: { items: [] } }),
@@ -1228,7 +1228,8 @@ it('ResourceConfigurationPatternsCollector - processCollection() handles errors 
 
   const data = await collector.collect();
 
-  // Should not throw - graceful degradation
-  await expect(collector.processCollection(data)).resolves.not.toThrow();
+  await expect(collector.processCollection(data)).rejects.toThrow(
+    /Failed to persist resource configuration patterns/i
+  );
 });
 

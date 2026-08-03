@@ -145,20 +145,36 @@ describe('ResourceInventoryCollector', () => {
       collectionRepository
     );
 
-    await collector.processCollection({
-      timestamp: new Date().toISOString(),
-      collectionId: 'bad-id',
-      clusterId: 'cls_' + 'a'.repeat(32),
-      namespaces: { count: 0, list: [] },
-      resources: {
-        pods: { total: 0, byNamespace: {} },
-        deployments: { total: 0 },
-        statefulSets: { total: 0 },
-        replicaSets: { total: 0 },
-        services: { total: 0, byType: {} },
-      },
-    });
+    await expect(
+      collector.processCollection({
+        timestamp: new Date().toISOString(),
+        collectionId: 'bad-id',
+        clusterId: 'cls_' + 'a'.repeat(32),
+        namespaces: { count: 0, list: [] },
+        resources: {
+          pods: { total: 0, byNamespace: {} },
+          deployments: { total: 0 },
+          statefulSets: { total: 0 },
+          replicaSets: { total: 0 },
+          services: { total: 0, byType: {} },
+        },
+      })
+    ).rejects.toThrow();
 
     expect(insertCollection).not.toHaveBeenCalled();
+  });
+
+  it('processCollection() throws when durable insert fails', async () => {
+    const insertCollection = vi.fn().mockReturnValue(false);
+    const collectionRepository = { insertCollection } as unknown as CollectionRepository;
+    const collector = new ResourceInventoryCollector(
+      mockKubernetesClient(),
+      collectionRepository
+    );
+
+    const inv = await collector.collect();
+    await expect(collector.processCollection(inv)).rejects.toThrow(
+      /Failed to persist resource inventory/i
+    );
   });
 });
